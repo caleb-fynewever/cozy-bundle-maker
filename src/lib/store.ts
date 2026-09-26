@@ -21,7 +21,7 @@ export type UserState = {
   favoriteVibes: Vibe[];
 };
 
-const KEY = "sidequest.state.v1";
+const KEY = "wego.state.v1";
 
 const initialState: UserState = {
   name: "You",
