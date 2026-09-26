@@ -168,9 +168,9 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
             </article>
           </div>
           <div className="flex items-center justify-center gap-2 sm:gap-3">
-            <Button variant="outline" onClick={() => choose("pass")} disabled={phase !== "idle"} ariaLabel={`Not now: ${current.quest.title}`}><X aria-hidden className="h-5 w-5" /> Not now</Button>
-            <Button onClick={() => choose("go")} disabled={phase !== "idle"} ariaLabel={`Do ${current.quest.title} now`}><Footprints aria-hidden className="h-5 w-5" /> Let&apos;s go</Button>
-            <Button variant="outline" onClick={() => choose("save")} disabled={phase !== "idle"} ariaLabel={`Save ${current.quest.title} for later`}><Bookmark aria-hidden className="h-5 w-5" /> Save for later</Button>
+            <Button variant="outline" onClick={() => choose("pass")} disabled={phase !== "idle"} ariaLabel={`Not now: ${current.quest.title}`} className="gap-1 whitespace-nowrap px-3 text-sm sm:px-6 sm:text-[15px]"><X aria-hidden className="h-5 w-5 shrink-0" /> Not now</Button>
+            <Button onClick={() => choose("go")} disabled={phase !== "idle"} ariaLabel={`Do ${current.quest.title} now`} className="whitespace-nowrap px-4 text-sm sm:px-6 sm:text-[15px]"><Footprints aria-hidden className="h-5 w-5 shrink-0" /> Let&apos;s go</Button>
+            <Button variant="outline" onClick={() => choose("save")} disabled={phase !== "idle"} ariaLabel={`Save ${current.quest.title} for later`} className="gap-1 whitespace-nowrap px-3 text-sm sm:px-6 sm:text-[15px]"><Bookmark aria-hidden className="h-5 w-5 shrink-0" /> Save for later</Button>
           </div>
           <p className="mt-1 text-center font-hand text-sm text-muted-foreground sm:mt-2 sm:text-base">swipe left for not now · right to save for later</p>
           <span className="sr-only" role="status" aria-live="polite">{choice === "save" ? `${current.quest.title} saved` : ""}</span>
