@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, type ChangeEvent } from "react";
-import { ArrowLeft, Bookmark, Footprints, Heart, ImagePlus, Star } from "lucide-react";
+import { ArrowLeft, Bookmark, Footprints, Heart, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Button, Chip } from "@/components/ui-kit";
@@ -150,10 +150,11 @@ function GoPage() {
           <div className="mt-8 space-y-6">
             <section>
               <h2 className="text-base font-semibold">How was it?</h2>
-              <div className="mt-2 flex gap-1" role="radiogroup" aria-label="Rating">
+              <div className="mt-2 flex gap-2" role="radiogroup" aria-label="Rating">
                 {[1, 2, 3, 4, 5].map((n) => (
-                  <button key={n} type="button" role="radio" aria-checked={rating === n} aria-label={`${n} star${n > 1 ? "s" : ""}`} onClick={() => setRating(n)} className="grid min-h-11 min-w-11 place-items-center">
-                    <Star aria-hidden className={`h-7 w-7 ${n <= rating ? "fill-primary text-ring" : "text-muted-foreground"}`} />
+                  <button key={n} type="button" role="radio" aria-checked={rating === n} aria-label={`Rate ${n} of 5`} onClick={() => setRating(n)}
+                    className={`grid min-h-11 min-w-11 place-items-center rounded-md border text-base font-medium ${rating === n ? "border-border-strong bg-secondary" : "border-input bg-card"}`}>
+                    {n}
                   </button>
                 ))}
               </div>

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { Heart, MessageCircle, Star } from "lucide-react";
+import { ChevronDown, Heart, MessageCircle } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Avatar } from "@/components/ui-kit";
 import { FRIEND_POSTS, type FeedPost } from "@/data/feed";
@@ -76,9 +76,7 @@ function Post({ post }: { post: FeedPost }) {
             {post.withNames.length ? `with ${post.withNames.join(", ")} · ` : ""}{quest?.location.area ?? ""} · {ago(post.at)}
           </p>
         </div>
-        <span className="flex items-center gap-0.5" aria-label={`Rated ${post.rating} of 5`}>
-          {[1, 2, 3, 4, 5].map((n) => <Star key={n} aria-hidden className={`h-4 w-4 ${n <= post.rating ? "fill-primary text-ring" : "text-border"}`} />)}
-        </span>
+        <span aria-label={`Rated ${post.rating} of 5`} className="shrink-0 text-sm font-medium">{post.rating}/5</span>
       </header>
       {quest || post.photo ? (
         <img src={post.photo ?? questImage(quest!)} alt={quest ? `${quest.location.name}` : "Quest photo"} loading="lazy" className="mt-3 aspect-[4/3] w-full border border-border bg-muted object-cover" />
@@ -88,8 +86,9 @@ function Post({ post }: { post: FeedPost }) {
         <button type="button" onClick={() => actions.toggleHeart(post.id)} aria-pressed={hearted} aria-label={hearted ? "Remove heart" : "Heart this"} className="inline-flex min-h-11 items-center gap-1.5 text-sm">
           <Heart aria-hidden className={`h-5 w-5 ${hearted ? "fill-destructive text-destructive" : ""}`} /> {post.hearts + (hearted ? 1 : 0)}
         </button>
-        <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="inline-flex min-h-11 items-center gap-1.5 text-sm">
+        <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="inline-flex min-h-11 items-center gap-1 text-sm">
           <MessageCircle aria-hidden className="h-5 w-5" /> {comments.length}
+          {comments.length ? <ChevronDown aria-hidden className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} /> : null}
         </button>
       </div>
       {comments.length && !open ? (
