@@ -115,7 +115,7 @@ function Discover() {
        <section className="grid gap-8 border-b-2 border-foreground pb-10 pt-4 md:grid-cols-[minmax(0,1.3fr)_minmax(260px,.7fr)] md:items-end md:gap-12 md:pb-14 md:pt-10">
          <div>
            <p className="mb-5 text-xs font-bold uppercase text-primary">Side Quest / Minneapolis</p>
-           <h1 className="max-w-[720px] font-display text-6xl font-extrabold uppercase leading-[0.94] sm:text-7xl lg:text-8xl">
+           <h1 className="max-w-[720px] font-display text-[38px] font-extrabold uppercase leading-[1.08] sm:text-6xl lg:text-7xl">
              What's the<br />move<span className="text-primary">?</span>
            </h1>
            <p className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground">Good stories start with a reason to get out. Find yours.</p>
@@ -139,7 +139,7 @@ function Discover() {
           ) : null}
         </div>
 
-         <div className="mt-6 flex flex-wrap items-center gap-5">
+         <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-5">
            <Button onClick={() => setTonightOpen(true)}>Find something to do →</Button>
            {state.completed.length === 0 ? (
              <button type="button" onClick={actions.loadDemo} className="min-h-11 text-sm text-muted-foreground underline underline-offset-4">
@@ -260,7 +260,7 @@ function Discover() {
           {EVENTS.map((event) => {
             const photo = PHOTOS[event.photo] ?? PHOTOS["isles"]!;
             return (
-               <article key={event.id} className="min-w-0 border-b border-border pb-6 md:col-span-4 first:md:col-span-8 first:md:row-span-2 first:md:border-foreground first:md:bg-card first:md:p-3 first:md:lift">
+               <article key={event.id} className="min-w-0 border-b border-border pb-6 md:col-span-4 first:md:col-span-8 first:md:border-foreground first:md:bg-card first:md:p-3 first:md:lift">
                 <img
                   src={photo.url}
                   alt={event.where}

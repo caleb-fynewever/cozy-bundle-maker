@@ -56,42 +56,42 @@
   --radius: 0.5rem;
 
   /* Editorial paper, ink, and jade-green pressed color. */
-  --background: #F8F9F8;
-  --foreground: #121212;
-  --surface: #EBF2EF;
-  --surface-foreground: #121212;
-  --card: #FFFFFF;
-  --card-foreground: #121212;
-  --popover: #FFFFFF;
-  --popover-foreground: #121212;
+  --background: oklch(0.981 0.002 170);
+  --foreground: oklch(0.178 0 0);
+  --surface: oklch(0.944 0.019 163);
+  --surface-foreground: oklch(0.178 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.178 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.178 0 0);
 
-  --primary: #0D9488;
-  --primary-foreground: #FFFFFF;
+  --primary: oklch(0.594 0.114 185);
+  --primary-foreground: oklch(1 0 0);
 
-  --secondary: #D5EDE5;
-  --secondary-foreground: #121212;
+  --secondary: oklch(0.921 0.037 165);
+  --secondary-foreground: oklch(0.178 0 0);
 
-  --muted: #E8EEEA;
-  --muted-foreground: #5A6460;
+  --muted: oklch(0.942 0.012 164);
+  --muted-foreground: oklch(0.482 0.016 163);
 
-  --accent: #121212;
-  --accent-foreground: #F8F9F8;
+  --accent: oklch(0.178 0 0);
+  --accent-foreground: oklch(0.981 0.002 170);
 
-  --signal: #0D9488;
-  --signal-foreground: #FFFFFF;
+  --signal: oklch(0.594 0.114 185);
+  --signal-foreground: oklch(1 0 0);
 
   --destructive: oklch(0.55 0.2 25);
   --destructive-foreground: oklch(0.99 0.004 20);
 
-  --border: #D8E0DC;
-  --border-strong: #121212;
-  --input: #D8E0DC;
-  --ring: #0D9488;
+  --border: oklch(0.884 0.014 163);
+  --border-strong: oklch(0.178 0 0);
+  --input: oklch(0.884 0.014 163);
+  --ring: oklch(0.594 0.114 185);
 
-  --map-water: #A8DADB;
-  --map-land: #F3F5EF;
-  --map-road: #D4DFD7;
-  --map-park: #C8E6C7;
+  --map-water: oklch(0.845 0.048 189);
+  --map-land: oklch(0.964 0.011 135);
+  --map-road: oklch(0.885 0.019 154);
+  --map-park: oklch(0.891 0.055 146);
 
   --gradient-night: linear-gradient(180deg, transparent 45%, color-mix(in srgb, var(--foreground) 55%, transparent) 100%);
   --shadow-lift: 4px 4px 0 var(--foreground);
