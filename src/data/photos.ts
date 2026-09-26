@@ -3,10 +3,16 @@ export type Photo = { url: string; source: string; credit: string; license: stri
 
 export const PHOTOS: Record<string, Photo> = {
   "stone": {
-    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b7/Stone_Arch_Bridge_at_Tongdosa_Temple.jpg/1280px-Stone_Arch_Bridge_at_Tongdosa_Temple.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-    "source": "https://commons.wikimedia.org/wiki/File:Stone_Arch_Bridge_at_Tongdosa_Temple.jpg",
-    "credit": "Bernard Gagno",
-    "license": "CC0"
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/73/Downtown_Minneapolis_from_the_University_of_Minnesota.jpg/1280px-Downtown_Minneapolis_from_the_University_of_Minnesota.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Downtown_Minneapolis_from_the_University_of_Minnesota.jpg",
+    "credit": "Wikimedia Commons contributor",
+    "license": "See source"
+  },
+  "weisman": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/16/Frank_Gehry_-_Minneapolis%2C_MN_-_Weisman_Art_Museum_%28A%29.jpg/1280px-Frank_Gehry_-_Minneapolis%2C_MN_-_Weisman_Art_Museum_%28A%29.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Frank_Gehry_-_Minneapolis,_MN_-_Weisman_Art_Museum_(A).jpg",
+    "credit": "Wikimedia Commons contributor",
+    "license": "See source"
   },
   "minnehaha": {
     "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/be/Redoneminnehaha.jpg/1280px-Redoneminnehaha.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
@@ -123,7 +129,7 @@ export const QUEST_PHOTO: Record<string, string> = {
   "q_stone_arch_freeze": "stone",
   "q_midnight_photo_hunt": "goldmedal",
   "q_global_market_draft": "midtown",
-  "q_weisman_mimic": "library",
+  "q_weisman_mimic": "weisman",
   "q_bridge_sprint": "stone",
   "q_minnehaha_descent": "minnehaha",
   "q_northeast_mural_bingo": "surdyks",
