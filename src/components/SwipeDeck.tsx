@@ -114,7 +114,17 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
                     zIndex: depth,
                   }}
                 >
-                  <img src={questImage(item.quest)} alt="" draggable={false} className="h-full w-full object-cover" style={{ opacity: 0.28 - level * 0.08 }} />
+                  <div className="flex h-full flex-col">
+                    <div className="bg-secondary p-2 sm:p-3">
+                      <img src={questImage(item.quest)} alt="" draggable={false} className="h-[min(24dvh,230px)] w-full object-cover sm:h-[min(42dvh,430px)]" style={{ opacity: 0.3 }} />
+                    </div>
+                    <div className="px-4 py-3 sm:p-6">
+                      <p className="font-hand text-base text-muted-foreground sm:text-lg">{reasonLine({ quest: item.quest, distance: item.distance })}</p>
+                      <h3 className="mt-0.5 text-xl font-semibold leading-tight sm:text-3xl">{item.quest.title}</h3>
+                      <p className="mt-1 text-xs text-muted-foreground sm:text-sm">{item.quest.location.area} · {metaLine(item.distance, item.quest.durationMin, item.quest.costPerPerson)}</p>
+                      <p className="mt-1 line-clamp-2 text-sm leading-snug sm:mt-4 sm:text-base">{item.quest.hook}</p>
+                    </div>
+                  </div>
                 </div>
               );
             })}
