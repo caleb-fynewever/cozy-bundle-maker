@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, type ChangeEvent } from "react";
-import { ArrowLeft, Bookmark, Footprints, Heart, ImagePlus } from "lucide-react";
+import { ArrowLeft, Bookmark, CalendarPlus, Clock, Footprints, Heart, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Button, Chip } from "@/components/ui-kit";
