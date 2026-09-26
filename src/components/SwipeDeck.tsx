@@ -86,8 +86,8 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
   }
 
   return (
-    <section aria-label="Quest postcards" className="mt-4 md:mt-6">
-      <div className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+    <section aria-label="Quest postcards" className="mt-3 md:mt-6">
+      <div className="mb-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:mb-3">
         <div className="min-w-0">
           <p className="font-hand text-lg">one thing at a time</p>
           <h2 className="text-xl font-semibold sm:text-2xl">Your next quest</h2>
@@ -111,15 +111,15 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
               aria-label={`${current.quest.title}. Press left arrow to pass or right arrow to save.`}
             >
               <div className="relative bg-secondary p-2 sm:p-3">
-                <img src={questImage(current.quest)} alt={`${current.quest.location.name}, ${current.quest.location.area}`} draggable={false} className="h-[min(31dvh,310px)] w-full select-none object-cover sm:h-[min(42dvh,430px)]" />
+                <img src={questImage(current.quest)} alt={`${current.quest.location.name}, ${current.quest.location.area}`} draggable={false} className="h-[min(24dvh,230px)] w-full select-none object-cover sm:h-[min(42dvh,430px)]" />
                 <span aria-hidden className={`pointer-events-none absolute left-6 top-6 -rotate-12 border-2 border-destructive bg-card px-3 py-1 font-hand text-2xl text-destructive transition-opacity ${dragX < -35 ? "opacity-100" : "opacity-0"}`}>pass</span>
                 {phase === "stamping" || (choice === "save" && phase === "leaving") ? <span aria-hidden className="save-stamp pointer-events-none absolute left-1/2 top-1/2 border-4 border-ring bg-card/90 px-7 py-2 font-hand text-4xl text-ring shadow-sm">SAVED!</span> : <span aria-hidden className={`pointer-events-none absolute right-6 top-6 rotate-12 border-2 border-ring bg-card px-3 py-1 font-hand text-2xl text-ring transition-opacity ${dragX > 35 ? "opacity-100" : "opacity-0"}`}>save</span>}
               </div>
-              <div className="p-4 sm:p-6">
+              <div className="px-4 py-3 sm:p-6">
                 <p className="font-hand text-base text-muted-foreground sm:text-lg">{reasonLine(current)}</p>
                 <h3 className="mt-0.5 text-xl font-semibold leading-tight sm:text-3xl">{current.quest.title}</h3>
                 <p className="mt-1 text-xs text-muted-foreground sm:text-sm">{current.quest.location.area} · {metaLine(current.distance, current.quest.durationMin, current.quest.costPerPerson)}</p>
-                <p className="mt-2 line-clamp-2 text-sm leading-snug sm:mt-4 sm:text-base">{current.quest.hook}</p>
+                <p className="mt-1 line-clamp-2 text-sm leading-snug sm:mt-4 sm:text-base">{current.quest.hook}</p>
                 <Link to="/quest/$questId" params={{ questId: current.quest.id }} className="mt-1 inline-flex min-h-10 items-center gap-1 text-sm font-semibold underline decoration-primary underline-offset-4 sm:mt-3">See the quest <ArrowUpRight aria-hidden className="h-4 w-4" /></Link>
               </div>
             </article>
@@ -128,7 +128,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
             <Button variant="outline" onClick={() => choose("pass")} disabled={phase !== "idle"} ariaLabel={`Pass ${current.quest.title}`}><X aria-hidden className="h-6 w-6" /> Pass</Button>
             <Button onClick={() => choose("save")} disabled={phase !== "idle"} ariaLabel={`Save ${current.quest.title}`}><Heart aria-hidden className="h-6 w-6" /> Save</Button>
           </div>
-          <p className="mt-2 text-center font-hand text-sm text-muted-foreground sm:text-base">swipe left to pass · right to save</p>
+          <p className="mt-1 text-center font-hand text-sm text-muted-foreground sm:mt-2 sm:text-base">swipe left to pass · right to save</p>
           <span className="sr-only" role="status" aria-live="polite">{phase === "stamping" ? `${current.quest.title} saved` : ""}</span>
         </>
       ) : (

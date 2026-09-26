@@ -110,14 +110,14 @@ function Discover() {
       <AppShell>
         <div className="mx-auto max-w-2xl">
           <section className="pt-0">
-            <p className="font-hand text-lg">Minneapolis · a little detour from the usual</p>
+            <p className="font-hand text-base sm:text-lg">Minneapolis · a little detour from the usual</p>
             <div className="mt-1 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
               <h1 className="min-w-0 text-2xl font-semibold leading-tight sm:text-3xl md:text-4xl">Find your next story.</h1>
              <Button variant="outline" onClick={() => setAdjusting((v) => !v)} ariaLabel="Change the plan">
                <SlidersHorizontal aria-hidden className="h-4 w-4" /> <span className="hidden sm:inline">Change the plan</span>
              </Button>
            </div>
-           <p className="mt-3 text-sm text-muted-foreground">For {summary}{squad.length ? ` · with ${squad.map((s) => s.name).join(" & ")}` : ""}</p>
+            <p className="mt-1 text-sm text-muted-foreground sm:mt-3">For {summary}{squad.length ? ` · with ${squad.map((s) => s.name).join(" & ")}` : ""}</p>
          </section>
 
          {adjusting ? (
