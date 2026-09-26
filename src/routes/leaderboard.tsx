@@ -21,7 +21,7 @@ export const Route = createFileRoute("/leaderboard")({
 
 function LeaderboardPage() {
   const state = useUserState();
-  const [key, setKey] = useState<BoardKey>("completed");
+  const [key, setKey] = useState<BoardKey>("week");
   const [scope, setScope] = useState<"friends" | "everyone">("friends");
   const board = BOARDS.find((b) => b.key === key)!;
   const entries = useMemo(() => rankBoard(state, key, scope), [state, key, scope]);
@@ -67,8 +67,9 @@ function LeaderboardPage() {
               {i + 1}
             </span>
             <Avatar name={entry.name} you={entry.you} size={i < 3 ? 48 : 40} />
-            <span className="flex-1 font-semibold">
-              {entry.you ? `${entry.name} (you)` : entry.name}
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">{entry.you ? `${entry.name} (you)` : entry.name}</span>
+              <span className="block text-sm text-muted-foreground">{entry.level}</span>
             </span>
             <span className="text-sm text-muted-foreground">{board.unit(entry.value)}</span>
           </li>

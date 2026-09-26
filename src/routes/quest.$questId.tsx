@@ -131,8 +131,10 @@ function QuestDetail() {
             <Button
               full
               onClick={() => {
-                actions.complete(quest.id);
-                toast.success("Quest done. +120 XP");
+                const earned = actions.complete(quest.id, quest.title);
+                toast.success(
+                  state.squadIds.length ? `Quest done with the squad. +${earned} XP` : `Quest done. +${earned} XP`,
+                );
               }}
             >
               I did it

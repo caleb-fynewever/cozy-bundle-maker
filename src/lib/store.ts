@@ -19,7 +19,14 @@ export type UserState = {
   streak: number;
   createdQuests: Quest[];
   favoriteVibes: Vibe[];
+  /** Every XP gain, newest first. Drives weekly boards and the profile history. */
+  log: XpEvent[];
+  /** Local day (YYYY-MM-DD) of the last completed quest, for streaks. */
+  lastQuestDay: string | null;
 };
+
+export type XpKind = "complete" | "squad" | "create" | "rank" | "save" | "join" | "verify";
+export type XpEvent = { kind: XpKind; xp: number; at: number; label: string };
 
 const KEY = "wego.state.v1";
 
@@ -41,6 +48,8 @@ const initialState: UserState = {
   streak: 0,
   createdQuests: [],
   favoriteVibes: [],
+  log: [],
+  lastQuestDay: null,
 };
 
 let state: UserState = initialState;
@@ -91,6 +100,8 @@ export function useUserState() {
 
 export const XP = {
   complete: 120,
+  /** Extra for doing a quest with at least one squadmate. */
+  squadBonus: 60,
   create: 90,
   rank: 20,
   save: 10,
@@ -98,12 +109,27 @@ export const XP = {
   verify: 60,
 };
 
+function dayKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function nextStreak(s: UserState) {
+  const today = dayKey();
+  if (s.lastQuestDay === today) return Math.max(1, s.streak);
+  const yesterday = dayKey(new Date(Date.now() - 86_400_000));
+  return s.lastQuestDay === yesterday ? s.streak + 1 : 1;
+}
+
+function gain(s: UserState, kind: XpKind, xp: number, label: string): Pick<UserState, "xp" | "log"> {
+  return { xp: s.xp + xp, log: [{ kind, xp, at: Date.now(), label }, ...s.log].slice(0, 80) };
+}
+
 export const actions = {
   toggleSave(id: string) {
     setState((s) =>
       s.saved.includes(id)
         ? { ...s, saved: s.saved.filter((x) => x !== id) }
-        : { ...s, saved: [...s.saved, id], xp: s.xp + XP.save },
+        : { ...s, saved: [...s.saved, id], ...gain(s, "save", XP.save, "Saved a quest") },
     );
   },
   pass(id: string) {
@@ -113,40 +139,54 @@ export const actions = {
     }));
   },
   undoChoice(id: string, choice: "pass" | "save") {
-    setState((s) => choice === "pass"
-      ? { ...s, passed: s.passed.filter((x) => x !== id) }
-      : { ...s, saved: s.saved.filter((x) => x !== id), xp: Math.max(0, s.xp - XP.save) },
-    );
+    setState((s) => {
+      if (choice === "pass") return { ...s, passed: s.passed.filter((x) => x !== id) };
+      const i = s.log.findIndex((e) => e.kind === "save");
+      return {
+        ...s,
+        saved: s.saved.filter((x) => x !== id),
+        xp: Math.max(0, s.xp - XP.save),
+        log: i < 0 ? s.log : [...s.log.slice(0, i), ...s.log.slice(i + 1)],
+      };
+    });
   },
-  complete(id: string) {
-    setState((s) =>
-      s.completed.includes(id)
-        ? s
-        : {
-            ...s,
-            completed: [...s.completed, id],
-            passed: s.passed.filter((x) => x !== id),
-            xp: s.xp + XP.complete,
-            streak: s.streak + 1,
-          },
-    );
+  /** Returns the XP earned so the caller can say it out loud. */
+  complete(id: string, title = "a quest"): number {
+    let earned = 0;
+    setState((s) => {
+      if (s.completed.includes(id)) return s;
+      const withSquad = s.squadIds.length > 0;
+      earned = XP.complete + (withSquad ? XP.squadBonus : 0);
+      const base = gain(s, "complete", XP.complete, `Did ${title}`);
+      const next = { ...s, ...base };
+      const bonus = withSquad ? gain(next, "squad", XP.squadBonus, "Went with the squad") : base;
+      return {
+        ...next,
+        ...bonus,
+        completed: [...s.completed, id],
+        passed: s.passed.filter((x) => x !== id),
+        streak: nextStreak(s),
+        lastQuestDay: dayKey(),
+      };
+    });
+    return earned;
   },
   rank(winner: string, loser: string) {
     setState((s) => ({
       ...s,
       rankings: [...s.rankings, { winner, loser }],
-      xp: s.xp + XP.rank,
+      ...gain(s, "rank", XP.rank, "Ranked two quests"),
     }));
   },
-  toggleSquadMember(id: string) {
+  toggleSquadMember(id: string, name = "someone") {
     setState((s) =>
       s.squadIds.includes(id)
         ? { ...s, squadIds: s.squadIds.filter((x) => x !== id) }
-        : { ...s, squadIds: [...s.squadIds, id], xp: s.xp + XP.squad },
+        : { ...s, squadIds: [...s.squadIds, id], ...gain(s, "join", XP.squad, `${name} joined your squad`) },
     );
   },
   verify(email: string) {
-    setState((s) => ({ ...s, eduEmail: email, verified: true, xp: s.xp + XP.verify }));
+    setState((s) => ({ ...s, eduEmail: email, verified: true, ...gain(s, "verify", XP.verify, "Verified your student email") }));
   },
   setPrivacy(patch: Partial<Pick<UserState, "optInNearby" | "shareLocation" | "publicProfile">>) {
     setState((s) => ({ ...s, ...patch }));
@@ -158,13 +198,15 @@ export const actions = {
     setState((s) => ({
       ...s,
       createdQuests: [quest, ...s.createdQuests],
-      xp: s.xp + XP.create,
+      ...gain(s, "create", XP.create, `Made “${quest.title}”`),
     }));
   },
   reset() {
     setState(() => initialState);
   },
   loadDemo() {
+    const now = Date.now();
+    const h = 3_600_000;
     setState((s) => ({
       ...s,
       name: "Caleb",
@@ -185,6 +227,17 @@ export const actions = {
       squadIds: ["u_alex", "u_jordan"],
       xp: 1680,
       streak: 6,
+      lastQuestDay: dayKey(new Date(now - 20 * h)),
+      log: [
+        { kind: "squad", xp: XP.squadBonus, at: now - 20 * h, label: "Went with the squad" },
+        { kind: "complete", xp: XP.complete, at: now - 20 * h, label: "Did Stone Arch freeze frame" },
+        { kind: "rank", xp: XP.rank, at: now - 30 * h, label: "Ranked two quests" },
+        { kind: "squad", xp: XP.squadBonus, at: now - 52 * h, label: "Went with the squad" },
+        { kind: "complete", xp: XP.complete, at: now - 52 * h, label: "Did the midnight photo hunt" },
+        { kind: "join", xp: XP.squad, at: now - 70 * h, label: "Jordan joined your squad" },
+        { kind: "save", xp: XP.save, at: now - 90 * h, label: "Saved a quest" },
+        { kind: "complete", xp: XP.complete, at: now - 10 * 24 * h, label: "Did the snack crawl" },
+      ],
     }));
   },
 };
