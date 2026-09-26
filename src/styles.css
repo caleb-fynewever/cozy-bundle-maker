@@ -157,17 +157,15 @@
   }
 }
 
-@keyframes feed-read {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
+@keyframes save-stamp {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(1.8) rotate(-18deg); }
+  60% { opacity: 1; transform: translate(-50%, -50%) scale(.88) rotate(-12deg); }
+  80% { transform: translate(-50%, -50%) scale(1.05) rotate(-12deg); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-12deg); }
 }
 
-@supports (animation-timeline: scroll()) {
-  .feed-progress {
-    transform-origin: left;
-    animation: feed-read linear both;
-    animation-timeline: scroll();
-  }
+@utility save-stamp {
+  animation: save-stamp 420ms cubic-bezier(.2,.8,.2,1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -177,5 +175,4 @@
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
   }
-  .feed-progress { animation: none; }
 }

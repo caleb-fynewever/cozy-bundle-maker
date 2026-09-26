@@ -11,13 +11,13 @@ const NAV = [
   { to: "/profile", label: "Profile", icon: User },
 ] as const;
 
-export function AppShell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
+export function AppShell({ children, wide = false, compact = false }: { children: ReactNode; wide?: boolean; compact?: boolean }) {
   useEffect(() => {
     hydrate();
   }, []);
 
   return (
-    <div className="min-h-screen bg-background pb-24 md:pb-0">
+    <div className={`min-h-screen bg-background ${compact ? "pb-16" : "pb-24"} md:pb-0`}>
        <header className="sticky top-0 z-50 border-b border-border bg-background/95">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 md:h-[72px] md:px-8">
          <Link to="/" className="font-hand text-[28px] leading-none md:text-[34px]" aria-label="Side Quest home">
@@ -37,10 +37,9 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
           ))}
         </nav>
         </div>
-         <div aria-hidden className="feed-progress h-[2px] w-full bg-primary" />
       </header>
 
-      <main className={`mx-auto px-5 pb-16 pt-5 md:px-8 md:pt-10 ${wide ? "max-w-7xl" : "max-w-5xl"}`}>{children}</main>
+      <main className={`mx-auto px-5 pt-5 md:px-8 md:pt-10 ${compact ? "pb-0 md:pb-16" : "pb-16"} ${wide ? "max-w-7xl" : "max-w-5xl"}`}>{children}</main>
 
       <nav
         aria-label="Main"
