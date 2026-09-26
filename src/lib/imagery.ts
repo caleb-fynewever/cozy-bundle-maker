@@ -1,25 +1,24 @@
-import food from "@/assets/vibe-food.jpg";
-import weird from "@/assets/vibe-weird.jpg";
-import active from "@/assets/vibe-active.jpg";
-import chill from "@/assets/vibe-chill.jpg";
+import { PHOTOS, QUEST_PHOTO, type Photo } from "@/data/photos";
 import type { Quest, Vibe } from "@/lib/types";
 
 const BY_VIBE: Partial<Record<Vibe, string>> = {
-  food,
-  weird,
-  active,
-  competitive: active,
-  outdoors: active,
-  chill,
-  creative: weird,
-  social: food,
-  "late-night": food,
+  food: "eatstreet",
+  weird: "spoon",
+  active: "stone",
+  competitive: "fulton",
+  outdoors: "minnehaha",
+  chill: "isles",
+  creative: "goldmedal",
+  social: "dinkytown",
+  "late-night": "greenway",
 };
 
+/** Real, licensed place photo for a quest (Wikimedia Commons). */
+export function questPhoto(quest: Quest): Photo {
+  const key = QUEST_PHOTO[quest.id] ?? quest.vibes.map((v) => BY_VIBE[v]).find(Boolean) ?? "isles";
+  return PHOTOS[key] ?? PHOTOS["isles"]!;
+}
+
 export function questImage(quest: Quest): string {
-  for (const vibe of quest.vibes) {
-    const image = BY_VIBE[vibe];
-    if (image) return image;
-  }
-  return chill;
+  return questPhoto(quest).url;
 }

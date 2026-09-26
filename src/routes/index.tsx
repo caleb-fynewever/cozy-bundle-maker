@@ -8,6 +8,8 @@ import { currentTimeSlot, recommend, tonightTrio } from "@/lib/engine";
 import { QUESTS } from "@/data/quests";
 import { NEARBY_STUDENTS } from "@/data/people";
 import { actions, useUserState } from "@/lib/store";
+import { EVENTS } from "@/data/events";
+import { PHOTOS } from "@/data/photos";
 import { VIBES, VIBE_LABEL, type SessionContext, type Vibe } from "@/lib/types";
 
 export const Route = createFileRoute("/")({
@@ -242,6 +244,44 @@ function Discover() {
           </div>
         </section>
       ) : null}
+
+      <section className="mt-20" aria-labelledby="happening">
+        <h2 id="happening" className="text-3xl font-bold">
+          Happening around town
+        </h2>
+        <p className="mt-1 text-muted-foreground">Real events this week. Bring the squad.</p>
+        <div className="hide-scrollbar -mx-5 mt-6 flex snap-x scroll-px-5 gap-5 overflow-x-auto px-5 pb-2">
+          {EVENTS.map((event) => {
+            const photo = PHOTOS[event.photo] ?? PHOTOS["isles"]!;
+            return (
+              <article key={event.id} className="w-72 shrink-0 snap-start">
+                <img
+                  src={photo.url}
+                  alt={event.where}
+                  loading="lazy"
+                  width={1200}
+                  height={800}
+                  className="aspect-[4/3] w-full rounded-2xl bg-muted object-cover"
+                />
+                <p className="mt-3 text-sm font-semibold text-primary">{event.when}</p>
+                <h3 className="mt-1 text-lg font-bold leading-tight">{event.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {event.where} · {event.price}
+                </p>
+                <p className="mt-2 text-sm leading-relaxed">{event.blurb}</p>
+                <a
+                  href={event.source.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 inline-flex min-h-11 items-center text-sm text-muted-foreground underline underline-offset-4"
+                >
+                  Via {event.source.name}
+                </a>
+              </article>
+            );
+          })}
+        </div>
+      </section>
 
       <section className="mt-20">
         <h2 className="text-3xl font-bold">Picked for you</h2>

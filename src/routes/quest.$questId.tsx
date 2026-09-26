@@ -7,7 +7,7 @@ import { reasonLine } from "@/components/QuestCard";
 import { Button } from "@/components/ui-kit";
 import { QUESTS, getQuest } from "@/data/quests";
 import { NEARBY_STUDENTS } from "@/data/people";
-import { questImage } from "@/lib/imagery";
+import { questImage, questPhoto } from "@/lib/imagery";
 import { actions, useUserState } from "@/lib/store";
 import { CAMPUS_ORIGIN, currentTimeSlot, distanceMi, recommend } from "@/lib/engine";
 
@@ -88,8 +88,16 @@ function QuestDetail() {
           alt={`${quest.location.name}, ${quest.location.area}`}
           width={1200}
           height={912}
-          className="aspect-[4/3] w-full rounded-2xl object-cover"
+          className="aspect-[4/3] w-full rounded-2xl bg-muted object-cover"
         />
+        <a
+          href={questPhoto(quest).source}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 inline-block text-xs text-muted-foreground"
+        >
+          Photo: {questPhoto(quest).credit} · {questPhoto(quest).license}
+        </a>
 
         <p className="mt-8 text-sm text-muted-foreground">
           {quest.location.name} · {quest.location.area}
