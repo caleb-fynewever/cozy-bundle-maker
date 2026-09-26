@@ -1,4 +1,5 @@
 # Roadmap
+- [x] Make postcard swipes feel like turning a book page and travel across the full screen on desktop
 - [x] Add a subtle 3D shift during Discover swipes without disrupting desktop dragging or save motion
 - [x] Make Discover a swipe-only deck with reliable gestures and a save stamp
 - [x] Replace Discover quest postcards with a swipeable pass/save deck; keep real events visible below
