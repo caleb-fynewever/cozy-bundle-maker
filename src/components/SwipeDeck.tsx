@@ -29,6 +29,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
     locked.current = true;
     gesture.current = null;
     setChoice(selected);
+    if (selected === "save") setDragX(0);
     const id = current.quest.id;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const stampDelay = selected === "save" && !reducedMotion ? 440 : 0;

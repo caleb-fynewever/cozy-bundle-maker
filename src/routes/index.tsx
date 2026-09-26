@@ -118,7 +118,6 @@ function Discover() {
              </Button>
            </div>
            <p className="mt-3 text-sm text-muted-foreground">For {summary}{squad.length ? ` · with ${squad.map((s) => s.name).join(" & ")}` : ""}</p>
-            {state.completed.length === 0 ? <div className="mt-1"><Button variant="ghost" onClick={actions.loadDemo}>Try with a demo profile</Button></div> : null}
          </section>
 
          {adjusting ? (
