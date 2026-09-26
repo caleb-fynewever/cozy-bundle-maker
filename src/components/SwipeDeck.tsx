@@ -89,7 +89,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
     if (move.axis !== "horizontal" || cancelled) { setDragX(0); return; }
     const dx = event.clientX - move.x;
     const elapsed = Math.max(performance.now() - move.at, 1);
-    if (Math.abs(dx) > 95 || (Math.abs(dx) > 45 && Math.abs(dx) / elapsed > 0.65)) choose(dx > 0 ? "go" : "pass");
+    if (Math.abs(dx) > 95 || (Math.abs(dx) > 45 && Math.abs(dx) / elapsed > 0.65)) choose(dx > 0 ? "save" : "pass");
     else setDragX(0);
   }
 
@@ -144,19 +144,19 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
             <article
               key={current.quest.id}
               className={`relative z-10 select-none overflow-hidden border border-border-strong bg-card shadow-sm ${phase === "leaving" ? "transition-transform duration-[420ms] ease-out" : dragX === 0 ? "transition-transform duration-200 ease-out" : ""}`}
-              style={{ transform: `translate(${dragX}px, ${liftY}px) rotate(${turn}deg)`, touchAction: "pan-y" }}
+              style={{ transform: `translate(${dragX}px, ${liftY}px) rotate(${turn}deg) scale(${zoom ? 1.07 : 1})`, touchAction: "pan-y" }}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={(event) => finish(event)}
               onPointerCancel={(event) => finish(event, true)}
-              onKeyDown={(event) => { if (event.target !== event.currentTarget) return; if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); choose(event.key === "ArrowRight" ? "go" : "pass"); } }}
+              onKeyDown={(event) => { if (event.target !== event.currentTarget) return; if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); choose(event.key === "ArrowRight" ? "save" : "pass"); } }}
               tabIndex={0}
-              aria-label={`${current.quest.title}. Press left arrow to pass for now or right arrow to go.`}
+              aria-label={`${current.quest.title}. Press left arrow to pass for now or right arrow to save for later.`}
             >
               <div className="relative bg-secondary p-2 sm:p-3">
                 <img src={questImage(current.quest)} alt={`${current.quest.location.name}, ${current.quest.location.area}`} draggable={false} className="h-[min(24dvh,230px)] w-full select-none object-cover sm:h-[min(42dvh,430px)]" />
                 <span aria-hidden className={`pointer-events-none absolute left-6 top-6 -rotate-12 border-2 border-destructive bg-card px-3 py-1 font-hand text-2xl text-destructive transition-opacity ${dragX < -35 ? "opacity-100" : "opacity-0"}`}>not now</span>
-                {choice === "save" && phase === "leaving" ? <span aria-hidden className="save-stamp pointer-events-none absolute left-1/2 top-1/2 border-4 border-ring bg-card/90 px-7 py-2 font-hand text-4xl text-ring shadow-sm">SAVED!</span> : <span aria-hidden className={`pointer-events-none absolute right-6 top-6 rotate-12 border-2 border-ring bg-card px-3 py-1 font-hand text-2xl text-ring transition-opacity ${dragX > 35 ? "opacity-100" : "opacity-0"}`}>let&apos;s go</span>}
+                {choice === "save" && phase === "leaving" ? <span aria-hidden className="save-stamp pointer-events-none absolute left-1/2 top-1/2 border-4 border-ring bg-card/90 px-7 py-2 font-hand text-4xl text-ring shadow-sm">SAVED!</span> : <span aria-hidden className={`pointer-events-none absolute right-6 top-6 rotate-12 border-2 border-ring bg-card px-3 py-1 font-hand text-2xl text-ring transition-opacity ${dragX > 35 ? "opacity-100" : "opacity-0"}`}>save for later</span>}
               </div>
               <div className="px-4 py-3 sm:p-6">
                 <p className="font-hand text-base text-muted-foreground sm:text-lg">{reasonLine(current)}</p>
@@ -167,18 +167,18 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
               </div>
             </article>
           </div>
-          <div className="flex items-center justify-center gap-3 sm:gap-5">
-            <Button variant="outline" onClick={() => choose("pass")} disabled={phase !== "idle"} ariaLabel={`Not now: ${current.quest.title}`}><X aria-hidden className="h-6 w-6" /> <span className="hidden sm:inline">Not now</span></Button>
-            <Button variant="ghost" onClick={() => choose("save")} disabled={phase !== "idle"} ariaLabel={`Save ${current.quest.title} for later`}><Bookmark aria-hidden className="h-5 w-5" /> Later</Button>
-            <Button onClick={() => choose("go")} disabled={phase !== "idle"} ariaLabel={`Do ${current.quest.title} now`}><Footprints aria-hidden className="h-6 w-6" /> Let&apos;s go</Button>
+          <div className="flex items-center justify-center gap-2 sm:gap-3">
+            <Button variant="outline" onClick={() => choose("pass")} disabled={phase !== "idle"} ariaLabel={`Not now: ${current.quest.title}`}><X aria-hidden className="h-5 w-5" /> Not now</Button>
+            <Button onClick={() => choose("go")} disabled={phase !== "idle"} ariaLabel={`Do ${current.quest.title} now`}><Footprints aria-hidden className="h-5 w-5" /> Let&apos;s go</Button>
+            <Button variant="outline" onClick={() => choose("save")} disabled={phase !== "idle"} ariaLabel={`Save ${current.quest.title} for later`}><Bookmark aria-hidden className="h-5 w-5" /> Save for later</Button>
           </div>
-          <p className="mt-1 text-center font-hand text-sm text-muted-foreground sm:mt-2 sm:text-base">swipe left for not now · right to go</p>
+          <p className="mt-1 text-center font-hand text-sm text-muted-foreground sm:mt-2 sm:text-base">swipe left for not now · right to save for later</p>
           <span className="sr-only" role="status" aria-live="polite">{choice === "save" ? `${current.quest.title} saved` : ""}</span>
         </>
       ) : (
         <div className="border-y border-border py-12 text-center" aria-live="polite">
           <p className="font-hand text-2xl">all caught up for now</p>
-          <p className="mt-2 text-muted-foreground">Change the plan for a fresh set, or check what you saved in Profile.</p>
+          <p className="mt-2 text-muted-foreground">Check back soon — or peek at what you saved in Profile.</p>
           {lastChoice ? <div className="mt-5"><Button variant="outline" onClick={undo}><RotateCcw aria-hidden className="h-4 w-4" /> Undo</Button></div> : null}
         </div>
       )}
