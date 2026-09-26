@@ -111,7 +111,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
                   className="absolute inset-0 overflow-hidden border border-border bg-secondary transition-transform duration-200 ease-out"
                   style={{
                     transform: `translate(${level * 8 * settle}px, ${level * 10 * settle}px) rotate(${level * (level % 2 === 0 ? -1.6 : 1.6) * settle}deg) scale(${1 - level * 0.03})`,
-                    zIndex: -level,
+                    zIndex: depth,
                   }}
                 >
                   <img src={questImage(item.quest)} alt="" draggable={false} className="h-full w-full object-cover" style={{ opacity: 0.55 - level * 0.13 }} />
@@ -120,7 +120,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
             })}
             <article
               key={current.quest.id}
-              className={`relative select-none overflow-hidden border border-border-strong bg-card shadow-sm ${phase === "leaving" ? "transition-transform duration-[420ms] ease-out" : dragX === 0 ? "transition-transform duration-200 ease-out" : ""}`}
+              className={`relative z-10 select-none overflow-hidden border border-border-strong bg-card shadow-sm ${phase === "leaving" ? "transition-transform duration-[420ms] ease-out" : dragX === 0 ? "transition-transform duration-200 ease-out" : ""}`}
               style={{ transform: `translateX(${dragX}px) rotate(${turn}deg)`, touchAction: "pan-y" }}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
