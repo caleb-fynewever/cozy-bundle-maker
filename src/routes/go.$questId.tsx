@@ -70,7 +70,7 @@ function GoPage() {
   const navigate = useNavigate();
   const quest = useMemo(() => state.createdQuests.find((q) => q.id === questId) ?? getQuest(questId), [questId, state.createdQuests]);
   const [crew, setCrew] = useState<string[] | null>(null);
-  const [when, setWhen] = useState(WHEN[0]!);
+  const [when, setWhen] = useState<string | null>(null);
   const [stage, setStage] = useState<"plan" | "out" | "share">("plan");
   const [rating, setRating] = useState(4);
   const [caption, setCaption] = useState("");
