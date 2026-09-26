@@ -9,3 +9,5 @@
 - [x] Discover: real photos (Wikimedia Commons, licensed) + real local events with sources
 - [x] Answer: pushing to GitHub branch caleb-fynewever/0-1-hackathon (needs Lovable GitHub connect by user)
 - [x] Make the deck stack smaller, cleaner, and full-postcard previews (image + text)
+- [x] Map as a "what's close right now" explorer (range, good-now, free, closest first, go now / save for later)
+- [x] Squad, ranks and XP: XP history, squad bonus, daily streaks, weekly board, squad weekly goal, stamps

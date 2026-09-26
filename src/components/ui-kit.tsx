@@ -22,7 +22,7 @@ export function Chip({
       aria-pressed={onClick ? Boolean(active) : undefined}
       aria-label={pressedLabel}
       className={cn(
-         "inline-flex min-h-11 items-center gap-1.5 rounded-md border px-4 text-sm font-medium transition-colors",
+         "inline-flex min-h-11 shrink-0 whitespace-nowrap items-center gap-1.5 rounded-md border px-4 text-sm font-medium transition-colors",
          active
             ? "border-foreground bg-primary text-primary-foreground"
           : "border-border bg-transparent text-foreground hover:border-border-strong",
