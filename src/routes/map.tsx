@@ -89,7 +89,7 @@ function MapPage() {
 
   return (
     <AppShell wide>
-      <h1 className="sr-only">Quests on the map</h1>
+       <h1 className="mb-4 text-3xl font-medium">Around you <span className="font-hand text-xl">↗</span></h1>
       <div className="hide-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-3" role="group" aria-label="Filters">
         {FILTERS.map((filter) => (
           <Chip

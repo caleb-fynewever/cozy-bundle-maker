@@ -30,7 +30,8 @@ function LeaderboardPage() {
 
   return (
     <AppShell>
-      <h1 className="mt-6 text-5xl font-extrabold leading-[0.95] sm:text-6xl">Local Legends</h1>
+       <p className="mt-6 font-hand text-xl">a little friendly competition</p>
+       <h1 className="mt-2 text-5xl font-medium leading-tight sm:text-6xl">Local Legends</h1>
       {gap ? <p className="mt-3 text-lg text-muted-foreground">{gap}</p> : null}
 
       <div className="mt-8 flex flex-wrap gap-2" role="group" aria-label="Leaderboard">
@@ -47,7 +48,7 @@ function LeaderboardPage() {
             type="button"
             aria-pressed={scope === s}
             onClick={() => setScope(s)}
-            className={`min-h-11 font-medium ${
+             className={`min-h-11 font-medium ${
               scope === s ? "text-foreground underline decoration-2 underline-offset-8" : "text-muted-foreground"
             }`}
           >
@@ -60,9 +61,9 @@ function LeaderboardPage() {
         {entries.map((entry, i) => (
           <li
             key={entry.id}
-             className={`flex items-center gap-4 py-4 ${entry.you ? "-mx-3 border-l-4 border-primary bg-surface px-3" : ""}`}
+              className={`flex items-center gap-4 py-4 ${entry.you ? "-mx-3 border-l-4 border-primary bg-card px-3" : ""}`}
           >
-            <span className={`w-6 text-right font-display text-lg font-bold ${i === 0 ? "text-primary" : "text-muted-foreground"}`}>
+             <span className={`w-6 text-right font-hand text-2xl ${i === 0 ? "text-foreground" : "text-muted-foreground"}`}>
               {i + 1}
             </span>
             <Avatar name={entry.name} you={entry.you} size={i < 3 ? 48 : 40} />

@@ -116,7 +116,8 @@ function CreatePage() {
 
   return (
     <AppShell>
-      <h1 className="mt-6 text-5xl font-extrabold leading-[0.95]">Make a quest</h1>
+       <p className="mt-6 font-hand text-xl">got an idea?</p>
+       <h1 className="mt-2 text-5xl font-medium leading-tight">Make a quest</h1>
 
       <form
         className="grid gap-4 lg:grid-cols-[1.4fr_1fr]"
@@ -125,7 +126,7 @@ function CreatePage() {
           publish();
         }}
       >
-         <div className="space-y-4 border-t-2 border-foreground pt-6">
+          <div className="space-y-4 border-t border-border pt-6">
           <Field label="Title" htmlFor="title">
             <input
               id="title"
@@ -251,8 +252,8 @@ function CreatePage() {
           </div>
         </div>
 
-         <aside className="space-y-3 border-t-2 border-primary pt-6">
-          <h3 className="text-lg font-bold">Make it a mission, not an errand</h3>
+          <aside className="space-y-3 border-t border-border pt-6">
+           <h3 className="text-lg font-medium">Make it a mission, not an errand</h3>
           <p className="text-sm text-muted-foreground">
             "Go get ice cream" is a plan. "Ice Cream Draft Night" is a quest: everyone picks a
             different flavor, you rank all four worst to best, and last place buys the next round.

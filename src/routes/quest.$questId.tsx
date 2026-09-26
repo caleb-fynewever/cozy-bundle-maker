@@ -102,16 +102,16 @@ function QuestDetail() {
         <p className="mt-8 text-sm text-muted-foreground">
           {quest.location.name} · {quest.location.area}
         </p>
-        <h1 className="mt-2 text-5xl font-extrabold leading-[0.95] sm:text-6xl">{quest.title}</h1>
+         <h1 className="mt-2 text-5xl font-medium leading-tight sm:text-6xl">{quest.title}</h1>
         <p className="mt-5 text-xl leading-relaxed">{quest.hook}</p>
         {scored ? <p className="mt-3 text-muted-foreground">{reasonLine(scored)}</p> : null}
 
-        <h2 className="mt-12 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">The quest</h2>
+         <h2 className="mt-12 font-hand text-xl text-foreground">the quest</h2>
         <p className="mt-3 text-lg leading-relaxed">{quest.mission}</p>
         <ol className="mt-6 space-y-5">
           {quest.steps.map((step, index) => (
             <li key={step} className="grid grid-cols-[2rem_1fr] gap-2">
-              <span className="font-display text-2xl font-bold leading-none text-primary">{index + 1}</span>
+               <span className="font-hand text-2xl leading-none text-foreground">{index + 1}</span>
               <span className="text-[17px] leading-relaxed">{step}</span>
             </li>
           ))}

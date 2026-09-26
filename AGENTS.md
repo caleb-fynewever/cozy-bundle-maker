@@ -24,3 +24,4 @@
 - Colors, gradients and shadows are semantic tokens in `src/styles.css`. No color utilities in
   components.
 - Shared editorial styling belongs in semantic tokens and reusable UI components so every route stays visually consistent on phone and laptop.
+- Keep IBM Plex Serif as the principal UI typeface and reserve Schoolbell for short human notes; this preserves a relaxed hierarchy without making controls hard to read.

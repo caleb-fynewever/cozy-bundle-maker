@@ -10,6 +10,7 @@ import { NEARBY_STUDENTS } from "@/data/people";
 import { actions, useUserState } from "@/lib/store";
 import { EVENTS } from "@/data/events";
 import { PHOTOS } from "@/data/photos";
+import { questImage } from "@/lib/imagery";
 import { VIBES, VIBE_LABEL, type SessionContext, type Vibe } from "@/lib/types";
 
 export const Route = createFileRoute("/")({
@@ -141,7 +142,7 @@ function Discover() {
           {results[0] ? (
             <Link to="/quest/$questId" params={{ questId: results[0].quest.id }} className="group block min-w-0" aria-label={`Explore ${results[0].quest.title}`}>
               <div className="overflow-hidden rounded-md border border-border-strong bg-card p-2">
-                <img src={PHOTOS["coffman"]?.url ?? PHOTOS["isles"]?.url} alt="Minneapolis, a place to start your next outing" className="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+                <img src={questImage(results[0].quest)} alt={`${results[0].quest.location.name}, ${results[0].quest.location.area}`} className="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
               </div>
               <p className="mt-3 font-hand text-xl text-foreground">start somewhere unexpected ↗</p>
             </Link>
