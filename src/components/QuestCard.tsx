@@ -45,7 +45,7 @@ export function QuestCard({
   return (
      <article className="group min-w-0">
       <Link to="/quest/$questId" params={{ questId: quest.id }} className="block">
-         <div className="overflow-hidden border border-foreground bg-card p-2 lift transition-transform duration-300 group-hover:-translate-y-1">
+          <div className="overflow-hidden rounded-md border border-border-strong bg-card p-1.5 transition-transform duration-300 group-hover:-translate-y-1 group-hover:lift">
           <img
             src={questImage(quest)}
             alt={`${quest.location.name}, ${quest.location.area}`}
@@ -60,9 +60,9 @@ export function QuestCard({
       </Link>
        <div className="mt-5 flex items-start justify-between gap-4">
         <div className="min-w-0">
-           {label ? <p className="mb-2 text-xs font-bold uppercase text-primary">{label}</p> : null}
+            {label ? <p className="mb-2 font-hand text-xl text-foreground">{label}</p> : null}
           <Link to="/quest/$questId" params={{ questId: quest.id }}>
-             <h3 className={`font-bold leading-tight ${featured ? "text-2xl sm:text-3xl" : "text-xl"}`}>
+              <h3 className={`font-medium leading-tight ${featured ? "text-2xl sm:text-3xl" : "text-xl"}`}>
               {quest.title}
             </h3>
           </Link>
