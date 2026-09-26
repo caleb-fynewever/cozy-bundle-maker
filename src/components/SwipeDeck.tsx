@@ -108,13 +108,23 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
                 <div
                   key={item.quest.id}
                   aria-hidden
-                  className="absolute inset-0 overflow-hidden border border-border bg-secondary transition-transform duration-200 ease-out"
+                  className="absolute inset-0 overflow-hidden border border-border bg-card transition-transform duration-200 ease-out"
                   style={{
-                    transform: `translate(${level * 8 * settle}px, ${level * 10 * settle}px) rotate(${level * (level % 2 === 0 ? -1.6 : 1.6) * settle}deg) scale(${1 - level * 0.03})`,
+                    transform: `translate(${level * 4 * settle}px, ${level * 5 * settle}px) rotate(${level * 0.7 * (level % 2 === 0 ? -1 : 1) * settle}deg)`,
                     zIndex: depth,
                   }}
                 >
-                  <img src={questImage(item.quest)} alt="" draggable={false} className="h-full w-full object-cover" style={{ opacity: 0.55 - level * 0.13 }} />
+                  <div className="flex h-full flex-col">
+                    <div className="bg-secondary p-2 sm:p-3">
+                      <img src={questImage(item.quest)} alt="" draggable={false} className="h-[min(24dvh,230px)] w-full object-cover sm:h-[min(42dvh,430px)]" style={{ opacity: 0.3 }} />
+                    </div>
+                    <div className="px-4 py-3 sm:p-6">
+                      <p className="font-hand text-base text-muted-foreground sm:text-lg">{reasonLine(item)}</p>
+                      <h3 className="mt-0.5 text-xl font-semibold leading-tight sm:text-3xl">{item.quest.title}</h3>
+                      <p className="mt-1 text-xs text-muted-foreground sm:text-sm">{item.quest.location.area} · {metaLine(item.distance, item.quest.durationMin, item.quest.costPerPerson)}</p>
+                      <p className="mt-1 line-clamp-2 text-sm leading-snug sm:mt-4 sm:text-base">{item.quest.hook}</p>
+                    </div>
+                  </div>
                 </div>
               );
             })}
