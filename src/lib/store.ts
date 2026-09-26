@@ -112,6 +112,12 @@ export const actions = {
       passed: s.passed.includes(id) ? s.passed : [...s.passed, id],
     }));
   },
+  undoChoice(id: string, choice: "pass" | "save") {
+    setState((s) => choice === "pass"
+      ? { ...s, passed: s.passed.filter((x) => x !== id) }
+      : { ...s, saved: s.saved.filter((x) => x !== id), xp: Math.max(0, s.xp - XP.save) },
+    );
+  },
   complete(id: string) {
     setState((s) =>
       s.completed.includes(id)
