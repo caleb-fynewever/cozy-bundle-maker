@@ -28,21 +28,16 @@ export function QuestMap({
   }
 
   const { lat, lng } = selected.quest.location;
-  const d = 0.012;
-  const bbox = [lng - d * 1.4, lat - d, lng + d * 1.4, lat + d].map((n) => n.toFixed(5)).join("%2C");
-  const src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lng}`;
   const full = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`;
 
   return (
     <div>
       <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-border bg-map-land sm:aspect-[16/9]">
-        <iframe
-          key={selected.quest.id}
-          title={`Map of ${selected.quest.title}`}
-          src={src}
-          loading="lazy"
-          className="absolute inset-0 h-full w-full border-0"
-        />
+        <ClientOnly fallback={<div className="absolute inset-0 grid place-items-center"><p className="font-hand text-xl text-muted-foreground">unfolding the map…</p></div>}>
+          <Suspense fallback={<div className="absolute inset-0 grid place-items-center"><p className="font-hand text-xl text-muted-foreground">unfolding the map…</p></div>}>
+            <QuestMapLeaflet items={items} selectedId={selected.quest.id} onSelect={onSelect} />
+          </Suspense>
+        </ClientOnly>
         <div className="absolute inset-x-3 bottom-3 z-10 rounded-xl border border-border bg-card p-4 sm:left-auto sm:w-80">
           <p className="font-hand text-base text-muted-foreground">{selected.quest.location.area}</p>
           <h2 className="text-lg font-semibold leading-tight">{selected.quest.title}</h2>
