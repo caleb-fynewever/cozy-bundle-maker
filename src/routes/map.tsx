@@ -112,14 +112,14 @@ function MapPage() {
           <div
             role="dialog"
             aria-label={selected.quest.title}
-            className="sheet absolute inset-x-3 bottom-3 z-40 flex items-center gap-4 rounded-2xl bg-card p-3 sm:left-auto sm:w-96"
+             className="sheet absolute inset-x-3 bottom-3 z-40 flex items-center gap-4 border border-foreground bg-card p-3 sm:left-auto sm:w-96"
           >
             <img
               src={questImage(selected.quest)}
               alt=""
               width={1200}
               height={912}
-              className="h-20 w-20 shrink-0 rounded-xl object-cover"
+               className="h-20 w-20 shrink-0 object-cover"
             />
             <div className="min-w-0 flex-1">
               <h2 className="truncate text-lg font-bold">{selected.quest.title}</h2>
