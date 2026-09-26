@@ -8,7 +8,7 @@ import { metaLine, reasonLine } from "@/components/QuestCard";
 import { Button } from "@/components/ui-kit";
 
 type Choice = "pass" | "save";
-type Phase = "idle" | "stamping" | "leaving";
+type Phase = "idle" | "leaving";
 type Gesture = { id: number; x: number; y: number; at: number; axis: "pending" | "horizontal" | "vertical" };
 
 export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
@@ -29,25 +29,19 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
     locked.current = true;
     gesture.current = null;
     setChoice(selected);
-    if (selected === "save") setDragX(0);
+    setPhase("leaving");
+    setDragX(selected === "save" ? 800 : -800);
     const id = current.quest.id;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const stampDelay = selected === "save" && !reducedMotion ? 440 : 0;
-    const flightDelay = reducedMotion ? 0 : 320;
-    if (stampDelay) setPhase("stamping");
     timers.current.push(setTimeout(() => {
-      setPhase("leaving");
-      setDragX(selected === "save" ? 800 : -800);
-      timers.current.push(setTimeout(() => {
-        if (selected === "pass") actions.pass(id);
-        else actions.toggleSave(id);
-        setLastChoice({ id, choice: selected });
-        setDragX(0);
-        setPhase("idle");
-        setChoice(null);
-        locked.current = false;
-      }, flightDelay));
-    }, stampDelay));
+      if (selected === "pass") actions.pass(id);
+      else actions.toggleSave(id);
+      setLastChoice({ id, choice: selected });
+      setDragX(0);
+      setPhase("idle");
+      setChoice(null);
+      locked.current = false;
+    }, reducedMotion ? 0 : 420));
   }
 
   function onPointerDown(event: PointerEvent<HTMLElement>) {
@@ -100,7 +94,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
             {next ? <div aria-hidden className="absolute inset-x-2 top-2 bottom-0 rotate-1 overflow-hidden border border-border bg-secondary"><img src={questImage(next.quest)} alt="" draggable={false} className="h-full w-full object-cover opacity-40" /></div> : null}
             <article
               key={current.quest.id}
-              className={`relative overflow-hidden border border-border-strong bg-card shadow-sm ${phase === "leaving" ? "transition-transform duration-300 ease-in" : dragX === 0 ? "transition-transform duration-200 ease-out" : ""}`}
+              className={`relative overflow-hidden border border-border-strong bg-card shadow-sm ${phase === "leaving" ? "transition-transform duration-[420ms] ease-out" : dragX === 0 ? "transition-transform duration-200 ease-out" : ""}`}
               style={{ transform: `translateX(${dragX}px) rotate(${Math.max(-12, Math.min(12, dragX / 30))}deg)`, touchAction: "pan-y" }}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
@@ -113,7 +107,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
               <div className="relative bg-secondary p-2 sm:p-3">
                 <img src={questImage(current.quest)} alt={`${current.quest.location.name}, ${current.quest.location.area}`} draggable={false} className="h-[min(24dvh,230px)] w-full select-none object-cover sm:h-[min(42dvh,430px)]" />
                 <span aria-hidden className={`pointer-events-none absolute left-6 top-6 -rotate-12 border-2 border-destructive bg-card px-3 py-1 font-hand text-2xl text-destructive transition-opacity ${dragX < -35 ? "opacity-100" : "opacity-0"}`}>pass</span>
-                {phase === "stamping" || (choice === "save" && phase === "leaving") ? <span aria-hidden className="save-stamp pointer-events-none absolute left-1/2 top-1/2 border-4 border-ring bg-card/90 px-7 py-2 font-hand text-4xl text-ring shadow-sm">SAVED!</span> : <span aria-hidden className={`pointer-events-none absolute right-6 top-6 rotate-12 border-2 border-ring bg-card px-3 py-1 font-hand text-2xl text-ring transition-opacity ${dragX > 35 ? "opacity-100" : "opacity-0"}`}>save</span>}
+                {choice === "save" && phase === "leaving" ? <span aria-hidden className="save-stamp pointer-events-none absolute left-1/2 top-1/2 border-4 border-ring bg-card/90 px-7 py-2 font-hand text-4xl text-ring shadow-sm">SAVED!</span> : <span aria-hidden className={`pointer-events-none absolute right-6 top-6 rotate-12 border-2 border-ring bg-card px-3 py-1 font-hand text-2xl text-ring transition-opacity ${dragX > 35 ? "opacity-100" : "opacity-0"}`}>save</span>}
               </div>
               <div className="px-4 py-3 sm:p-6">
                 <p className="font-hand text-base text-muted-foreground sm:text-lg">{reasonLine(current)}</p>
@@ -129,7 +123,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
             <Button onClick={() => choose("save")} disabled={phase !== "idle"} ariaLabel={`Save ${current.quest.title}`}><Heart aria-hidden className="h-6 w-6" /> Save</Button>
           </div>
           <p className="mt-1 text-center font-hand text-sm text-muted-foreground sm:mt-2 sm:text-base">swipe left to pass · right to save</p>
-          <span className="sr-only" role="status" aria-live="polite">{phase === "stamping" ? `${current.quest.title} saved` : ""}</span>
+          <span className="sr-only" role="status" aria-live="polite">{choice === "save" ? `${current.quest.title} saved` : ""}</span>
         </>
       ) : (
         <div className="border-y border-border py-12 text-center" aria-live="polite">
