@@ -17,6 +17,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
   const [liftY, setLiftY] = useState(0);
   const [phase, setPhase] = useState<Phase>("idle");
   const [choice, setChoice] = useState<Choice | null>(null);
+  const [zoom, setZoom] = useState(false);
   const [lastChoice, setLastChoice] = useState<{ id: string; choice: Choice } | null>(null);
   const gesture = useRef<Gesture | null>(null);
   const locked = useRef(false);
@@ -33,10 +34,15 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
     gesture.current = null;
     setChoice(selected);
     setPhase("leaving");
-    // Move completely out of the viewport, even on a wide desktop display.
-    if (selected === "save") setLiftY(-Math.max(window.innerHeight, 900));
-    else setDragX((selected === "go" ? 1 : -1) * Math.max(window.innerWidth, 800));
     const id = current.quest.id;
+    if (selected === "go") {
+      // "Let's go" zooms the card in on the way out to the go flow.
+      setZoom(true);
+    } else {
+      // Move completely out of the viewport, even on a wide desktop display.
+      if (selected === "save") setLiftY(-Math.max(window.innerHeight, 900));
+      else setDragX(-Math.max(window.innerWidth, 800));
+    }
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     timers.current.push(setTimeout(() => {
       if (selected === "pass") actions.pass(id);
@@ -44,6 +50,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
       if (selected !== "go") setLastChoice({ id, choice: selected });
       setDragX(0);
       setLiftY(0);
+      setZoom(false);
       setPhase("idle");
       setChoice(null);
       locked.current = false;
