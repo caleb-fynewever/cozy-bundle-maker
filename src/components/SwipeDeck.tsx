@@ -47,6 +47,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
   }
 
   function onPointerDown(event: PointerEvent<HTMLElement>) {
+    console.log("DBG down", event.pointerId, event.pointerType, (event.target as HTMLElement).tagName);
     if (!current || locked.current || (event.pointerType === "mouse" && event.button !== 0)) return;
     if ((event.target as HTMLElement).closest("a, button")) return;
     // A mouse can leave the card before the first move event. Capture it immediately;
@@ -61,6 +62,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
   function onPointerMove(event: PointerEvent<HTMLElement>) {
     const move = gesture.current;
     if (!move || move.id !== event.pointerId || locked.current) return;
+    console.log("DBG move", move.axis, event.clientX - move.x);
     const dx = event.clientX - move.x;
     const dy = event.clientY - move.y;
     if (move.axis === "pending" && Math.max(Math.abs(dx), Math.abs(dy)) > 8) {
