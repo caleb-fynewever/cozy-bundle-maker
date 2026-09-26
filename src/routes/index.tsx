@@ -112,43 +112,41 @@ function Discover() {
 
   return (
      <AppShell>
-       <section className="grid gap-8 border-b-2 border-foreground pb-10 pt-4 md:grid-cols-[minmax(0,1.3fr)_minmax(260px,.7fr)] md:items-end md:gap-12 md:pb-14 md:pt-10">
-         <div>
-           <p className="mb-5 text-xs font-bold uppercase text-primary">Side Quest / Minneapolis</p>
-           <h1 className="max-w-[720px] font-display text-[38px] font-extrabold uppercase leading-[1.08] sm:text-6xl lg:text-7xl">
-             What's the<br />move<span className="text-primary">?</span>
-           </h1>
-           <p className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground">Good stories start with a reason to get out. Find yours.</p>
-         </div>
-         <div className="md:pb-1">
-         <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setAdjusting((v) => !v)}
-            aria-expanded={adjusting}
-            aria-controls="adjust"
-             className="inline-flex min-h-12 max-w-full flex-wrap items-center gap-3 rounded-sm border border-foreground bg-card px-4 py-2 text-sm font-semibold hover:bg-surface"
-          >
-            {summary}
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <SlidersHorizontal aria-hidden className="h-4 w-4" /> Adjust
-            </span>
-          </button>
-          {squad.length ? (
-            <span className="text-sm text-muted-foreground">with {squad.map((s) => s.name).join(" & ")}</span>
+        <section className="grid gap-8 border-b border-border pb-12 pt-4 md:grid-cols-[minmax(0,1.05fr)_minmax(0,.95fr)] md:items-center md:gap-16 md:pb-16 md:pt-10">
+          <div>
+            <p className="mb-5 font-hand text-xl text-foreground">a little detour from the usual · Minneapolis</p>
+            <h1 className="max-w-[650px] font-display text-[44px] font-medium leading-[1.12] sm:text-6xl lg:text-[72px]">
+              What's the move<span className="text-ring">?</span>
+            </h1>
+            <p className="mt-6 max-w-md text-lg leading-relaxed text-muted-foreground">Good stories start with a reason to get out. Find yours.</p>
+            <div className="mt-8 flex flex-wrap items-center gap-4">
+              <Button onClick={() => setTonightOpen(true)}>Find something to do <span aria-hidden>→</span></Button>
+              <button
+                type="button"
+                onClick={() => setAdjusting((v) => !v)}
+                aria-expanded={adjusting}
+                aria-controls="adjust"
+                className="inline-flex min-h-12 items-center gap-2 text-sm text-foreground underline decoration-primary decoration-2 underline-offset-8"
+              >
+                <SlidersHorizontal aria-hidden className="h-4 w-4" /> Change the plan
+              </button>
+            </div>
+            <p className="mt-5 text-sm text-muted-foreground">For {summary}{squad.length ? ` · with ${squad.map((s) => s.name).join(" & ")}` : ""}</p>
+            {state.completed.length === 0 ? (
+              <button type="button" onClick={actions.loadDemo} className="mt-3 min-h-11 text-sm text-muted-foreground underline underline-offset-4">
+                Try with a demo profile
+              </button>
+            ) : null}
+          </div>
+          {results[0] ? (
+            <Link to="/quest/$questId" params={{ questId: results[0].quest.id }} className="group block min-w-0" aria-label={`Explore ${results[0].quest.title}`}>
+              <div className="overflow-hidden rounded-md border border-border-strong bg-card p-2">
+                <img src={PHOTOS["coffman"]?.url ?? PHOTOS["isles"]?.url} alt="Minneapolis, a place to start your next outing" className="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+              </div>
+              <p className="mt-3 font-hand text-xl text-foreground">start somewhere unexpected ↗</p>
+            </Link>
           ) : null}
-        </div>
-
-         <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-5">
-           <Button onClick={() => setTonightOpen(true)}>Find something to do →</Button>
-           {state.completed.length === 0 ? (
-             <button type="button" onClick={actions.loadDemo} className="min-h-11 text-sm text-muted-foreground underline underline-offset-4">
-               Try with a demo profile
-             </button>
-           ) : null}
-         </div>
-         </div>
-       </section>
+        </section>
 
          {adjusting ? (
            <div id="adjust" className="mt-6 grid gap-6 border-b border-border pb-8 md:grid-cols-2">
@@ -203,7 +201,7 @@ function Discover() {
                 id="area"
                 value={area.label}
                 onChange={(event) => setArea(AREAS.find((a) => a.label === event.target.value) ?? AREAS[0]!)}
-                className="min-h-11 rounded-full border border-border bg-transparent px-4"
+               className="min-h-11 rounded-md border border-border bg-card px-4"
               >
                 {AREAS.map((a) => (
                   <option key={a.label} value={a.label}>
@@ -218,7 +216,7 @@ function Discover() {
                 id="radius"
                 value={radiusMi}
                 onChange={(event) => setRadius(Number(event.target.value))}
-                className="min-h-11 rounded-full border border-border bg-transparent px-4"
+                 className="min-h-11 rounded-md border border-border bg-card px-4"
               >
                 {[1, 3, 5, 10].map((r) => (
                   <option key={r} value={r}>
@@ -233,8 +231,8 @@ function Discover() {
 
       {tonightOpen && trio.length ? (
          <section aria-labelledby="tonight" className="mt-16 border-b border-border pb-12">
-          <div className="flex items-baseline justify-between">
-            <h2 id="tonight" className="text-3xl font-bold">
+           <div className="flex items-baseline justify-between">
+             <h2 id="tonight" className="text-3xl font-medium">
               Three ways to go
             </h2>
             <button type="button" onClick={() => setTonightOpen(false)} className="min-h-11 text-sm text-muted-foreground">
@@ -249,10 +247,10 @@ function Discover() {
         </section>
       ) : null}
 
-       <section className="mt-14 md:mt-20" aria-labelledby="happening">
+       <section className="mt-12 md:mt-16" aria-labelledby="happening">
          <div className="flex items-end justify-between gap-4 border-b border-border pb-5">
-         <div><p className="mb-2 text-xs font-bold uppercase text-primary">Out in the world</p>
-         <h2 id="happening" className="text-3xl font-bold md:text-4xl">
+          <div><p className="mb-2 font-hand text-xl">out in the world</p>
+          <h2 id="happening" className="text-3xl font-medium md:text-4xl">
           Happening around town
         </h2>
          </div><p className="hidden text-sm text-muted-foreground md:block">Real events this week. Bring the squad.</p></div>
@@ -260,7 +258,7 @@ function Discover() {
           {EVENTS.map((event) => {
             const photo = PHOTOS[event.photo] ?? PHOTOS["isles"]!;
             return (
-               <article key={event.id} className="min-w-0 border-b border-border pb-6 md:col-span-4 first:md:col-span-8 first:md:border-foreground first:md:bg-card first:md:p-3 first:md:lift">
+               <article key={event.id} className="min-w-0 border-b border-border pb-6 md:col-span-4 first:md:col-span-8">
                 <img
                   src={photo.url}
                   alt={event.where}
@@ -269,8 +267,8 @@ function Discover() {
                   height={800}
                    className="aspect-[16/10] w-full bg-muted object-cover md:aspect-[4/3] md:first:aspect-[16/10]"
                 />
-                 <p className="mt-4 text-xs font-bold uppercase text-primary">{event.when}</p>
-                 <h3 className="mt-1 text-xl font-bold leading-tight">{event.title}</h3>
+                  <p className="mt-4 text-sm font-medium text-muted-foreground">{event.when}</p>
+                  <h3 className="mt-1 text-xl font-medium leading-tight">{event.title}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {event.where} · {event.price}
                 </p>
@@ -289,9 +287,9 @@ function Discover() {
         </div>
       </section>
 
-       <section className="mt-20 border-t-2 border-foreground pt-10">
-         <p className="mb-2 text-xs font-bold uppercase text-primary">Your next chapter</p>
-         <h2 className="text-3xl font-bold md:text-4xl">Picked for you</h2>
+       <section className="mt-20 border-t border-border pt-10">
+          <p className="mb-2 font-hand text-xl">your next chapter</p>
+          <h2 className="text-3xl font-medium md:text-4xl">Picked for you</h2>
          <div className="mt-8 grid gap-10 md:grid-cols-2 lg:grid-cols-3">
           {results.map((item, index) => (
             <QuestCard key={item.quest.id} item={item} featured={index === 0} />
