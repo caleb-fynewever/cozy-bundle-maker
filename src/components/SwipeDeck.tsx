@@ -75,9 +75,10 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
       </div>
       {current ? (
         <>
-          <div className="relative mb-5 pb-3" aria-live="polite">
+          <div className="relative mb-5 overflow-hidden pb-3 pr-3" aria-live="polite">
             {next ? <div aria-hidden className="absolute inset-x-3 top-3 bottom-0 rotate-1 overflow-hidden border border-border bg-secondary"><img src={questImage(next.quest)} alt="" className="h-full w-full object-cover opacity-40" /></div> : null}
             <article
+              key={current.quest.id}
               className={`relative overflow-hidden border border-border-strong bg-card shadow-sm ${leaving ? "transition-transform duration-200 ease-out" : dragX === 0 ? "transition-transform duration-200 ease-out" : ""}`}
               style={{ transform: `translateX(${dragX}px) rotate(${Math.max(-12, Math.min(12, dragX / 28))}deg)`, touchAction: "pan-y" }}
               onPointerDown={onPointerDown}
