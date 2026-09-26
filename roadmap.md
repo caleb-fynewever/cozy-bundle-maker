@@ -12,3 +12,4 @@
 - [x] Map as a "what's close right now" explorer (range, good-now, free, closest first, go now / save for later)
 - [x] Squad, ranks and XP: XP history, squad bonus, daily streaks, weekly board, squad weekly goal, stamps
 - [x] Feed tab (friend activity, ratings, hearts, photos, comments); Discover swipe right = go page, Later = save, left = not now (recirculates)
+- [x] Feed: number ratings instead of stars, collapsible comments, smaller images with a subtle squircle rounding
