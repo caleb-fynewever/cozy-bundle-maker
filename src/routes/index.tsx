@@ -74,7 +74,7 @@ function Discover() {
   const [maxCost, setMaxCost] = useState<number | null>(25);
   const [vibes, setVibes] = useState<Vibe[]>(["weird"]);
   const [chaos, setChaos] = useState(3);
-  const [area, setArea] = useState(AREAS[0]);
+  const [area, setArea] = useState(AREAS[0]!);
   const [radiusMi, setRadius] = useState(3);
   const [tonightOpen, setTonightOpen] = useState(false);
   const [working, setWorking] = useState(true);
@@ -194,7 +194,7 @@ function Discover() {
               id="area"
               value={area.label}
               onChange={(event) =>
-                setArea(AREAS.find((a) => a.label === event.target.value) ?? AREAS[0])
+                setArea(AREAS.find((a) => a.label === event.target.value) ?? AREAS[0]!)
               }
               className="min-h-11 rounded-full border border-border bg-surface px-4 text-sm"
             >

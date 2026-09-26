@@ -335,7 +335,7 @@ export function recommend(
 export function tonightTrio(scored: ScoredQuest[]) {
   if (scored.length === 0) return [];
   const byScore = [...scored].sort((a, b) => b.score - a.score);
-  const perfect = byScore[0];
+  const perfect = byScore[0]!;
   const safe =
     [...scored]
       .filter((s) => s !== perfect)

@@ -51,7 +51,7 @@ function smarten(title: string, description: string, vibes: Vibe[], chaos: numbe
     "A stranger has to break the tie.",
   ];
   const twists = twistBank.slice(0, Math.max(2, Math.min(4, chaos)));
-  const label = vibes.length ? VIBE_LABEL[vibes[0]] : "Side";
+  const label = vibes.length ? VIBE_LABEL[vibes[0]!] : "Side";
 
   return {
     title: `${subject.replace(/\.$/, "")} — ${label} Draft`,
@@ -70,7 +70,7 @@ function CreatePage() {
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [locationName, setLocationName] = useState(AREAS[0].name);
+  const [locationName, setLocationName] = useState(AREAS[0]!.name);
   const [vibes, setVibes] = useState<Vibe[]>([]);
   const [durationMin, setDuration] = useState(60);
   const [costPerPerson, setCost] = useState(10);
@@ -83,7 +83,7 @@ function CreatePage() {
       toast.error("Give the quest a title");
       return;
     }
-    const place = AREAS.find((a) => a.name === locationName) ?? AREAS[0];
+    const place = AREAS.find((a) => a.name === locationName) ?? AREAS[0]!;
     const quest: Quest = {
       id: `q_user_${Date.now()}`,
       title: title.trim(),
