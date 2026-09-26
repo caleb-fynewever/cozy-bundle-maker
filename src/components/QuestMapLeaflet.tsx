@@ -56,8 +56,7 @@ export default function QuestMapLeaflet({
         title: item.quest.title,
       });
       marker.on("click", () => onSelectRef.current(item.quest.id));
-      marker.addTo(map);
-      markersRef.current.set(item.quest.id, marker);
+      marker.addTo(layer);
       points.push([lat, lng]);
     }
     const selected = items.find((i) => i.quest.id === selectedId) ?? items[0];
