@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { SlidersHorizontal } from "lucide-react";
+import { Bookmark, SlidersHorizontal, ArrowUpRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { QuestCard } from "@/components/QuestCard";
+import { metaLine, reasonLine } from "@/components/QuestCard";
 import { Button, Chip } from "@/components/ui-kit";
 import { currentTimeSlot, recommend, tonightTrio } from "@/lib/engine";
 import { QUESTS } from "@/data/quests";
@@ -12,6 +12,7 @@ import { EVENTS } from "@/data/events";
 import { PHOTOS } from "@/data/photos";
 import { questImage } from "@/lib/imagery";
 import { VIBES, VIBE_LABEL, type SessionContext, type Vibe } from "@/lib/types";
+import type { ScoredQuest } from "@/lib/engine";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -110,47 +111,34 @@ function Discover() {
   ].join(" · ");
 
   const TRIO_LABEL = { safe: "Safe bet", perfect: "Your kind of thing", chaos: "Wildcard" } as const;
+  const feed = [
+    ...results.slice(0, 2).map((item) => ({ kind: "quest" as const, item })),
+    ...EVENTS.slice(0, 1).map((event) => ({ kind: "event" as const, event })),
+    ...results.slice(2, 4).map((item) => ({ kind: "quest" as const, item })),
+    ...EVENTS.slice(1, 3).map((event) => ({ kind: "event" as const, event })),
+    ...results.slice(4).map((item) => ({ kind: "quest" as const, item })),
+    ...EVENTS.slice(3).map((event) => ({ kind: "event" as const, event })),
+  ];
 
   return (
-     <AppShell>
-        <section className="grid gap-8 border-b border-border pb-12 pt-4 md:grid-cols-[minmax(0,1.05fr)_minmax(0,.95fr)] md:items-center md:gap-16 md:pb-16 md:pt-10">
-          <div>
-            <p className="mb-5 font-hand text-xl text-foreground">a little detour from the usual · Minneapolis</p>
-            <h1 className="max-w-[650px] font-display text-[44px] font-medium leading-[1.12] sm:text-6xl lg:text-[72px]">
-              What's the move<span className="text-ring">?</span>
-            </h1>
-            <p className="mt-6 max-w-md text-lg leading-relaxed text-muted-foreground">Good stories start with a reason to get out. Find yours.</p>
-            <div className="mt-8 flex flex-wrap items-center gap-4">
-              <Button onClick={() => setTonightOpen(true)}>Find something to do <span aria-hidden>→</span></Button>
-              <button
-                type="button"
-                onClick={() => setAdjusting((v) => !v)}
-                aria-expanded={adjusting}
-                aria-controls="adjust"
-                className="inline-flex min-h-12 items-center gap-2 text-sm text-foreground underline decoration-primary decoration-2 underline-offset-8"
-              >
-                <SlidersHorizontal aria-hidden className="h-4 w-4" /> Change the plan
-              </button>
-            </div>
-            <p className="mt-5 text-sm text-muted-foreground">For {summary}{squad.length ? ` · with ${squad.map((s) => s.name).join(" & ")}` : ""}</p>
-            {state.completed.length === 0 ? (
-              <button type="button" onClick={actions.loadDemo} className="mt-3 min-h-11 text-sm text-muted-foreground underline underline-offset-4">
-                Try with a demo profile
-              </button>
-            ) : null}
-          </div>
-          {results[0] ? (
-            <Link to="/quest/$questId" params={{ questId: results[0].quest.id }} className="group hidden min-w-0 md:block" aria-label={`Explore ${results[0].quest.title}`}>
-              <div className="overflow-hidden rounded-md border border-border-strong bg-card p-2">
-                <img src={questImage(results[0].quest)} alt={`${results[0].quest.location.name}, ${results[0].quest.location.area}`} className="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
-              </div>
-              <p className="mt-3 font-hand text-xl text-foreground">start somewhere unexpected ↗</p>
-            </Link>
-          ) : null}
-        </section>
+      <AppShell>
+        <div className="mx-auto max-w-2xl">
+         <section className="pt-3 md:pt-8">
+           <p className="font-hand text-xl">a little detour from the usual · Minneapolis</p>
+           <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+             <h1 className="text-[38px] font-semibold leading-tight md:text-5xl">Find your next story.</h1>
+             <Button variant="outline" onClick={() => setAdjusting((v) => !v)} ariaLabel="Change the plan">
+               <SlidersHorizontal aria-hidden className="h-4 w-4" /> Change the plan
+             </Button>
+           </div>
+           <p className="mt-3 text-sm text-muted-foreground">For {summary}{squad.length ? ` · with ${squad.map((s) => s.name).join(" & ")}` : ""}</p>
+           {state.completed.length === 0 ? (
+             <div className="mt-1"><Button variant="ghost" onClick={actions.loadDemo}>Try with a demo profile</Button></div>
+           ) : null}
+         </section>
 
          {adjusting ? (
-           <div id="adjust" className="mt-6 grid gap-6 border-b border-border pb-8 md:grid-cols-2">
+            <div id="adjust" className="mt-6 grid gap-6 border-b border-border pb-8 md:grid-cols-2">
             <Group label="Who's coming">
               {GROUPS.map((g) => (
                 <Chip key={g.value} active={groupSize === g.value} onClick={() => setGroupSize(g.value)}>
@@ -230,83 +218,84 @@ function Discover() {
         ) : null}
 
 
-      {tonightOpen && trio.length ? (
-         <section aria-labelledby="tonight" className="mt-16 border-b border-border pb-12">
+       {tonightOpen && trio.length ? (
+          <section aria-labelledby="tonight" className="mt-10 border-b border-border pb-10">
            <div className="flex items-baseline justify-between">
              <h2 id="tonight" className="text-3xl font-medium">
               Three ways to go
             </h2>
-            <button type="button" onClick={() => setTonightOpen(false)} className="min-h-11 text-sm text-muted-foreground">
-              Close
-            </button>
+             <Button variant="ghost" onClick={() => setTonightOpen(false)}>Close</Button>
           </div>
-           <div className="mt-6 grid gap-10 md:grid-cols-3">
+            <div className="mt-6 grid gap-8 sm:grid-cols-3">
             {trio.map(({ tone, item }) => (
-              <QuestCard key={tone} item={item} label={TRIO_LABEL[tone]} />
+               <div key={tone} className="min-w-0">
+                 <p className="mb-2 font-hand text-lg">{TRIO_LABEL[tone]}</p>
+                 <Link to="/quest/$questId" params={{ questId: item.quest.id }} className="block">
+                   <img src={questImage(item.quest)} alt={item.quest.location.name} className="aspect-square w-full object-cover" />
+                   <h3 className="mt-2 text-base font-semibold">{item.quest.title}</h3>
+                 </Link>
+               </div>
             ))}
           </div>
         </section>
       ) : null}
-
-       <section className="mt-12 md:mt-16" aria-labelledby="happening">
-         <div className="flex items-end justify-between gap-4 border-b border-border pb-5">
-          <div><p className="mb-2 font-hand text-xl">out in the world</p>
-          <h2 id="happening" className="text-3xl font-medium md:text-4xl">
-          Happening around town
-        </h2>
-         </div><p className="hidden text-sm text-muted-foreground md:block">Real events this week. Bring the squad.</p></div>
-         <div className="mt-6 grid gap-8 md:grid-cols-12">
-          {EVENTS.map((event) => {
-            const photo = PHOTOS[event.photo] ?? PHOTOS["isles"]!;
-            return (
-               <article key={event.id} className="min-w-0 border-b border-border pb-6 md:col-span-4 first:md:col-span-8">
-                <img
-                  src={photo.url}
-                  alt={event.where}
-                  loading="lazy"
-                  width={1200}
-                  height={800}
-                   className="aspect-[16/10] w-full bg-muted object-cover md:aspect-[4/3] md:first:aspect-[16/10]"
-                />
-                  <p className="mt-4 text-sm font-medium text-muted-foreground">{event.when}</p>
-                  <h3 className="mt-1 text-xl font-medium leading-tight">{event.title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {event.where} · {event.price}
-                </p>
-                <p className="mt-2 text-sm leading-relaxed">{event.blurb}</p>
-                <a
-                  href={event.source.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-2 inline-flex min-h-11 items-center text-sm text-muted-foreground underline underline-offset-4"
-                >
-                  Via {event.source.name}
-                </a>
+        <section className="mt-10 border-t border-border pt-5" aria-label="Discover feed">
+          <div className="mb-8 flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <p className="font-hand text-xl">the good stuff, one scroll at a time</p>
+            <Button variant="ghost" onClick={() => setTonightOpen(true)}>Three ways to go <span aria-hidden>→</span></Button>
+          </div>
+          <div className="space-y-14 md:space-y-24">
+            {feed.map((entry, index) => entry.kind === "quest" ? (
+              <FeedQuest key={entry.item.quest.id} item={entry.item} index={index} saved={state.saved.includes(entry.item.quest.id)} />
+            ) : (
+              <article key={entry.event.id} className="min-w-0">
+                <p className="mb-3 font-hand text-xl">out in the world · {entry.event.when}</p>
+                <div className="bg-secondary p-2.5 sm:p-4">
+                  <img src={(PHOTOS[entry.event.photo] ?? PHOTOS["isles"]!).url} alt={entry.event.where} loading="lazy" className="aspect-[16/10] w-full bg-muted object-cover" />
+                </div>
+                <div className="mt-5 px-1 sm:px-3">
+                  <h2 className="text-2xl font-semibold leading-tight md:text-3xl">{entry.event.title}</h2>
+                  <p className="mt-2 text-sm text-muted-foreground">{entry.event.where} · {entry.event.price}</p>
+                  <p className="mt-3 leading-relaxed">{entry.event.blurb}</p>
+                  <a href={entry.event.source.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex min-h-11 items-center gap-1 font-semibold underline decoration-primary underline-offset-4">Details via {entry.event.source.name} <ArrowUpRight aria-hidden className="h-4 w-4" /></a>
+                </div>
               </article>
-            );
-          })}
+            ))}
+            {results.length === 0 ? <p className="text-muted-foreground">Nothing fits that. Try a bigger budget or more time.</p> : null}
+          </div>
+          <div className="pb-10 pt-20 text-center">
+            <span aria-hidden className="mx-auto block h-12 w-px bg-primary" />
+            <p className="mt-4 font-hand text-xl">that's the latest for now</p>
+            <p className="mt-4">Got your own idea? <Link to="/create" className="font-semibold underline decoration-primary underline-offset-4">Make a quest</Link></p>
+          </div>
+        </section>
         </div>
-      </section>
-
-       <section className="mt-20 border-t border-border pt-10">
-          <p className="mb-2 font-hand text-xl">your next chapter</p>
-          <h2 className="text-3xl font-medium md:text-4xl">Picked for you</h2>
-         <div className="mt-8 grid gap-10 md:grid-cols-2 lg:grid-cols-3">
-          {results.map((item, index) => (
-            <QuestCard key={item.quest.id} item={item} featured={index === 0} />
-          ))}
-          {results.length === 0 ? (
-            <p className="text-muted-foreground">Nothing fits that. Try a bigger budget or more time.</p>
-          ) : null}
-        </div>
-        <p className="mt-16 text-muted-foreground">
-          Got your own idea?{" "}
-          <Link to="/create" className="font-semibold text-foreground underline underline-offset-4">
-            Make a quest
-          </Link>
-        </p>
-      </section>
     </AppShell>
+  );
+}
+
+function FeedQuest({ item, index, saved }: { item: ScoredQuest; index: number; saved: boolean }) {
+  const { quest } = item;
+  return (
+    <article className="group min-w-0">
+      <p className="mb-3 font-hand text-xl">{index === 0 ? "a good place to start" : reasonLine(item)}</p>
+      <Link to="/quest/$questId" params={{ questId: quest.id }} className="block" aria-label={`Explore ${quest.title}`}>
+        <div className={`${index % 3 === 1 ? "bg-secondary" : "bg-card"} p-2.5 sm:p-4`}>
+          <img src={questImage(quest)} alt={`${quest.location.name}, ${quest.location.area}`} loading={index === 0 ? "eager" : "lazy"} width={1200} height={900} className={`w-full bg-muted object-cover transition-transform duration-500 group-hover:scale-[1.01] ${index % 3 === 1 ? "aspect-[16/10]" : "aspect-[4/3]"}`} />
+        </div>
+      </Link>
+      <div className="mt-5 flex items-start justify-between gap-3 px-1 sm:px-3">
+        <div className="min-w-0">
+          <Link to="/quest/$questId" params={{ questId: quest.id }}><h2 className="text-2xl font-semibold leading-tight md:text-3xl">{quest.title}</h2></Link>
+          <p className="mt-2 text-sm text-muted-foreground">{quest.location.area} · {metaLine(item.distance, quest.durationMin, quest.costPerPerson)}</p>
+          <p className="mt-3 leading-relaxed">{quest.hook}</p>
+          <Link to="/quest/$questId" params={{ questId: quest.id }} className="mt-3 inline-flex min-h-11 items-center gap-1 font-semibold underline decoration-primary underline-offset-4">See the quest <ArrowUpRight aria-hidden className="h-4 w-4" /></Link>
+        </div>
+        <Button variant="ghost" onClick={() => actions.toggleSave(quest.id)} ariaLabel={saved ? `Remove ${quest.title} from saved` : `Save ${quest.title}`}>
+          <Bookmark aria-hidden className="h-5 w-5 shrink-0" fill={saved ? "currentColor" : "none"} />
+        </Button>
+      </div>
+    </article>
   );
 }
 

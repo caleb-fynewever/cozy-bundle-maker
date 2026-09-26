@@ -18,10 +18,10 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
 
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-0">
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95">
+       <header className="sticky top-0 z-50 border-b border-border bg-background/95">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 md:h-[72px] md:px-8">
-        <Link to="/" className="font-display text-xl font-medium md:text-2xl" aria-label="Side Quest home">
-          side <span className="font-hand text-2xl md:text-3xl">quest<span className="text-ring">.</span></span>
+         <Link to="/" className="font-hand text-[28px] leading-none md:text-[34px]" aria-label="Side Quest home">
+           side quest
         </Link>
         <nav aria-label="Main" className="hidden items-center gap-8 md:flex">
           {NAV.map(({ to, label }) => (
@@ -37,6 +37,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
           ))}
         </nav>
         </div>
+         <div aria-hidden className="feed-progress h-[2px] w-full bg-primary" />
       </header>
 
       <main className={`mx-auto px-5 pb-16 pt-5 md:px-8 md:pt-10 ${wide ? "max-w-7xl" : "max-w-5xl"}`}>{children}</main>
