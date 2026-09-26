@@ -20,7 +20,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
   const locked = useRef(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const current = items[0];
-  const next = items[1];
+  const stack = items.slice(1, 4);
   const turn = Math.max(-6, Math.min(6, dragX / 45));
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
