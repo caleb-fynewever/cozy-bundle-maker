@@ -99,7 +99,25 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
       {current ? (
         <>
           <div className="relative mb-4 pb-2 pr-2" aria-live="off">
-            {next ? <div aria-hidden className="absolute inset-x-2 top-2 bottom-0 rotate-1 overflow-hidden border border-border bg-secondary"><img src={questImage(next.quest)} alt="" draggable={false} className="h-full w-full object-cover opacity-40" /></div> : null}
+            {stack.map((item, depth) => {
+              // Deepest card renders first so the nearest one sits on top.
+              const level = stack.length - depth;
+              const lift = Math.min(Math.abs(dragX) / 240, 1);
+              const settle = 1 - lift * 0.5;
+              return (
+                <div
+                  key={item.quest.id}
+                  aria-hidden
+                  className="absolute inset-0 overflow-hidden border border-border bg-secondary transition-transform duration-200 ease-out"
+                  style={{
+                    transform: `translate(${level * 8 * settle}px, ${level * 10 * settle}px) rotate(${level * (level % 2 === 0 ? -1.6 : 1.6) * settle}deg) scale(${1 - level * 0.03})`,
+                    zIndex: -level,
+                  }}
+                >
+                  <img src={questImage(item.quest)} alt="" draggable={false} className="h-full w-full object-cover" style={{ opacity: 0.55 - level * 0.13 }} />
+                </div>
+              );
+            })}
             <article
               key={current.quest.id}
               className={`relative select-none overflow-hidden border border-border-strong bg-card shadow-sm ${phase === "leaving" ? "transition-transform duration-[420ms] ease-out" : dragX === 0 ? "transition-transform duration-200 ease-out" : ""}`}
