@@ -145,7 +145,8 @@ export const actions = {
   pass(id: string) {
     setState((s) => ({
       ...s,
-      passed: s.passed.includes(id) ? s.passed : [...s.passed, id],
+      // Moving to the end keeps passed quests recirculating in order.
+      passed: [...s.passed.filter((x) => x !== id), id],
     }));
   },
   undoChoice(id: string, choice: "pass" | "save") {
