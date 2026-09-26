@@ -96,7 +96,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
       </div>
       {current ? (
         <>
-          <div className="relative mb-4 pb-2 pr-2" aria-live="off">
+          <div className="relative mb-4 overflow-x-clip pb-2 pr-2" aria-live="off">
             {next ? <div aria-hidden className="absolute inset-x-2 top-2 bottom-0 rotate-1 overflow-hidden border border-border bg-secondary"><img src={questImage(next.quest)} alt="" draggable={false} className="h-full w-full object-cover opacity-40" /></div> : null}
             <article
               key={current.quest.id}

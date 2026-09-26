@@ -107,7 +107,7 @@ function Discover() {
 
 
   return (
-      <AppShell>
+      <AppShell compact>
         <div className="mx-auto max-w-2xl">
           <section className="pt-0">
             <p className="font-hand text-base sm:text-lg">Minneapolis · a little detour from the usual</p>
