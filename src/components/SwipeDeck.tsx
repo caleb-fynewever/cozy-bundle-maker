@@ -65,7 +65,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
   }
 
   return (
-    <section aria-label="Quest postcards" className="mt-10 border-t border-border pt-6">
+    <section aria-label="Quest postcards" className="mt-6 border-t border-border pt-5 md:mt-10 md:pt-6">
       <div className="mb-5 flex items-end justify-between gap-3">
         <div>
           <p className="font-hand text-xl">one thing at a time</p>
@@ -90,7 +90,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
               aria-label={`${current.quest.title}. Left to pass, right to save.`}
             >
               <div className="relative bg-secondary p-2.5 sm:p-4">
-                <img src={questImage(current.quest)} alt={`${current.quest.location.name}, ${current.quest.location.area}`} draggable={false} className="aspect-[4/3] w-full select-none object-cover sm:aspect-[16/10]" />
+                <img src={questImage(current.quest)} alt={`${current.quest.location.name}, ${current.quest.location.area}`} draggable={false} className="aspect-[16/10] w-full select-none object-cover" />
                 <span aria-hidden className={`pointer-events-none absolute left-6 top-6 -rotate-12 border-2 border-destructive bg-card px-4 py-1 font-hand text-2xl text-destructive transition-opacity ${dragX < -25 ? "opacity-100" : "opacity-0"}`}>pass</span>
                 <span aria-hidden className={`pointer-events-none absolute right-6 top-6 rotate-12 border-2 border-ring bg-card px-4 py-1 font-hand text-2xl text-ring transition-opacity ${dragX > 25 ? "opacity-100" : "opacity-0"}`}>save</span>
               </div>

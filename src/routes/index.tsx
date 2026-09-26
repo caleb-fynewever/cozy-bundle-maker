@@ -115,18 +115,16 @@ function Discover() {
   return (
       <AppShell>
         <div className="mx-auto max-w-2xl">
-         <section className="pt-3 md:pt-8">
-           <p className="font-hand text-xl">a little detour from the usual · Minneapolis</p>
-           <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
-             <h1 className="text-[38px] font-semibold leading-tight md:text-5xl">Find your next story.</h1>
+          <section className="pt-1 md:pt-8">
+            <p className="font-hand text-lg">Minneapolis · a little detour from the usual</p>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+              <h1 className="text-3xl font-semibold leading-tight md:text-5xl">Find your next story.</h1>
              <Button variant="outline" onClick={() => setAdjusting((v) => !v)} ariaLabel="Change the plan">
                <SlidersHorizontal aria-hidden className="h-4 w-4" /> Change the plan
              </Button>
            </div>
            <p className="mt-3 text-sm text-muted-foreground">For {summary}{squad.length ? ` · with ${squad.map((s) => s.name).join(" & ")}` : ""}</p>
-           {state.completed.length === 0 ? (
-             <div className="mt-1"><Button variant="ghost" onClick={actions.loadDemo}>Try with a demo profile</Button></div>
-           ) : null}
+            {state.completed.length === 0 ? <div className="mt-1"><Button variant="ghost" onClick={actions.loadDemo}>Try with a demo profile</Button></div> : null}
          </section>
 
          {adjusting ? (
