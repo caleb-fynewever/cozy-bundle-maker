@@ -22,9 +22,9 @@ export function Chip({
       aria-pressed={onClick ? Boolean(active) : undefined}
       aria-label={pressedLabel}
       className={cn(
-        "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-4 text-sm font-medium transition-colors",
-        active
-          ? "border-foreground bg-foreground text-background"
+        "inline-flex min-h-11 items-center gap-1.5 rounded-sm border px-4 text-sm font-semibold transition-colors",
+         active
+           ? "border-foreground bg-foreground text-background"
           : "border-border bg-transparent text-foreground hover:border-border-strong",
       )}
     >
@@ -85,13 +85,13 @@ export function Button({
     ghost: "text-foreground hover:bg-surface",
   } as const;
   return (
-    <button
+     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel}
       className={cn(
-        "inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-6 text-[15px] font-semibold transition active:scale-[0.98] disabled:opacity-40",
+         "inline-flex min-h-12 items-center justify-center gap-2 rounded-sm border border-transparent px-6 text-[15px] font-bold transition active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40",
         variants[variant],
         full && "w-full",
       )}
@@ -104,9 +104,9 @@ export function Button({
 export function SectionTitle({ kicker, title, action }: { kicker?: string; title: string; action?: ReactNode }) {
   return (
     <div className="mb-5 flex items-end justify-between gap-4">
-      <div>
-        {kicker ? <p className="text-sm text-muted-foreground">{kicker}</p> : null}
-        <h2 className="text-2xl font-bold">{title}</h2>
+       <div>
+         {kicker ? <p className="text-sm text-primary">{kicker}</p> : null}
+         <h2 className="text-2xl font-bold">{title}</h2>
       </div>
       {action}
     </div>
@@ -118,7 +118,7 @@ export function Avatar({ name, size = 44, you = false }: { name: string; size?: 
     <span
       aria-hidden
       className={cn(
-        "grid shrink-0 place-items-center rounded-full font-display font-bold",
+         "grid shrink-0 place-items-center border border-foreground font-display font-bold",
         you ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground",
       )}
       style={{ width: size, height: size, fontSize: size * 0.4 }}
