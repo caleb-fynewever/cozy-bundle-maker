@@ -51,7 +51,7 @@ function ProfilePage() {
         <div className="flex justify-center sm:justify-start">
           <Avatar name={state.name} you size={104} />
         </div>
-        <h1 className="mt-5 text-5xl font-extrabold leading-none">{state.name}</h1>
+         <h1 className="mt-5 text-5xl font-medium leading-tight">{state.name}</h1>
         <div className="mt-2 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
           <span className="text-sm text-muted-foreground">@{state.handle}</span>
           {state.verified ? <Verified label="University of Minnesota" /> : null}
@@ -67,7 +67,7 @@ function ProfilePage() {
         ].map(([n, label]) => (
           <div key={label as string}>
             <dt className="sr-only">{label}</dt>
-            <dd className="font-display text-4xl font-extrabold">{n}</dd>
+             <dd className="font-display text-4xl font-medium">{n}</dd>
             <dd className="text-sm text-muted-foreground">{label}</dd>
           </div>
         ))}

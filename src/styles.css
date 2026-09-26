@@ -6,7 +6,7 @@
 
 /*
  * Side Quest design system.
- * Warm paper background, near-black ink, a single vermilion accent.
+ * Cool paper, soft ink and electric aqua. Handwritten accents are used sparingly.
  * All colors are oklch semantic tokens. Never hardcode colors in components.
  */
 
@@ -18,8 +18,9 @@
   --radius-2xl: calc(var(--radius) + 12px);
   --radius-3xl: calc(var(--radius) + 20px);
 
-  --font-display: "Syne", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "IBM Plex Serif", Georgia, serif;
+  --font-sans: "IBM Plex Serif", Georgia, serif;
+  --font-hand: "Schoolbell", cursive;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   --color-background: var(--background);
@@ -55,47 +56,46 @@
 :root {
   --radius: 0.5rem;
 
-  /* Editorial paper, ink, and jade-green pressed color. */
-  --background: oklch(0.981 0.002 170);
-  --foreground: oklch(0.178 0 0);
-  --surface: oklch(0.944 0.019 163);
-  --surface-foreground: oklch(0.178 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.178 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.178 0 0);
+  --background: #ECF2F7;
+  --foreground: #1E1E1E;
+  --surface: #DDEAF1;
+  --surface-foreground: #1E1E1E;
+  --card: #F9FCFD;
+  --card-foreground: #1E1E1E;
+  --popover: #F9FCFD;
+  --popover-foreground: #1E1E1E;
 
-  --primary: oklch(0.594 0.114 185);
-  --primary-foreground: oklch(1 0 0);
+  --primary: #12ECF8;
+  --primary-foreground: #1E1E1E;
 
-  --secondary: oklch(0.921 0.037 165);
-  --secondary-foreground: oklch(0.178 0 0);
+  --secondary: #E3EBCC;
+  --secondary-foreground: #1E1E1E;
 
-  --muted: oklch(0.942 0.012 164);
-  --muted-foreground: oklch(0.482 0.016 163);
+  --muted: #DFE9F0;
+  --muted-foreground: #505B61;
 
-  --accent: oklch(0.178 0 0);
-  --accent-foreground: oklch(0.981 0.002 170);
+  --accent: #1E1E1E;
+  --accent-foreground: #ECF2F7;
 
-  --signal: oklch(0.594 0.114 185);
-  --signal-foreground: oklch(1 0 0);
+  --signal: #12ECF8;
+  --signal-foreground: #1E1E1E;
 
   --destructive: oklch(0.55 0.2 25);
   --destructive-foreground: oklch(0.99 0.004 20);
 
-  --border: oklch(0.884 0.014 163);
-  --border-strong: oklch(0.178 0 0);
-  --input: oklch(0.884 0.014 163);
-  --ring: oklch(0.594 0.114 185);
+  --border: #C7D3DA;
+  --border-strong: #1E1E1E;
+  --input: #C7D3DA;
+  --ring: #087E85;
 
-  --map-water: oklch(0.845 0.048 189);
-  --map-land: oklch(0.964 0.011 135);
-  --map-road: oklch(0.885 0.019 154);
-  --map-park: oklch(0.891 0.055 146);
+  --map-water: #AFEAF0;
+  --map-land: #F1F4EA;
+  --map-road: #D5DEE0;
+  --map-park: #D9E9CC;
 
   --gradient-night: linear-gradient(180deg, transparent 45%, color-mix(in srgb, var(--foreground) 55%, transparent) 100%);
-  --shadow-lift: 4px 4px 0 var(--foreground);
-  --shadow-sheet: 0 -8px 30px -12px color-mix(in srgb, var(--foreground) 25%, transparent);
+  --shadow-lift: 3px 3px 0 var(--foreground);
+  --shadow-sheet: 0 -8px 30px -12px color-mix(in srgb, var(--foreground) 15%, transparent);
 }
 
 @layer base {
@@ -112,6 +112,7 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    font-weight: 500;
   }
 
   h1,
@@ -119,6 +120,7 @@
   h3,
   h4 {
     font-family: var(--font-display);
+    font-weight: 500;
     letter-spacing: 0;
   }
 

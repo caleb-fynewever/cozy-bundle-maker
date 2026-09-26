@@ -102,7 +102,8 @@ function SquadPage() {
 
   return (
     <AppShell>
-      <h1 className="mt-6 text-5xl font-extrabold leading-[0.95] sm:text-6xl">Your squad</h1>
+       <p className="mt-6 font-hand text-xl">better together</p>
+       <h1 className="mt-2 text-5xl font-medium leading-tight sm:text-6xl">Your squad</h1>
 
       {squad.length ? (
         <ul className="mt-8 flex flex-wrap gap-5">
@@ -130,7 +131,7 @@ function SquadPage() {
 
       {groupQuest && squad.length ? (
         <section className="mt-12">
-          <h2 className="text-2xl font-bold">Something you'd all like</h2>
+           <h2 className="text-2xl font-medium">Something you'd all like</h2>
           <div className="mt-6">
             <QuestCard item={groupQuest} />
           </div>
@@ -138,7 +139,7 @@ function SquadPage() {
       ) : null}
 
       <section className="mt-16 border-t border-border pt-10">
-        <h2 className="text-3xl font-bold">Looking for people to join?</h2>
+         <h2 className="text-3xl font-medium">Looking for people to join?</h2>
 
         {!state.verified ? (
           <div className="mt-4">
@@ -155,7 +156,7 @@ function SquadPage() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="you@umn.edu"
-                className="min-h-12 flex-1 rounded-full border border-border-strong bg-card px-5 text-[15px]"
+                 className="min-h-12 flex-1 rounded-md border border-border-strong bg-card px-5 text-[15px]"
               />
               <Button variant="ink" onClick={verifyEmail}>
                 Verify
@@ -189,7 +190,7 @@ function SquadPage() {
                 id="radius"
                 value={radiusMi}
                 onChange={(e) => setRadius(Number(e.target.value))}
-                className="min-h-11 rounded-full border border-border bg-transparent px-4 text-sm"
+                 className="min-h-11 rounded-md border border-border bg-card px-4 text-sm"
               >
                 {[1, 3, 5].map((r) => (
                   <option key={r} value={r}>
