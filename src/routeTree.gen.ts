@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CreateRouteImport } from './routes/create'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SquadRouteImport } from './routes/squad'
@@ -18,6 +19,11 @@ import { Route as QuestQuestIdRouteImport } from './routes/quest.$questId'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreateRoute = CreateRouteImport.update({
+  id: '/create',
+  path: '/create',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MapRoute = MapRouteImport.update({
@@ -43,6 +49,7 @@ const QuestQuestIdRoute = QuestQuestIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/create': typeof CreateRoute
   '/map': typeof MapRoute
   '/profile': typeof ProfileRoute
   '/squad': typeof SquadRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/create': typeof CreateRoute
   '/map': typeof MapRoute
   '/profile': typeof ProfileRoute
   '/squad': typeof SquadRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/create': typeof CreateRoute
   '/map': typeof MapRoute
   '/profile': typeof ProfileRoute
   '/squad': typeof SquadRoute
@@ -65,14 +74,23 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/map' | '/profile' | '/squad' | '/quest/$questId'
+  fullPaths:
+    '/' | '/create' | '/map' | '/profile' | '/squad' | '/quest/$questId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/map' | '/profile' | '/squad' | '/quest/$questId'
-  id: '__root__' | '/' | '/map' | '/profile' | '/squad' | '/quest/$questId'
+  to: '/' | '/create' | '/map' | '/profile' | '/squad' | '/quest/$questId'
+  id:
+    | '__root__'
+    | '/'
+    | '/create'
+    | '/map'
+    | '/profile'
+    | '/squad'
+    | '/quest/$questId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CreateRoute: typeof CreateRoute
   MapRoute: typeof MapRoute
   ProfileRoute: typeof ProfileRoute
   SquadRoute: typeof SquadRoute
@@ -86,6 +104,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/create': {
+      id: '/create'
+      path: '/create'
+      fullPath: '/create'
+      preLoaderRoute: typeof CreateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/map': {
@@ -121,6 +146,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CreateRoute: CreateRoute,
   MapRoute: MapRoute,
   ProfileRoute: ProfileRoute,
   SquadRoute: SquadRoute,
