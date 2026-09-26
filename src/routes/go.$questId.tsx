@@ -3,7 +3,7 @@ import { useMemo, useState, type ChangeEvent } from "react";
 import { ArrowLeft, Bookmark, Footprints, Heart, ImagePlus, Star } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
-import { Avatar, Button, Chip } from "@/components/ui-kit";
+import { Button, Chip } from "@/components/ui-kit";
 import { getQuest } from "@/data/quests";
 import { NEARBY_STUDENTS } from "@/data/people";
 import { questImage } from "@/lib/imagery";
