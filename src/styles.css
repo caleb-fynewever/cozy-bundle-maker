@@ -6,7 +6,7 @@
 
 /*
  * Side Quest design system.
- * Dark editorial night palette + acid-lime accent + signal amber.
+ * Warm paper background, near-black ink, a single vermilion accent.
  * All colors are oklch semantic tokens. Never hardcode colors in components.
  */
 
@@ -18,8 +18,8 @@
   --radius-2xl: calc(var(--radius) + 12px);
   --radius-3xl: calc(var(--radius) + 20px);
 
-  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   --color-background: var(--background);
@@ -53,59 +53,49 @@
 }
 
 :root {
-  --radius: 1.125rem;
+  --radius: 0.875rem;
 
-  --background: oklch(0.17 0.022 250);
-  --foreground: oklch(0.97 0.006 250);
-  --surface: oklch(0.22 0.026 252);
-  --surface-foreground: oklch(0.97 0.006 250);
-  --card: oklch(0.235 0.028 254);
-  --card-foreground: oklch(0.97 0.006 250);
-  --popover: oklch(0.21 0.026 252);
-  --popover-foreground: oklch(0.97 0.006 250);
+  /* Warm paper, ink, one vermilion accent. */
+  --background: oklch(0.975 0.007 85);
+  --foreground: oklch(0.2 0.012 60);
+  --surface: oklch(0.945 0.01 80);
+  --surface-foreground: oklch(0.2 0.012 60);
+  --card: oklch(0.99 0.004 85);
+  --card-foreground: oklch(0.2 0.012 60);
+  --popover: oklch(0.99 0.004 85);
+  --popover-foreground: oklch(0.2 0.012 60);
 
-  --primary: oklch(0.88 0.2 124);
-  --primary-foreground: oklch(0.2 0.05 135);
+  --primary: oklch(0.6 0.19 36);
+  --primary-foreground: oklch(0.99 0.005 85);
 
-  --secondary: oklch(0.29 0.033 254);
-  --secondary-foreground: oklch(0.95 0.008 250);
+  --secondary: oklch(0.92 0.012 78);
+  --secondary-foreground: oklch(0.25 0.012 60);
 
-  --muted: oklch(0.26 0.028 254);
-  --muted-foreground: oklch(0.7 0.024 253);
+  --muted: oklch(0.93 0.01 80);
+  --muted-foreground: oklch(0.48 0.012 65);
 
-  --accent: oklch(0.63 0.19 300);
-  --accent-foreground: oklch(0.98 0.005 300);
+  --accent: oklch(0.2 0.012 60);
+  --accent-foreground: oklch(0.975 0.007 85);
 
-  --signal: oklch(0.82 0.16 72);
-  --signal-foreground: oklch(0.22 0.05 60);
+  --signal: oklch(0.6 0.19 36);
+  --signal-foreground: oklch(0.99 0.005 85);
 
-  --destructive: oklch(0.62 0.21 22);
-  --destructive-foreground: oklch(0.98 0.004 20);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.99 0.004 20);
 
-  --border: oklch(0.32 0.03 254);
-  --border-strong: oklch(0.42 0.035 254);
-  --input: oklch(0.3 0.03 254);
-  --ring: oklch(0.88 0.2 124);
+  --border: oklch(0.89 0.01 78);
+  --border-strong: oklch(0.78 0.012 70);
+  --input: oklch(0.89 0.01 78);
+  --ring: oklch(0.2 0.012 60);
 
-  --map-water: oklch(0.3 0.06 245);
-  --map-land: oklch(0.21 0.024 252);
-  --map-road: oklch(0.32 0.024 252);
-  --map-park: oklch(0.31 0.06 155);
+  --map-water: oklch(0.86 0.035 230);
+  --map-land: oklch(0.955 0.01 85);
+  --map-road: oklch(0.88 0.008 80);
+  --map-park: oklch(0.9 0.045 140);
 
-  --gradient-night: linear-gradient(
-    180deg,
-    oklch(0.17 0.022 250 / 0) 0%,
-    oklch(0.15 0.02 250 / 0.72) 55%,
-    oklch(0.14 0.02 250 / 0.96) 100%
-  );
-  --gradient-acid: linear-gradient(
-    120deg,
-    oklch(0.88 0.2 124) 0%,
-    oklch(0.84 0.16 160) 100%
-  );
-  --shadow-lift: 0 22px 48px -20px oklch(0.1 0.02 250 / 0.85);
-  --shadow-glow: 0 0 0 1px oklch(0.88 0.2 124 / 0.35),
-    0 14px 40px -18px oklch(0.88 0.2 124 / 0.45);
+  --gradient-night: linear-gradient(180deg, oklch(0 0 0 / 0) 45%, oklch(0.15 0.01 60 / 0.55) 100%);
+  --shadow-lift: 0 1px 2px oklch(0.2 0.012 60 / 0.06);
+  --shadow-sheet: 0 -8px 30px -12px oklch(0.2 0.012 60 / 0.25);
 }
 
 @layer base {
@@ -129,7 +119,7 @@
   h3,
   h4 {
     font-family: var(--font-display);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
   }
 
   :focus-visible {
@@ -143,7 +133,7 @@
 }
 
 @utility acid-fill {
-  background-image: var(--gradient-acid);
+  background-color: var(--color-primary);
 }
 
 @utility lift {
@@ -151,7 +141,11 @@
 }
 
 @utility glow {
-  box-shadow: var(--shadow-glow);
+  box-shadow: none;
+}
+
+@utility sheet {
+  box-shadow: var(--shadow-sheet);
 }
 
 @utility hide-scrollbar {
