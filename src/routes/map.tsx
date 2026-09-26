@@ -13,13 +13,13 @@ import { questImage } from "@/lib/imagery";
 export const Route = createFileRoute("/map")({
   head: () => ({
     meta: [
-      { title: "Explore the map — Side Quest" },
+      { title: "Explore the map — wego" },
       {
         name: "description",
         content:
           "See every nearby side quest around campus and the lakes, filter by tonight, free, quick or weird, and open the mission.",
       },
-      { property: "og:title", content: "Explore the map — Side Quest" },
+      { property: "og:title", content: "Explore the map — wego" },
       {
         property: "og:description",
         content: "Nearby student side quests plotted around Minneapolis, filterable by time, cost and vibe.",

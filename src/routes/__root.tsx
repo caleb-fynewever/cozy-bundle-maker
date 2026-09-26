@@ -78,12 +78,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Side Quest" },
+      { title: "wego" },
       {
         name: "description",
-        content: "Side Quest turns 'what should we do?' into a personalized mission near you.",
+        content: "wego turns 'what should we do?' into a personalized mission near you.",
       },
-      { property: "og:site_name", content: "Side Quest" },
+      { property: "og:site_name", content: "wego" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

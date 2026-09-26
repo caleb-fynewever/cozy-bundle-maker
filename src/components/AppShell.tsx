@@ -20,8 +20,8 @@ export function AppShell({ children, wide = false, compact = false }: { children
     <div className={`min-h-screen bg-background ${compact ? "overflow-x-clip pb-16" : "pb-24"} md:pb-0`}>
        <header className="sticky top-0 z-50 border-b border-border bg-background/95">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 md:h-[72px] md:px-8">
-         <Link to="/" className="font-hand text-[28px] leading-none md:text-[34px]" aria-label="Side Quest home">
-           side quest
+         <Link to="/" className="font-hand text-[28px] leading-none md:text-[34px]" aria-label="wego home">
+           wego
         </Link>
         <nav aria-label="Main" className="hidden items-center gap-8 md:flex">
           {NAV.map(({ to, label }) => (

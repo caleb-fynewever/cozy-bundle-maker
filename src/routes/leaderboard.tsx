@@ -8,9 +8,9 @@ import { useUserState } from "@/lib/store";
 export const Route = createFileRoute("/leaderboard")({
   head: () => ({
     meta: [
-      { title: "Local Legends — Side Quest" },
+      { title: "Local Legends — wego" },
       { name: "description", content: "See who's done the most side quests, made the most, and kept the longest streak." },
-      { property: "og:title", content: "Local Legends — Side Quest" },
+      { property: "og:title", content: "Local Legends — wego" },
       { property: "og:description", content: "Friendly competition: quests done, quests made, streaks." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

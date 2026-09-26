@@ -18,13 +18,13 @@ export const Route = createFileRoute("/quest/$questId")({
   },
   head: ({ loaderData }) => {
     if (!loaderData?.title) {
-      return { meta: [{ title: "Quest unavailable — Side Quest" }, { name: "robots", content: "noindex" }] };
+      return { meta: [{ title: "Quest unavailable — wego" }, { name: "robots", content: "noindex" }] };
     }
     return {
       meta: [
-        { title: `${loaderData.title} — Side Quest` },
+        { title: `${loaderData.title} — wego` },
         { name: "description", content: loaderData.hook ?? "" },
-        { property: "og:title", content: `${loaderData.title} — Side Quest` },
+        { property: "og:title", content: `${loaderData.title} — wego` },
         { property: "og:description", content: loaderData.hook ?? "" },
         { property: "og:type", content: "article" },
         { name: "twitter:card", content: "summary_large_image" },

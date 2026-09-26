@@ -21,13 +21,13 @@ import { VIBE_EMOJI, VIBE_LABEL } from "@/lib/types";
 export const Route = createFileRoute("/squad")({
   head: () => ({
     meta: [
-      { title: "Build a squad — Side Quest" },
+      { title: "Build a squad — wego" },
       {
         name: "description",
         content:
           "Start a temporary squad with friends or verified students nearby. Compatibility is scored on taste, shared interests, distance and group size.",
       },
-      { property: "og:title", content: "Build a squad — Side Quest" },
+      { property: "og:title", content: "Build a squad — wego" },
       {
         property: "og:description",
         content: "Match with verified students nearby by vibe compatibility — approximate distance only.",
