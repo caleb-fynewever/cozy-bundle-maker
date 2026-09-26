@@ -140,7 +140,7 @@ function Discover() {
             ) : null}
           </div>
           {results[0] ? (
-            <Link to="/quest/$questId" params={{ questId: results[0].quest.id }} className="group block min-w-0" aria-label={`Explore ${results[0].quest.title}`}>
+            <Link to="/quest/$questId" params={{ questId: results[0].quest.id }} className="group hidden min-w-0 md:block" aria-label={`Explore ${results[0].quest.title}`}>
               <div className="overflow-hidden rounded-md border border-border-strong bg-card p-2">
                 <img src={questImage(results[0].quest)} alt={`${results[0].quest.location.name}, ${results[0].quest.location.area}`} className="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
               </div>
