@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { Bookmark, SlidersHorizontal, ArrowUpRight } from "lucide-react";
+import { useMemo, useState } from "react";
+import { SlidersHorizontal, ArrowUpRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { metaLine, reasonLine } from "@/components/QuestCard";
+import { SwipeDeck } from "@/components/SwipeDeck";
 import { Button, Chip } from "@/components/ui-kit";
 import { currentTimeSlot, recommend, tonightTrio } from "@/lib/engine";
 import { QUESTS } from "@/data/quests";
@@ -12,7 +12,6 @@ import { EVENTS } from "@/data/events";
 import { PHOTOS } from "@/data/photos";
 import { questImage } from "@/lib/imagery";
 import { VIBES, VIBE_LABEL, type SessionContext, type Vibe } from "@/lib/types";
-import type { ScoredQuest } from "@/lib/engine";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -97,7 +96,8 @@ function Discover() {
   );
 
   const allQuests = useMemo(() => [...state.createdQuests, ...QUESTS], [state.createdQuests]);
-  const { results } = useMemo(() => recommend(context, state, allQuests), [context, state, allQuests]);
+  const { results } = useMemo(() => recommend(context, state, allQuests, allQuests.length), [context, state, allQuests]);
+  const deck = useMemo(() => results.filter(({ quest }) => !state.saved.includes(quest.id) && !state.completed.includes(quest.id)), [results, state.saved, state.completed]);
   const trio = useMemo(() => tonightTrio(results), [results]);
   const squad = NEARBY_STUDENTS.filter((u) => state.squadIds.includes(u.id));
 
@@ -111,30 +111,20 @@ function Discover() {
   ].join(" · ");
 
   const TRIO_LABEL = { safe: "Safe bet", perfect: "Your kind of thing", chaos: "Wildcard" } as const;
-  const feed = [
-    ...results.slice(0, 2).map((item) => ({ kind: "quest" as const, item })),
-    ...EVENTS.slice(0, 1).map((event) => ({ kind: "event" as const, event })),
-    ...results.slice(2, 4).map((item) => ({ kind: "quest" as const, item })),
-    ...EVENTS.slice(1, 3).map((event) => ({ kind: "event" as const, event })),
-    ...results.slice(4).map((item) => ({ kind: "quest" as const, item })),
-    ...EVENTS.slice(3).map((event) => ({ kind: "event" as const, event })),
-  ];
 
   return (
       <AppShell>
         <div className="mx-auto max-w-2xl">
-         <section className="pt-3 md:pt-8">
-           <p className="font-hand text-xl">a little detour from the usual · Minneapolis</p>
-           <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
-             <h1 className="text-[38px] font-semibold leading-tight md:text-5xl">Find your next story.</h1>
+          <section className="pt-1 md:pt-8">
+            <p className="font-hand text-lg">Minneapolis · a little detour from the usual</p>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+              <h1 className="text-3xl font-semibold leading-tight md:text-5xl">Find your next story.</h1>
              <Button variant="outline" onClick={() => setAdjusting((v) => !v)} ariaLabel="Change the plan">
                <SlidersHorizontal aria-hidden className="h-4 w-4" /> Change the plan
              </Button>
            </div>
            <p className="mt-3 text-sm text-muted-foreground">For {summary}{squad.length ? ` · with ${squad.map((s) => s.name).join(" & ")}` : ""}</p>
-           {state.completed.length === 0 ? (
-             <div className="mt-1"><Button variant="ghost" onClick={actions.loadDemo}>Try with a demo profile</Button></div>
-           ) : null}
+            {state.completed.length === 0 ? <div className="mt-1"><Button variant="ghost" onClick={actions.loadDemo}>Try with a demo profile</Button></div> : null}
          </section>
 
          {adjusting ? (
@@ -239,29 +229,27 @@ function Discover() {
           </div>
         </section>
       ) : null}
-        <section className="mt-10 border-t border-border pt-5" aria-label="Discover feed">
+         <SwipeDeck items={deck} />
+         <section className="mt-16 border-t border-border pt-5" aria-label="Local events">
           <div className="mb-8 flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-            <p className="font-hand text-xl">the good stuff, one scroll at a time</p>
+             <div><p className="font-hand text-xl">out in the world</p><h2 className="text-2xl font-semibold">Happening around town</h2></div>
             <Button variant="ghost" onClick={() => setTonightOpen(true)}>Three ways to go <span aria-hidden>→</span></Button>
           </div>
           <div className="space-y-14 md:space-y-24">
-            {feed.map((entry, index) => entry.kind === "quest" ? (
-              <FeedQuest key={entry.item.quest.id} item={entry.item} index={index} saved={state.saved.includes(entry.item.quest.id)} />
-            ) : (
-              <article key={entry.event.id} className="min-w-0">
-                <p className="mb-3 font-hand text-xl">out in the world · {entry.event.when}</p>
+             {EVENTS.map((event) => (
+               <article key={event.id} className="min-w-0">
+                 <p className="mb-3 font-hand text-xl">{event.when}</p>
                 <div className="bg-secondary p-2.5 sm:p-4">
-                  <img src={(PHOTOS[entry.event.photo] ?? PHOTOS["isles"]!).url} alt={entry.event.where} loading="lazy" className="aspect-[16/10] w-full bg-muted object-cover" />
+                   <img src={(PHOTOS[event.photo] ?? PHOTOS["isles"]!).url} alt={event.where} loading="lazy" className="aspect-[16/10] w-full bg-muted object-cover" />
                 </div>
                 <div className="mt-5 px-1 sm:px-3">
-                  <h2 className="text-2xl font-semibold leading-tight md:text-3xl">{entry.event.title}</h2>
-                  <p className="mt-2 text-sm text-muted-foreground">{entry.event.where} · {entry.event.price}</p>
-                  <p className="mt-3 leading-relaxed">{entry.event.blurb}</p>
-                  <a href={entry.event.source.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex min-h-11 items-center gap-1 font-semibold underline decoration-primary underline-offset-4">Details via {entry.event.source.name} <ArrowUpRight aria-hidden className="h-4 w-4" /></a>
+                   <h3 className="text-2xl font-semibold leading-tight md:text-3xl">{event.title}</h3>
+                   <p className="mt-2 text-sm text-muted-foreground">{event.where} · {event.price}</p>
+                   <p className="mt-3 leading-relaxed">{event.blurb}</p>
+                   <a href={event.source.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex min-h-11 items-center gap-1 font-semibold underline decoration-primary underline-offset-4">Details via {event.source.name} <ArrowUpRight aria-hidden className="h-4 w-4" /></a>
                 </div>
               </article>
             ))}
-            {results.length === 0 ? <p className="text-muted-foreground">Nothing fits that. Try a bigger budget or more time.</p> : null}
           </div>
           <div className="pb-10 pt-20 text-center">
             <span aria-hidden className="mx-auto block h-12 w-px bg-primary" />
@@ -271,31 +259,6 @@ function Discover() {
         </section>
         </div>
     </AppShell>
-  );
-}
-
-function FeedQuest({ item, index, saved }: { item: ScoredQuest; index: number; saved: boolean }) {
-  const { quest } = item;
-  return (
-    <article className="group min-w-0">
-      <p className="mb-3 font-hand text-xl">{index === 0 ? "a good place to start" : reasonLine(item)}</p>
-      <Link to="/quest/$questId" params={{ questId: quest.id }} className="block" aria-label={`Explore ${quest.title}`}>
-        <div className={`${index % 3 === 1 ? "bg-secondary" : "bg-card"} p-2.5 sm:p-4`}>
-          <img src={questImage(quest)} alt={`${quest.location.name}, ${quest.location.area}`} loading={index === 0 ? "eager" : "lazy"} width={1200} height={900} className={`w-full bg-muted object-cover transition-transform duration-500 group-hover:scale-[1.01] ${index % 3 === 1 ? "aspect-[16/10]" : "aspect-[4/3]"}`} />
-        </div>
-      </Link>
-      <div className="mt-5 flex items-start justify-between gap-3 px-1 sm:px-3">
-        <div className="min-w-0">
-          <Link to="/quest/$questId" params={{ questId: quest.id }}><h2 className="text-2xl font-semibold leading-tight md:text-3xl">{quest.title}</h2></Link>
-          <p className="mt-2 text-sm text-muted-foreground">{quest.location.area} · {metaLine(item.distance, quest.durationMin, quest.costPerPerson)}</p>
-          <p className="mt-3 leading-relaxed">{quest.hook}</p>
-          <Link to="/quest/$questId" params={{ questId: quest.id }} className="mt-3 inline-flex min-h-11 items-center gap-1 font-semibold underline decoration-primary underline-offset-4">See the quest <ArrowUpRight aria-hidden className="h-4 w-4" /></Link>
-        </div>
-        <Button variant="ghost" onClick={() => actions.toggleSave(quest.id)} ariaLabel={saved ? `Remove ${quest.title} from saved` : `Save ${quest.title}`}>
-          <Bookmark aria-hidden className="h-5 w-5 shrink-0" fill={saved ? "currentColor" : "none"} />
-        </Button>
-      </div>
-    </article>
   );
 }
 

@@ -25,4 +25,4 @@
   components.
 - Shared editorial styling belongs in semantic tokens and reusable UI components so every route stays visually consistent on phone and laptop.
 - Use Figtree as the readable principal typeface and Schoolbell for the full wordmark and short human notes; this keeps controls clear and the voice casual.
-- Keep Discover as a single-column photo-journal feed, with real quest images and real events interleaved; the reading-progress line gives scrolling a quiet sense of movement.
+- Keep Discover's quests in a single-card swipe deck with real images and pass/save actions, and show sourced local events below; this makes one decision at a time without hiding events.
