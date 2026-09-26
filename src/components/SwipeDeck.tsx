@@ -30,7 +30,8 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
     gesture.current = null;
     setChoice(selected);
     setPhase("leaving");
-    setDragX(selected === "save" ? 800 : -800);
+    // Move completely out of the viewport, even on a wide desktop display.
+    setDragX((selected === "save" ? 1 : -1) * Math.max(window.innerWidth, 800));
     const id = current.quest.id;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     timers.current.push(setTimeout(() => {
@@ -47,7 +48,13 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
   function onPointerDown(event: PointerEvent<HTMLElement>) {
     if (!current || locked.current || (event.pointerType === "mouse" && event.button !== 0)) return;
     if ((event.target as HTMLElement).closest("a, button")) return;
-    gesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY, at: performance.now(), axis: "pending" };
+    // A mouse can leave the card before the first move event. Capture it immediately;
+    // touch still waits for a horizontal intent so vertical page scrolling works.
+    if (event.pointerType === "mouse") {
+      event.preventDefault();
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    gesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY, at: performance.now(), axis: event.pointerType === "mouse" ? "horizontal" : "pending" };
   }
 
   function onPointerMove(event: PointerEvent<HTMLElement>) {
@@ -57,7 +64,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
     const dy = event.clientY - move.y;
     if (move.axis === "pending" && Math.max(Math.abs(dx), Math.abs(dy)) > 8) {
       move.axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? "horizontal" : "vertical";
-      if (move.axis === "horizontal") event.currentTarget.setPointerCapture(event.pointerId);
+      if (move.axis === "horizontal" && !event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.setPointerCapture(event.pointerId);
     }
     if (move.axis === "horizontal") setDragX(dx);
   }
@@ -94,7 +101,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
             {next ? <div aria-hidden className="absolute inset-x-2 top-2 bottom-0 rotate-1 overflow-hidden border border-border bg-secondary"><img src={questImage(next.quest)} alt="" draggable={false} className="h-full w-full object-cover opacity-40" /></div> : null}
             <article
               key={current.quest.id}
-              className={`relative overflow-hidden border border-border-strong bg-card shadow-sm ${phase === "leaving" ? "transition-transform duration-[420ms] ease-out" : dragX === 0 ? "transition-transform duration-200 ease-out" : ""}`}
+              className={`relative select-none overflow-hidden border border-border-strong bg-card shadow-sm ${phase === "leaving" ? "transition-transform duration-[420ms] ease-out" : dragX === 0 ? "transition-transform duration-200 ease-out" : ""}`}
               style={{ transform: `translateX(${dragX}px) rotate(${Math.max(-12, Math.min(12, dragX / 30))}deg)`, touchAction: "pan-y" }}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
