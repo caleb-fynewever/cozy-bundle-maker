@@ -15,7 +15,7 @@ export default function QuestMapLeaflet({
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<Map<string, L.Marker>>(new Map());
+  const layerRef = useRef<L.LayerGroup | null>(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
 
@@ -28,19 +28,20 @@ export default function QuestMapLeaflet({
       attribution:
         'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM | style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)',
     }).addTo(map);
+    layerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
     return () => {
       map.remove();
       mapRef.current = null;
-      markersRef.current.clear();
+      layerRef.current = null;
     };
   }, []);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
-    markersRef.current.forEach((m) => m.remove());
-    markersRef.current.clear();
+    const layer = layerRef.current;
+    if (!map || !layer) return;
+    layer.clearLayers();
     const points: L.LatLngExpression[] = [];
     for (const item of items.slice(0, 20)) {
       const { lat, lng } = item.quest.location;
