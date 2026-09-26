@@ -1,9 +1,13 @@
+import { lazy, Suspense } from "react";
 import type { ScoredQuest } from "@/lib/engine";
 import { questImage } from "@/lib/imagery";
-import { Link } from "@tanstack/react-router";
+import { ClientOnly, Link } from "@tanstack/react-router";
 import { metaLine } from "@/components/QuestCard";
 
-/** OpenStreetMap embed centered on the selected quest, with a quest strip to switch between. */
+// Leaflet is browser-only: load it after hydration, never in the SSR bundle.
+const QuestMapLeaflet = lazy(() => import("@/components/QuestMapLeaflet"));
+
+/** OpenTopoMap view of every quest, with a quest strip to switch between. */
 export function QuestMap({
   items,
   selectedId,
