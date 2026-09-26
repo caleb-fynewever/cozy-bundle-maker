@@ -93,7 +93,7 @@ function GoPage() {
         </Link>
 
         <div className="mt-2 grid grid-cols-[96px_minmax(0,1fr)] items-center gap-4 sm:grid-cols-[140px_minmax(0,1fr)]">
-          <img src={questImage(quest)} alt="" className="aspect-square w-full border border-border object-cover" />
+          <img src={questImage(quest)} alt="" className="aspect-square w-full rounded-2xl border border-border object-cover" />
           <div className="min-w-0">
             <p className="font-hand text-lg">{stage === "share" ? "you did it" : "let's go"}</p>
             <h1 className="text-2xl font-semibold leading-tight sm:text-3xl">{quest.title}</h1>
@@ -168,7 +168,7 @@ function GoPage() {
                 <ImagePlus aria-hidden className="h-5 w-5" /> {photo ? "Change photo" : "Add a photo"}
                 <input type="file" accept="image/*" onChange={onPhoto} className="sr-only" />
               </label>
-              {photo ? <img src={photo} alt="Your photo" className="mt-3 max-h-64 border border-border object-cover" /> : null}
+              {photo ? <img src={photo} alt="Your photo" className="mx-auto mt-3 block max-h-64 w-[86%] max-w-[420px] rounded-2xl border border-border object-cover" /> : null}
             </section>
             <div className="flex flex-wrap gap-3">
               <Button onClick={share}><Heart aria-hidden className="h-5 w-5" /> Share to feed</Button>
