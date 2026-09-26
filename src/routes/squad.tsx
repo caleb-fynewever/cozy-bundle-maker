@@ -15,7 +15,8 @@ import {
   recommend,
   topVibes,
 } from "@/lib/engine";
-import { actions, useUserState } from "@/lib/store";
+import { actions, useUserState, XP } from "@/lib/store";
+import { levelName, squadWeek } from "@/lib/progress";
 import { VIBE_EMOJI, VIBE_LABEL } from "@/lib/types";
 
 export const Route = createFileRoute("/squad")({
@@ -93,11 +94,12 @@ function SquadPage() {
   const invite = (id: string, name: string) => {
     setRequested((r) => [...r, id]);
     setTimeout(() => {
-      actions.toggleSquadMember(id);
+      actions.toggleSquadMember(id, name);
       toast(`${name} is in.`);
     }, 1200);
   };
 
+  const week = squadWeek(state);
   const people = scope === "friends" ? nearby.filter((p) => p.user.level >= 3) : nearby;
 
   return (
@@ -115,19 +117,45 @@ function SquadPage() {
             <li key={m.id} className="flex flex-col items-center gap-2">
               <button
                 type="button"
-                onClick={() => actions.toggleSquadMember(m.id)}
+                onClick={() => actions.toggleSquadMember(m.id, m.name)}
                 aria-label={`Remove ${m.name} from squad`}
                 className="rounded-full"
               >
                 <Avatar name={m.name} size={56} />
               </button>
               <span className="text-sm font-medium">{m.name}</span>
+              <span className="-mt-2 text-xs text-muted-foreground">{levelName(m.level)}</span>
             </li>
           ))}
         </ul>
       ) : (
         <p className="mt-3 text-lg text-muted-foreground">Just you right now.</p>
       )}
+
+      {squad.length ? (
+        <section className="mt-10 border-y border-border py-6" aria-labelledby="squad-week">
+          <div className="flex items-baseline justify-between gap-4">
+            <h2 id="squad-week" className="text-xl font-semibold">This week together</h2>
+            <p className="font-hand text-lg">{week.totalXp} XP as a squad</p>
+          </div>
+          <p className="mt-1 text-muted-foreground">
+            {week.done
+              ? "Goal hit. Anything else is bragging rights."
+              : `${week.goal - week.together} more ${week.goal - week.together === 1 ? "quest" : "quests"} together to hit this week's goal.`}
+          </p>
+          <ol className="mt-4 flex gap-2" aria-label={`${week.together} of ${week.goal} quests together`}>
+            {Array.from({ length: week.goal }, (_, i) => (
+              <li
+                key={i}
+                className={`h-2 flex-1 rounded-full ${i < week.together ? "bg-primary" : "bg-muted"}`}
+              />
+            ))}
+          </ol>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Every quest you do with someone here is +{XP.squadBonus} XP on top.
+          </p>
+        </section>
+      ) : null}
 
       {groupQuest && squad.length ? (
         <section className="mt-12">

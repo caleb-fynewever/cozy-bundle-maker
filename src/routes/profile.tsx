@@ -4,6 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { QuestDna } from "@/components/QuestDna";
 import { Avatar, Verified } from "@/components/ui-kit";
 import { rankBoard } from "@/lib/leaderboard";
+import { badges, weekXp, XP_RULES } from "@/lib/progress";
 import { levelFor } from "@/data/people";
 import { getQuest } from "@/data/quests";
 import { buildTasteVector } from "@/lib/engine";
@@ -39,6 +40,9 @@ function ProfilePage() {
   const completed = state.completed.map((id) => getQuest(id)).filter(Boolean);
   const saved = state.saved.map((id) => getQuest(id)).filter(Boolean);
 
+  const earned = badges(state);
+  const thisWeek = weekXp(state);
+
   const toggles = [
     ["optInNearby", "Show me to students nearby"],
     ["shareLocation", "Use my rough location"],
@@ -73,17 +77,65 @@ function ProfilePage() {
         ))}
       </dl>
 
-      <div className="mt-6 flex items-center justify-between gap-4">
-        <p className="text-[15px]">
-          <span className="font-semibold">{level.name}</span>
-          <span className="text-muted-foreground">
-            {level.next ? ` · ${level.next.xp - state.xp} XP to ${level.next.name}` : " · top level"}
-          </span>
+      <section className="mt-8" aria-labelledby="level">
+        <div className="flex items-baseline justify-between gap-4">
+          <h2 id="level" className="text-xl font-semibold">{level.name}</h2>
+          <Link to="/leaderboard" className="min-h-11 content-center text-sm font-semibold underline underline-offset-4">
+            {entries.length > 1 ? `#${myRank} in your squad` : "See ranks"}
+          </Link>
+        </div>
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(level.progress * 100)} aria-label="Progress to next level">
+          <div className="h-full rounded-full bg-primary" style={{ width: `${level.progress * 100}%` }} />
+        </div>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {state.xp} XP · {thisWeek} this week
+          {level.next ? ` · ${level.next.xp - state.xp} to ${level.next.name}` : " · top level"}
         </p>
-        <Link to="/leaderboard" className="min-h-11 content-center text-sm font-semibold text-primary">
-          {entries.length > 1 ? `#${myRank} in your squad →` : "Leaderboard →"}
-        </Link>
-      </div>
+      </section>
+
+      <section className="mt-10" aria-labelledby="badges">
+        <h2 id="badges" className="text-lg font-semibold">Stamps</h2>
+        <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {earned.map((b) => (
+            <li
+              key={b.id}
+              className={`rounded-xl border p-3 ${b.earned ? "border-foreground bg-card" : "border-dashed border-border text-muted-foreground"}`}
+            >
+              <p className={`font-hand text-lg leading-tight ${b.earned ? "" : "opacity-60"}`}>{b.name}</p>
+              <p className="text-xs text-muted-foreground">{b.earned ? "got it" : b.note}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="mt-10 grid gap-8 sm:grid-cols-2" aria-label="XP">
+        <div>
+          <h2 className="text-lg font-semibold">Recently</h2>
+          {state.log.length ? (
+            <ul className="mt-3 divide-y divide-border">
+              {state.log.slice(0, 5).map((e, i) => (
+                <li key={`${e.at}-${i}`} className="flex items-center justify-between gap-3 py-2.5 text-[15px]">
+                  <span className="min-w-0 truncate">{e.label}</span>
+                  <span className="shrink-0 text-sm text-muted-foreground">+{e.xp}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-3 font-hand text-lg text-muted-foreground">nothing yet — go do something</p>
+          )}
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold">How XP works</h2>
+          <ul className="mt-3 divide-y divide-border">
+            {XP_RULES.map((r) => (
+              <li key={r.kind} className="flex items-center justify-between gap-3 py-2.5 text-[15px]">
+                <span>{r.label}</span>
+                <span className="shrink-0 text-sm text-muted-foreground">+{r.xp}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
 
       <div className="mt-12">
         <QuestDna vibes={taste.vibes} note={taste.hasHistory ? "Changes as you go." : "Do a few quests and this fills in."} />
