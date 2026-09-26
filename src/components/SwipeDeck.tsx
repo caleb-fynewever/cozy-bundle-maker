@@ -119,7 +119,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
                       <img src={questImage(item.quest)} alt="" draggable={false} className="h-[min(24dvh,230px)] w-full object-cover sm:h-[min(42dvh,430px)]" style={{ opacity: 0.3 }} />
                     </div>
                     <div className="px-4 py-3 sm:p-6">
-                      <p className="font-hand text-base text-muted-foreground sm:text-lg">{reasonLine({ quest: item.quest, distance: item.distance })}</p>
+                      <p className="font-hand text-base text-muted-foreground sm:text-lg">{reasonLine(item)}</p>
                       <h3 className="mt-0.5 text-xl font-semibold leading-tight sm:text-3xl">{item.quest.title}</h3>
                       <p className="mt-1 text-xs text-muted-foreground sm:text-sm">{item.quest.location.area} · {metaLine(item.distance, item.quest.durationMin, item.quest.costPerPerson)}</p>
                       <p className="mt-1 line-clamp-2 text-sm leading-snug sm:mt-4 sm:text-base">{item.quest.hook}</p>
