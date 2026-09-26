@@ -2,7 +2,12 @@ import { lazy, Suspense } from "react";
 import type { ScoredQuest } from "@/lib/engine";
 import { questImage } from "@/lib/imagery";
 import { ClientOnly, Link } from "@tanstack/react-router";
-import { metaLine } from "@/components/QuestCard";
+import { actions, useUserState } from "@/lib/store";
+
+/** Rough walking time at ~3 mph. */
+export function walkMinutes(mi: number) {
+  return Math.max(2, Math.round(mi * 20));
+}
 
 // Leaflet is browser-only: load it after hydration, never in the SSR bundle.
 const QuestMapLeaflet = lazy(() => import("@/components/QuestMapLeaflet"));
@@ -18,18 +23,15 @@ export function QuestMap({
   onSelect: (id: string | null) => void;
 }) {
   const selected = items.find((i) => i.quest.id === selectedId) ?? null;
+  const state = useUserState();
 
   if (items.length === 0) {
     return (
       <div className="grid aspect-[16/10] w-full place-items-center rounded-2xl border border-border bg-surface">
-        <p className="font-hand text-xl text-muted-foreground">nothing matches — loosen a filter</p>
+        <p className="font-hand text-xl text-muted-foreground">nothing this close — widen the range</p>
       </div>
     );
   }
-
-  const full = selected
-    ? `https://www.openstreetmap.org/?mlat=${selected.quest.location.lat}&mlon=${selected.quest.location.lng}#map=16/${selected.quest.location.lat}/${selected.quest.location.lng}`
-    : null;
 
   return (
     <div>
@@ -44,21 +46,25 @@ export function QuestMap({
             <p className="font-hand text-base text-muted-foreground">{selected.quest.location.area}</p>
             <h2 className="text-lg font-semibold leading-tight">{selected.quest.title}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {metaLine(selected.distance, selected.quest.durationMin, selected.quest.costPerPerson)}
+              {walkMinutes(selected.distance)} min walk · {selected.quest.durationMin} min ·{" "}
+              {selected.quest.costPerPerson === 0 ? "free" : `$${selected.quest.costPerPerson}`}
             </p>
-            <div className="mt-3 flex items-center justify-between gap-3 text-sm font-medium">
+            <div className="mt-3 flex items-center gap-3 text-sm font-medium">
               <Link
                 to="/quest/$questId"
                 params={{ questId: selected.quest.id }}
                 className="inline-flex min-h-10 items-center rounded-full bg-foreground px-4 text-background"
               >
-                See the quest
+                Go now
               </Link>
-              {full ? (
-                <a href={full} target="_blank" rel="noreferrer" className="underline underline-offset-4">
-                  Open full map ↗
-                </a>
-              ) : null}
+              <button
+                type="button"
+                onClick={() => actions.toggleSave(selected.quest.id)}
+                aria-pressed={state.saved.includes(selected.quest.id)}
+                className="min-h-10 underline underline-offset-4"
+              >
+                {state.saved.includes(selected.quest.id) ? "Saved for later" : "Save for later"}
+              </button>
             </div>
           </div>
         ) : (
@@ -86,7 +92,7 @@ export function QuestMap({
               <span className="min-w-0">
                 <span className="block truncate text-sm font-semibold">{item.quest.title}</span>
                 <span className="block truncate text-xs text-muted-foreground">
-                  {item.quest.location.area} · {item.distance.toFixed(1)} mi
+                  {walkMinutes(item.distance)} min walk · {item.quest.location.area}
                 </span>
               </span>
             </button>
