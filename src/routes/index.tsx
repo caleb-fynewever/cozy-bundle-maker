@@ -102,11 +102,12 @@ function Discover() {
   const trio = useMemo(() => tonightTrio(results), [results]);
   const squad = NEARBY_STUDENTS.filter((u) => state.squadIds.includes(u.id));
 
+  const contextKey = JSON.stringify(context);
   useEffect(() => {
     setWorking(true);
-    const timer = setTimeout(() => setWorking(false), 650);
+    const timer = setTimeout(() => setWorking(false), 550);
     return () => clearTimeout(timer);
-  }, [context]);
+  }, [contextKey]);
 
   const toggleVibe = (vibe: Vibe) =>
     setVibes((current) =>

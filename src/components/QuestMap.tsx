@@ -107,7 +107,7 @@ export function QuestMap({
               loading="lazy"
               width={1200}
               height={912}
-              className="h-11 w-11 rounded-xl object-cover"
+              className="h-10 w-10 rounded-xl object-cover"
             />
           </button>
         );
