@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, type ChangeEvent } from "react";
-import { ArrowLeft, Bookmark, Footprints, Heart, ImagePlus } from "lucide-react";
+import { ArrowLeft, Bookmark, CalendarPlus, Clock, Footprints, Heart, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Button, Chip } from "@/components/ui-kit";
@@ -30,7 +30,39 @@ export const Route = createFileRoute("/go/$questId")({
   component: GoPage,
 });
 
-const WHEN = ["Right now", "In 30 min", "In an hour", "Tonight"];
+function pad(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function defaultTime() {
+  const d = new Date(Date.now() + 60 * 60 * 1000);
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function timeLabel(value: string) {
+  const [h, m] = value.split(":").map(Number);
+  const d = new Date();
+  d.setHours(h ?? 0, m ?? 0, 0, 0);
+  return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+function calendarUrl(title: string, location: string, time: string | null) {
+  const start = new Date();
+  if (time) {
+    const [h, m] = time.split(":").map(Number);
+    start.setHours(h ?? 0, m ?? 0, 0, 0);
+    if (start.getTime() < Date.now()) start.setDate(start.getDate() + 1);
+  }
+  const end = new Date(start.getTime() + 90 * 60 * 1000);
+  const stamp = (d: Date) => d.toISOString().replace(/[-:]|\.\d{3}/g, "");
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: `wego: ${title}`,
+    dates: `${stamp(start)}/${stamp(end)}`,
+    location,
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
 
 function GoPage() {
   const { questId } = Route.useParams();
@@ -38,7 +70,7 @@ function GoPage() {
   const navigate = useNavigate();
   const quest = useMemo(() => state.createdQuests.find((q) => q.id === questId) ?? getQuest(questId), [questId, state.createdQuests]);
   const [crew, setCrew] = useState<string[] | null>(null);
-  const [when, setWhen] = useState(WHEN[0]!);
+  const [when, setWhen] = useState<string | null>(null);
   const [stage, setStage] = useState<"plan" | "out" | "share">("plan");
   const [rating, setRating] = useState(4);
   const [caption, setCaption] = useState("");
@@ -116,12 +148,31 @@ function GoPage() {
             </section>
             <section>
               <h2 className="text-base font-semibold">When?</h2>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {WHEN.map((w) => <Chip key={w} active={when === w} onClick={() => setWhen(w)}>{w}</Chip>)}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Chip active={when === null} onClick={() => setWhen(null)}>Right now</Chip>
+                <label className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-[15px] font-medium ${when !== null ? "border-border-strong bg-secondary" : "border-input bg-card"}`}>
+                  <Clock aria-hidden className="h-4 w-4" />
+                  <input
+                    type="time"
+                    aria-label="Pick a time"
+                    value={when ?? defaultTime()}
+                    onChange={(e) => setWhen(e.target.value)}
+                    className="bg-transparent outline-none"
+                  />
+                </label>
+                <a
+                  href={calendarUrl(quest.title, quest.location.name, when)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full border border-input bg-card px-4 text-[15px] font-medium"
+                >
+                  <CalendarPlus aria-hidden className="h-4 w-4" /> Add to calendar
+                </a>
               </div>
+              <p className="mt-2 font-hand text-base text-muted-foreground">{when === null ? "heading out right now" : `aiming for ${timeLabel(when)}`}</p>
             </section>
             <div className="flex flex-wrap gap-3">
-              <Button onClick={() => { setStage("out"); if (names.length) toast(`Sent to ${names.join(", ")}: ${when.toLowerCase()}`); }}><Footprints aria-hidden className="h-5 w-5" /> Head out</Button>
+              <Button onClick={() => { setStage("out"); if (names.length) toast(`Sent to ${names.join(", ")}: ${when === null ? "right now" : timeLabel(when)}`); }}><Footprints aria-hidden className="h-5 w-5" /> Head out</Button>
               <Button variant="ghost" onClick={() => { if (!state.saved.includes(quest.id)) actions.toggleSave(quest.id); toast("Saved for later"); void navigate({ to: "/" }); }}><Bookmark aria-hidden className="h-5 w-5" /> Save for later</Button>
             </div>
           </div>
