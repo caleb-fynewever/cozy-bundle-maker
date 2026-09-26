@@ -6,8 +6,8 @@
 
 /*
  * Side Quest design system.
- * Cool paper, soft ink and electric aqua. Handwritten accents are used sparingly.
- * All colors are oklch semantic tokens. Never hardcode colors in components.
+  * Cool paper, soft ink and clover green. Handwritten accents are used sparingly.
+  * All colors are semantic tokens. Never hardcode colors in components.
  */
 
 @theme inline {
@@ -18,8 +18,8 @@
   --radius-2xl: calc(var(--radius) + 12px);
   --radius-3xl: calc(var(--radius) + 20px);
 
-  --font-display: "IBM Plex Serif", Georgia, serif;
-  --font-sans: "IBM Plex Serif", Georgia, serif;
+  --font-display: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
   --font-hand: "Schoolbell", cursive;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
@@ -58,40 +58,40 @@
 
   --background: #ECF2F7;
   --foreground: #1E1E1E;
-  --surface: #DDEAF1;
+  --surface: #E3EDD8;
   --surface-foreground: #1E1E1E;
-  --card: #F9FCFD;
+  --card: #FFFFFF;
   --card-foreground: #1E1E1E;
-  --popover: #F9FCFD;
+  --popover: #FFFFFF;
   --popover-foreground: #1E1E1E;
 
-  --primary: #12ECF8;
+  --primary: #76B98C;
   --primary-foreground: #1E1E1E;
 
-  --secondary: #E3EBCC;
+  --secondary: #E3EDD8;
   --secondary-foreground: #1E1E1E;
 
-  --muted: #DFE9F0;
+  --muted: #E3EDD8;
   --muted-foreground: #505B61;
 
   --accent: #1E1E1E;
   --accent-foreground: #ECF2F7;
 
-  --signal: #12ECF8;
+  --signal: #76B98C;
   --signal-foreground: #1E1E1E;
 
   --destructive: oklch(0.55 0.2 25);
   --destructive-foreground: oklch(0.99 0.004 20);
 
-  --border: #C7D3DA;
+  --border: #CAD7CD;
   --border-strong: #1E1E1E;
-  --input: #C7D3DA;
-  --ring: #087E85;
+  --input: #CAD7CD;
+  --ring: #367850;
 
-  --map-water: #AFEAF0;
+  --map-water: #C8DDE2;
   --map-land: #F1F4EA;
-  --map-road: #D5DEE0;
-  --map-park: #D9E9CC;
+  --map-road: #D5DED8;
+  --map-park: #D3E5D1;
 
   --gradient-night: linear-gradient(180deg, transparent 45%, color-mix(in srgb, var(--foreground) 55%, transparent) 100%);
   --shadow-lift: 3px 3px 0 var(--foreground);
@@ -112,7 +112,7 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
-    font-weight: 500;
+    font-weight: 400;
   }
 
   h1,
@@ -120,7 +120,7 @@
   h3,
   h4 {
     font-family: var(--font-display);
-    font-weight: 500;
+    font-weight: 600;
     letter-spacing: 0;
   }
 
@@ -157,6 +157,19 @@
   }
 }
 
+@keyframes feed-read {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@supports (animation-timeline: scroll()) {
+  .feed-progress {
+    transform-origin: left;
+    animation: feed-read linear both;
+    animation-timeline: scroll();
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -164,4 +177,5 @@
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
   }
+  .feed-progress { animation: none; }
 }

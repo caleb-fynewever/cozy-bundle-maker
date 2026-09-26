@@ -24,4 +24,5 @@
 - Colors, gradients and shadows are semantic tokens in `src/styles.css`. No color utilities in
   components.
 - Shared editorial styling belongs in semantic tokens and reusable UI components so every route stays visually consistent on phone and laptop.
-- Keep IBM Plex Serif as the principal UI typeface and reserve Schoolbell for short human notes; this preserves a relaxed hierarchy without making controls hard to read.
+- Use Figtree as the readable principal typeface and Schoolbell for the full wordmark and short human notes; this keeps controls clear and the voice casual.
+- Keep Discover as a single-column photo-journal feed, with real quest images and real events interleaved; the reading-progress line gives scrolling a quiet sense of movement.
