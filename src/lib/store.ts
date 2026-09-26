@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import type { Quest, Vibe } from "@/lib/types";
+import type { FeedComment, FeedPost } from "@/data/feed";
 
 export type UserState = {
   name: string;
@@ -23,6 +24,12 @@ export type UserState = {
   log: XpEvent[];
   /** Local day (YYYY-MM-DD) of the last completed quest, for streaks. */
   lastQuestDay: string | null;
+  /** Posts you shared after finishing a quest. */
+  posts: FeedPost[];
+  /** Post ids you hearted. */
+  hearted: string[];
+  /** Your comments on any post, keyed by post id. */
+  comments: Record<string, FeedComment[]>;
 };
 
 export type XpKind = "complete" | "squad" | "create" | "rank" | "save" | "join" | "verify";
@@ -50,6 +57,9 @@ const initialState: UserState = {
   favoriteVibes: [],
   log: [],
   lastQuestDay: null,
+  posts: [],
+  hearted: [],
+  comments: {},
 };
 
 let state: UserState = initialState;
@@ -135,7 +145,8 @@ export const actions = {
   pass(id: string) {
     setState((s) => ({
       ...s,
-      passed: s.passed.includes(id) ? s.passed : [...s.passed, id],
+      // Moving to the end keeps passed quests recirculating in order.
+      passed: [...s.passed.filter((x) => x !== id), id],
     }));
   },
   undoChoice(id: string, choice: "pass" | "save") {
@@ -199,6 +210,18 @@ export const actions = {
       ...s,
       createdQuests: [quest, ...s.createdQuests],
       ...gain(s, "create", XP.create, `Made “${quest.title}”`),
+    }));
+  },
+  sharePost(post: FeedPost) {
+    setState((s) => ({ ...s, posts: [post, ...s.posts] }));
+  },
+  toggleHeart(postId: string) {
+    setState((s) => ({ ...s, hearted: s.hearted.includes(postId) ? s.hearted.filter((x) => x !== postId) : [...s.hearted, postId] }));
+  },
+  comment(postId: string, text: string) {
+    setState((s) => ({
+      ...s,
+      comments: { ...s.comments, [postId]: [...(s.comments[postId] ?? []), { id: `c_${Date.now()}`, author: s.name, text, at: Date.now() }] },
     }));
   },
   reset() {

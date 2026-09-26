@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import { Compass, Trophy, Users, User } from "lucide-react";
+import { Compass, Newspaper, Trophy, Users, User } from "lucide-react";
 import { hydrate } from "@/lib/store";
 
 const NAV = [
+  { to: "/feed", label: "Feed", icon: Newspaper },
   { to: "/", label: "Discover", icon: Compass },
   { to: "/squad", label: "Squad", icon: Users },
   { to: "/leaderboard", label: "Ranks", icon: Trophy },

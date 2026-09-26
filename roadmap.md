@@ -11,3 +11,4 @@
 - [x] Make the deck stack smaller, cleaner, and full-postcard previews (image + text)
 - [x] Map as a "what's close right now" explorer (range, good-now, free, closest first, go now / save for later)
 - [x] Squad, ranks and XP: XP history, squad bonus, daily streaks, weekly board, squad weekly goal, stamps
+- [x] Feed tab (friend activity, ratings, hearts, photos, comments); Discover swipe right = go page, Later = save, left = not now (recirculates)

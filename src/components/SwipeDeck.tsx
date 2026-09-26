@@ -1,18 +1,20 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
-import { ArrowUpRight, Heart, RotateCcw, X } from "lucide-react";
+import { ArrowUpRight, Bookmark, Footprints, RotateCcw, X } from "lucide-react";
 import type { ScoredQuest } from "@/lib/engine";
 import { actions } from "@/lib/store";
 import { questImage } from "@/lib/imagery";
 import { metaLine, reasonLine } from "@/components/QuestCard";
 import { Button } from "@/components/ui-kit";
 
-type Choice = "pass" | "save";
+type Choice = "pass" | "save" | "go";
 type Phase = "idle" | "leaving";
 type Gesture = { id: number; x: number; y: number; at: number; axis: "pending" | "horizontal" | "vertical" };
 
 export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
+  const navigate = useNavigate();
   const [dragX, setDragX] = useState(0);
+  const [liftY, setLiftY] = useState(0);
   const [phase, setPhase] = useState<Phase>("idle");
   const [choice, setChoice] = useState<Choice | null>(null);
   const [lastChoice, setLastChoice] = useState<{ id: string; choice: Choice } | null>(null);
@@ -32,17 +34,20 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
     setChoice(selected);
     setPhase("leaving");
     // Move completely out of the viewport, even on a wide desktop display.
-    setDragX((selected === "save" ? 1 : -1) * Math.max(window.innerWidth, 800));
+    if (selected === "save") setLiftY(-Math.max(window.innerHeight, 900));
+    else setDragX((selected === "go" ? 1 : -1) * Math.max(window.innerWidth, 800));
     const id = current.quest.id;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     timers.current.push(setTimeout(() => {
       if (selected === "pass") actions.pass(id);
-      else actions.toggleSave(id);
-      setLastChoice({ id, choice: selected });
+      else if (selected === "save") actions.toggleSave(id);
+      if (selected !== "go") setLastChoice({ id, choice: selected });
       setDragX(0);
+      setLiftY(0);
       setPhase("idle");
       setChoice(null);
       locked.current = false;
+      if (selected === "go") void navigate({ to: "/go/$questId", params: { questId: id } });
     }, reducedMotion ? 0 : 420));
   }
 
@@ -77,12 +82,12 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
     if (move.axis !== "horizontal" || cancelled) { setDragX(0); return; }
     const dx = event.clientX - move.x;
     const elapsed = Math.max(performance.now() - move.at, 1);
-    if (Math.abs(dx) > 95 || (Math.abs(dx) > 45 && Math.abs(dx) / elapsed > 0.65)) choose(dx > 0 ? "save" : "pass");
+    if (Math.abs(dx) > 95 || (Math.abs(dx) > 45 && Math.abs(dx) / elapsed > 0.65)) choose(dx > 0 ? "go" : "pass");
     else setDragX(0);
   }
 
   function undo() {
-    if (!lastChoice || locked.current) return;
+    if (!lastChoice || locked.current || lastChoice.choice === "go") return;
     actions.undoChoice(lastChoice.id, lastChoice.choice);
     setLastChoice(null);
   }
@@ -91,8 +96,8 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
     <section aria-label="Quest postcards" className="mt-3 md:mt-6">
       <div className="mb-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:mb-3">
         <div className="min-w-0">
-          <p className="font-hand text-lg">one thing at a time</p>
-          <h2 className="text-xl font-semibold sm:text-2xl">Your next quest</h2>
+          <p className="font-hand text-lg">free right now?</p>
+          <h2 className="text-xl font-semibold sm:text-2xl">Find something to do</h2>
         </div>
         {lastChoice ? <Button variant="ghost" onClick={undo} ariaLabel="Undo last choice"><RotateCcw aria-hidden className="h-5 w-5" /> <span className="hidden sm:inline">Undo</span></Button> : null}
       </div>
@@ -132,19 +137,19 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
             <article
               key={current.quest.id}
               className={`relative z-10 select-none overflow-hidden border border-border-strong bg-card shadow-sm ${phase === "leaving" ? "transition-transform duration-[420ms] ease-out" : dragX === 0 ? "transition-transform duration-200 ease-out" : ""}`}
-              style={{ transform: `translateX(${dragX}px) rotate(${turn}deg)`, touchAction: "pan-y" }}
+              style={{ transform: `translate(${dragX}px, ${liftY}px) rotate(${turn}deg)`, touchAction: "pan-y" }}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={(event) => finish(event)}
               onPointerCancel={(event) => finish(event, true)}
-              onKeyDown={(event) => { if (event.target !== event.currentTarget) return; if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); choose(event.key === "ArrowRight" ? "save" : "pass"); } }}
+              onKeyDown={(event) => { if (event.target !== event.currentTarget) return; if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); choose(event.key === "ArrowRight" ? "go" : "pass"); } }}
               tabIndex={0}
-              aria-label={`${current.quest.title}. Press left arrow to pass or right arrow to save.`}
+              aria-label={`${current.quest.title}. Press left arrow to pass for now or right arrow to go.`}
             >
               <div className="relative bg-secondary p-2 sm:p-3">
                 <img src={questImage(current.quest)} alt={`${current.quest.location.name}, ${current.quest.location.area}`} draggable={false} className="h-[min(24dvh,230px)] w-full select-none object-cover sm:h-[min(42dvh,430px)]" />
-                <span aria-hidden className={`pointer-events-none absolute left-6 top-6 -rotate-12 border-2 border-destructive bg-card px-3 py-1 font-hand text-2xl text-destructive transition-opacity ${dragX < -35 ? "opacity-100" : "opacity-0"}`}>pass</span>
-                {choice === "save" && phase === "leaving" ? <span aria-hidden className="save-stamp pointer-events-none absolute left-1/2 top-1/2 border-4 border-ring bg-card/90 px-7 py-2 font-hand text-4xl text-ring shadow-sm">SAVED!</span> : <span aria-hidden className={`pointer-events-none absolute right-6 top-6 rotate-12 border-2 border-ring bg-card px-3 py-1 font-hand text-2xl text-ring transition-opacity ${dragX > 35 ? "opacity-100" : "opacity-0"}`}>save</span>}
+                <span aria-hidden className={`pointer-events-none absolute left-6 top-6 -rotate-12 border-2 border-destructive bg-card px-3 py-1 font-hand text-2xl text-destructive transition-opacity ${dragX < -35 ? "opacity-100" : "opacity-0"}`}>not now</span>
+                {choice === "save" && phase === "leaving" ? <span aria-hidden className="save-stamp pointer-events-none absolute left-1/2 top-1/2 border-4 border-ring bg-card/90 px-7 py-2 font-hand text-4xl text-ring shadow-sm">SAVED!</span> : <span aria-hidden className={`pointer-events-none absolute right-6 top-6 rotate-12 border-2 border-ring bg-card px-3 py-1 font-hand text-2xl text-ring transition-opacity ${dragX > 35 ? "opacity-100" : "opacity-0"}`}>let&apos;s go</span>}
               </div>
               <div className="px-4 py-3 sm:p-6">
                 <p className="font-hand text-base text-muted-foreground sm:text-lg">{reasonLine(current)}</p>
@@ -155,17 +160,18 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
               </div>
             </article>
           </div>
-          <div className="flex items-center justify-center gap-5">
-            <Button variant="outline" onClick={() => choose("pass")} disabled={phase !== "idle"} ariaLabel={`Pass ${current.quest.title}`}><X aria-hidden className="h-6 w-6" /> Pass</Button>
-            <Button onClick={() => choose("save")} disabled={phase !== "idle"} ariaLabel={`Save ${current.quest.title}`}><Heart aria-hidden className="h-6 w-6" /> Save</Button>
+          <div className="flex items-center justify-center gap-3 sm:gap-5">
+            <Button variant="outline" onClick={() => choose("pass")} disabled={phase !== "idle"} ariaLabel={`Not now: ${current.quest.title}`}><X aria-hidden className="h-6 w-6" /> <span className="hidden sm:inline">Not now</span></Button>
+            <Button variant="ghost" onClick={() => choose("save")} disabled={phase !== "idle"} ariaLabel={`Save ${current.quest.title} for later`}><Bookmark aria-hidden className="h-5 w-5" /> Later</Button>
+            <Button onClick={() => choose("go")} disabled={phase !== "idle"} ariaLabel={`Do ${current.quest.title} now`}><Footprints aria-hidden className="h-6 w-6" /> Let&apos;s go</Button>
           </div>
-          <p className="mt-1 text-center font-hand text-sm text-muted-foreground sm:mt-2 sm:text-base">swipe left to pass · right to save</p>
+          <p className="mt-1 text-center font-hand text-sm text-muted-foreground sm:mt-2 sm:text-base">swipe left for not now · right to go</p>
           <span className="sr-only" role="status" aria-live="polite">{choice === "save" ? `${current.quest.title} saved` : ""}</span>
         </>
       ) : (
         <div className="border-y border-border py-12 text-center" aria-live="polite">
           <p className="font-hand text-2xl">all caught up for now</p>
-          <p className="mt-2 text-muted-foreground">Change the plan for a fresh set, or revisit your saved quests in Profile.</p>
+          <p className="mt-2 text-muted-foreground">Change the plan for a fresh set, or check what you saved in Profile.</p>
           {lastChoice ? <div className="mt-5"><Button variant="outline" onClick={undo}><RotateCcw aria-hidden className="h-4 w-4" /> Undo</Button></div> : null}
         </div>
       )}

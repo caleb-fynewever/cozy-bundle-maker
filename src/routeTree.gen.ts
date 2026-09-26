@@ -11,9 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CreateRouteImport } from './routes/create'
+import { Route as FeedRouteImport } from './routes/feed'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SquadRouteImport } from './routes/squad'
+import { Route as GoQuestIdRouteImport } from './routes/go.$questId'
 import { Route as QuestQuestIdRouteImport } from './routes/quest.$questId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -24,6 +26,11 @@ const IndexRoute = IndexRouteImport.update({
 const CreateRoute = CreateRouteImport.update({
   id: '/create',
   path: '/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeedRoute = FeedRouteImport.update({
+  id: '/feed',
+  path: '/feed',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LeaderboardRoute = LeaderboardRouteImport.update({
@@ -41,6 +48,11 @@ const SquadRoute = SquadRouteImport.update({
   path: '/squad',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GoQuestIdRoute = GoQuestIdRouteImport.update({
+  id: '/go/$questId',
+  path: '/go/$questId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QuestQuestIdRoute = QuestQuestIdRouteImport.update({
   id: '/quest/$questId',
   path: '/quest/$questId',
@@ -50,51 +62,75 @@ const QuestQuestIdRoute = QuestQuestIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
+  '/feed': typeof FeedRoute
   '/leaderboard': typeof LeaderboardRoute
   '/profile': typeof ProfileRoute
   '/squad': typeof SquadRoute
+  '/go/$questId': typeof GoQuestIdRoute
   '/quest/$questId': typeof QuestQuestIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
+  '/feed': typeof FeedRoute
   '/leaderboard': typeof LeaderboardRoute
   '/profile': typeof ProfileRoute
   '/squad': typeof SquadRoute
+  '/go/$questId': typeof GoQuestIdRoute
   '/quest/$questId': typeof QuestQuestIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
+  '/feed': typeof FeedRoute
   '/leaderboard': typeof LeaderboardRoute
   '/profile': typeof ProfileRoute
   '/squad': typeof SquadRoute
+  '/go/$questId': typeof GoQuestIdRoute
   '/quest/$questId': typeof QuestQuestIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/create' | '/leaderboard' | '/profile' | '/squad' | '/quest/$questId'
+    | '/'
+    | '/create'
+    | '/feed'
+    | '/leaderboard'
+    | '/profile'
+    | '/squad'
+    | '/go/$questId'
+    | '/quest/$questId'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/create' | '/leaderboard' | '/profile' | '/squad' | '/quest/$questId'
+    | '/'
+    | '/create'
+    | '/feed'
+    | '/leaderboard'
+    | '/profile'
+    | '/squad'
+    | '/go/$questId'
+    | '/quest/$questId'
   id:
     | '__root__'
     | '/'
     | '/create'
+    | '/feed'
     | '/leaderboard'
     | '/profile'
     | '/squad'
+    | '/go/$questId'
     | '/quest/$questId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CreateRoute: typeof CreateRoute
+  FeedRoute: typeof FeedRoute
   LeaderboardRoute: typeof LeaderboardRoute
   ProfileRoute: typeof ProfileRoute
   SquadRoute: typeof SquadRoute
+  GoQuestIdRoute: typeof GoQuestIdRoute
   QuestQuestIdRoute: typeof QuestQuestIdRoute
 }
 
@@ -112,6 +148,13 @@ declare module '@tanstack/react-router' {
       path: '/create'
       fullPath: '/create'
       preLoaderRoute: typeof CreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/feed': {
+      id: '/feed'
+      path: '/feed'
+      fullPath: '/feed'
+      preLoaderRoute: typeof FeedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/leaderboard': {
@@ -135,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SquadRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/go/$questId': {
+      id: '/go/$questId'
+      path: '/go/$questId'
+      fullPath: '/go/$questId'
+      preLoaderRoute: typeof GoQuestIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/quest/$questId': {
       id: '/quest/$questId'
       path: '/quest/$questId'
@@ -148,9 +198,11 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CreateRoute: CreateRoute,
+  FeedRoute: FeedRoute,
   LeaderboardRoute: LeaderboardRoute,
   ProfileRoute: ProfileRoute,
   SquadRoute: SquadRoute,
+  GoQuestIdRoute: GoQuestIdRoute,
   QuestQuestIdRoute: QuestQuestIdRoute,
 }
 export const routeTree = rootRouteImport

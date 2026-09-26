@@ -92,8 +92,14 @@ function Discover() {
   );
 
   const allQuests = useMemo(() => [...state.createdQuests, ...QUESTS], [state.createdQuests]);
-  const { results } = useMemo(() => recommend(context, state, allQuests, allQuests.length), [context, state, allQuests]);
-  const deck = useMemo(() => results.filter(({ quest }) => !state.saved.includes(quest.id) && !state.completed.includes(quest.id)), [results, state.saved, state.completed]);
+  // Passed quests aren't gone: they come back after everything fresh, oldest pass first.
+  const { results } = useMemo(() => recommend(context, { ...state, passed: [] }, allQuests, allQuests.length), [context, state, allQuests]);
+  const deck = useMemo(() => {
+    const open = results.filter(({ quest }) => !state.saved.includes(quest.id) && !state.completed.includes(quest.id));
+    const fresh = open.filter(({ quest }) => !state.passed.includes(quest.id));
+    const later = state.passed.map((id) => open.find(({ quest }) => quest.id === id)).filter((x): x is (typeof open)[number] => !!x);
+    return [...fresh, ...later];
+  }, [results, state.saved, state.completed, state.passed]);
   const squad = NEARBY_STUDENTS.filter((u) => state.squadIds.includes(u.id));
 
   const toggleVibe = (vibe: Vibe) =>
