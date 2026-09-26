@@ -78,8 +78,10 @@ export default function QuestMapLeaflet({
     const selected = items.find((i) => i.quest.id === selectedId);
     if (selected) {
       map.setView([selected.quest.location.lat, selected.quest.location.lng], Math.max(map.getZoom(), 14), { animate: true });
-    } else if (points.length) {
-      // Nothing selected: show every quest at once.
+    } else if (points.length && !didFit.current) {
+      // Only frame every quest once on first load; after that, deselecting
+      // keeps the view right where the person left it.
+      didFit.current = true;
       map.fitBounds(L.latLngBounds(points).pad(0.12), { animate: true });
     }
   }, [items, selectedId]);
