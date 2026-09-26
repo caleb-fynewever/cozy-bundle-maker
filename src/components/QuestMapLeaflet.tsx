@@ -22,7 +22,15 @@ export default function QuestMapLeaflet({
   useEffect(() => {
     const host = hostRef.current;
     if (!host || mapRef.current) return;
-    const map = L.map(host, { scrollWheelZoom: false, zoomControl: true, attributionControl: true });
+    const map = L.map(host, {
+      scrollWheelZoom: false,
+      zoomControl: true,
+      attributionControl: true,
+      center: [44.9778, -93.2277],
+      zoom: 13,
+    });
+    // The container may not have its final size yet on first paint.
+    requestAnimationFrame(() => map.invalidateSize());
     L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
       maxZoom: 17,
       attribution:
