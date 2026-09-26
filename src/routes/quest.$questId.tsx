@@ -88,7 +88,7 @@ function QuestDetail() {
           alt={`${quest.location.name}, ${quest.location.area}`}
           width={1200}
           height={912}
-          className="aspect-[4/3] w-full rounded-2xl bg-muted object-cover"
+           className="aspect-[4/3] w-full border border-foreground bg-muted object-cover"
         />
         <a
           href={questPhoto(quest).source}

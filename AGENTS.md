@@ -23,3 +23,4 @@
 - Privacy rule: never render or store exact user coordinates; only approximate distance.
 - Colors, gradients and shadows are semantic tokens in `src/styles.css`. No color utilities in
   components.
+- Shared editorial styling belongs in semantic tokens and reusable UI components so every route stays visually consistent on phone and laptop.

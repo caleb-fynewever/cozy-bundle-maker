@@ -18,30 +18,32 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
 
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-0">
-      <header className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5 md:h-20">
-        <Link to="/" className="font-display text-xl font-extrabold tracking-tight" aria-label="Side Quest home">
-          side quest<span className="text-primary">.</span>
+      <header className="sticky top-0 z-50 border-b border-border bg-background/95">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 md:h-20 md:px-8">
+        <Link to="/" className="font-display text-xl font-extrabold uppercase md:text-2xl" aria-label="Side Quest home">
+          Side<span className="text-primary">Quest</span>
         </Link>
-        <nav aria-label="Main" className="hidden items-center gap-7 md:flex">
+        <nav aria-label="Main" className="hidden items-center gap-8 md:flex">
           {NAV.map(({ to, label }) => (
             <Link
               key={to}
               to={to}
               activeOptions={{ exact: to === "/" }}
-              activeProps={{ className: "text-foreground underline decoration-2 underline-offset-8" }}
-              className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+               activeProps={{ className: "text-primary underline decoration-2 underline-offset-8" }}
+               className="py-2 text-xs font-bold uppercase text-muted-foreground transition-colors hover:text-primary"
             >
               {label}
             </Link>
           ))}
         </nav>
+        </div>
       </header>
 
-      <main className={`mx-auto px-5 pb-16 ${wide ? "max-w-5xl" : "max-w-2xl"}`}>{children}</main>
+      <main className={`mx-auto px-5 pb-16 pt-5 md:px-8 md:pt-10 ${wide ? "max-w-7xl" : "max-w-5xl"}`}>{children}</main>
 
       <nav
         aria-label="Main"
-        className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background md:hidden"
+         className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-foreground text-background md:hidden"
       >
         <ul className="mx-auto flex max-w-lg items-stretch justify-between px-2 pb-[env(safe-area-inset-bottom)]">
           {NAV.map(({ to, label, icon: Icon }) => (
@@ -49,8 +51,8 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
               <Link
                 to={to}
                 activeOptions={{ exact: to === "/" }}
-                activeProps={{ className: "text-foreground" }}
-                className="flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-muted-foreground"
+                 activeProps={{ className: "text-secondary" }}
+                 className="flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-semibold text-background/60"
               >
                 <Icon aria-hidden className="h-5 w-5" strokeWidth={1.75} />
                 {label}

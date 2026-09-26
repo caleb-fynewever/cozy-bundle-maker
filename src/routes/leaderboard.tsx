@@ -60,7 +60,7 @@ function LeaderboardPage() {
         {entries.map((entry, i) => (
           <li
             key={entry.id}
-            className={`flex items-center gap-4 py-4 ${entry.you ? "-mx-3 rounded-xl bg-surface px-3" : ""}`}
+             className={`flex items-center gap-4 py-4 ${entry.you ? "-mx-3 border-l-4 border-primary bg-surface px-3" : ""}`}
           >
             <span className={`w-6 text-right font-display text-lg font-bold ${i === 0 ? "text-primary" : "text-muted-foreground"}`}>
               {i + 1}

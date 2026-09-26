@@ -43,26 +43,26 @@ export function QuestCard({
   const saved = state.saved.includes(quest.id);
 
   return (
-    <article className="group">
+     <article className="group min-w-0">
       <Link to="/quest/$questId" params={{ questId: quest.id }} className="block">
-        <div className="overflow-hidden rounded-2xl bg-muted">
+         <div className="overflow-hidden border border-foreground bg-card p-2 lift transition-transform duration-300 group-hover:-translate-y-1">
           <img
             src={questImage(quest)}
             alt={`${quest.location.name}, ${quest.location.area}`}
             loading={featured ? undefined : "lazy"}
             width={1200}
             height={912}
-            className={`w-full object-cover transition-transform duration-500 group-hover:scale-[1.02] ${
-              featured ? "aspect-[4/3]" : "aspect-[16/10]"
+             className={`w-full object-cover transition-transform duration-500 group-hover:scale-[1.02] ${
+               featured ? "aspect-[16/10]" : "aspect-[4/3]"
             }`}
           />
         </div>
       </Link>
-      <div className="mt-4 flex items-start justify-between gap-4">
+       <div className="mt-5 flex items-start justify-between gap-4">
         <div className="min-w-0">
-          {label ? <p className="text-sm font-semibold text-primary">{label}</p> : null}
+           {label ? <p className="mb-2 text-xs font-bold uppercase text-primary">{label}</p> : null}
           <Link to="/quest/$questId" params={{ questId: quest.id }}>
-            <h3 className={`font-bold leading-tight ${featured ? "text-2xl sm:text-3xl" : "text-xl"}`}>
+             <h3 className={`font-bold leading-tight ${featured ? "text-2xl sm:text-3xl" : "text-xl"}`}>
               {quest.title}
             </h3>
           </Link>

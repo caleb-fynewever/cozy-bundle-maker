@@ -125,14 +125,14 @@ function CreatePage() {
           publish();
         }}
       >
-        <div className="space-y-4 rounded-2xl border border-border p-5">
+         <div className="space-y-4 border-t-2 border-foreground pt-6">
           <Field label="Title" htmlFor="title">
             <input
               id="title"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder="Go get ice cream"
-              className="min-h-12 w-full rounded-2xl border border-input bg-surface px-4 text-sm"
+               className="min-h-12 w-full rounded-sm border border-input bg-card px-4 text-sm"
             />
           </Field>
 
@@ -143,7 +143,7 @@ function CreatePage() {
               onChange={(event) => setDescription(event.target.value)}
               rows={4}
               placeholder="What actually happens?"
-              className="w-full rounded-2xl border border-input bg-surface p-4 text-sm"
+               className="w-full rounded-sm border border-input bg-card p-4 text-sm"
             />
           </Field>
 
@@ -152,7 +152,7 @@ function CreatePage() {
               id="location"
               value={locationName}
               onChange={(event) => setLocationName(event.target.value)}
-              className="min-h-12 w-full rounded-2xl border border-input bg-surface px-4 text-sm"
+               className="min-h-12 w-full rounded-sm border border-input bg-card px-4 text-sm"
             >
               {AREAS.map((a) => (
                 <option key={a.name} value={a.name}>
@@ -191,7 +191,7 @@ function CreatePage() {
                 step={15}
                 value={durationMin}
                 onChange={(event) => setDuration(Number(event.target.value))}
-                className="min-h-12 w-full rounded-2xl border border-input bg-surface px-4 text-sm"
+                 className="min-h-12 w-full rounded-sm border border-input bg-card px-4 text-sm"
               />
             </Field>
             <Field label="Cost per person ($)" htmlFor="cost">
@@ -202,7 +202,7 @@ function CreatePage() {
                 max={100}
                 value={costPerPerson}
                 onChange={(event) => setCost(Number(event.target.value))}
-                className="min-h-12 w-full rounded-2xl border border-input bg-surface px-4 text-sm"
+                 className="min-h-12 w-full rounded-sm border border-input bg-card px-4 text-sm"
               />
             </Field>
             <Field label="Max group size" htmlFor="group">
@@ -213,7 +213,7 @@ function CreatePage() {
                 max={10}
                 value={groupMax}
                 onChange={(event) => setGroupMax(Number(event.target.value))}
-                className="min-h-12 w-full rounded-2xl border border-input bg-surface px-4 text-sm"
+                 className="min-h-12 w-full rounded-sm border border-input bg-card px-4 text-sm"
               />
             </Field>
           </div>
@@ -251,7 +251,7 @@ function CreatePage() {
           </div>
         </div>
 
-        <aside className="space-y-3 rounded-2xl border border-border p-5">
+         <aside className="space-y-3 border-t-2 border-primary pt-6">
           <h3 className="text-lg font-bold">Make it a mission, not an errand</h3>
           <p className="text-sm text-muted-foreground">
             "Go get ice cream" is a plan. "Ice Cream Draft Night" is a quest: everyone picks a
