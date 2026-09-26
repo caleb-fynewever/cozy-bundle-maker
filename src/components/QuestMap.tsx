@@ -38,7 +38,7 @@ export function QuestMap({
             <QuestMapLeaflet items={items} selectedId={selected.quest.id} onSelect={onSelect} />
           </Suspense>
         </ClientOnly>
-        <div className="absolute inset-x-3 bottom-3 z-10 rounded-xl border border-border bg-card p-4 sm:left-auto sm:w-80">
+        <div className="absolute inset-x-3 bottom-3 z-[1001] rounded-xl border border-border bg-card p-4 sm:left-auto sm:w-80">
           <p className="font-hand text-base text-muted-foreground">{selected.quest.location.area}</p>
           <h2 className="text-lg font-semibold leading-tight">{selected.quest.title}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
