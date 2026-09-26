@@ -30,7 +30,39 @@ export const Route = createFileRoute("/go/$questId")({
   component: GoPage,
 });
 
-const WHEN = ["Right now", "In 30 min", "In an hour", "Tonight"];
+function pad(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function defaultTime() {
+  const d = new Date(Date.now() + 60 * 60 * 1000);
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function timeLabel(value: string) {
+  const [h, m] = value.split(":").map(Number);
+  const d = new Date();
+  d.setHours(h ?? 0, m ?? 0, 0, 0);
+  return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+function calendarUrl(title: string, location: string, time: string | null) {
+  const start = new Date();
+  if (time) {
+    const [h, m] = time.split(":").map(Number);
+    start.setHours(h ?? 0, m ?? 0, 0, 0);
+    if (start.getTime() < Date.now()) start.setDate(start.getDate() + 1);
+  }
+  const end = new Date(start.getTime() + 90 * 60 * 1000);
+  const stamp = (d: Date) => d.toISOString().replace(/[-:]|\.\d{3}/g, "");
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: `wego: ${title}`,
+    dates: `${stamp(start)}/${stamp(end)}`,
+    location,
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
 
 function GoPage() {
   const { questId } = Route.useParams();
