@@ -1,6 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Button, Chip, SectionTitle } from "@/components/ui-kit";
@@ -247,7 +246,7 @@ function CreatePage() {
           <div className="flex flex-wrap gap-2">
             <Button type="submit">Publish quest</Button>
             <Button variant="outline" onClick={makeSmarter}>
-              <Wand2 aria-hidden className="h-4 w-4" /> Make this quest smarter
+              Punch it up
             </Button>
           </div>
         </div>
@@ -262,7 +261,7 @@ function CreatePage() {
             The smartener adds secret picks, a scoring rule and a consequence — the three things that
             turn an outing into a story. You can edit every word before publishing.
           </p>
-          <p className="font-mono text-xs text-primary">+90 XP per published quest</p>
+          <p className="text-sm text-muted-foreground">+90 XP per published quest</p>
         </aside>
       </form>
     </AppShell>
