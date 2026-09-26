@@ -1,16 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { SlidersHorizontal, ArrowUpRight } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { SwipeDeck } from "@/components/SwipeDeck";
 import { Button, Chip } from "@/components/ui-kit";
-import { currentTimeSlot, recommend, tonightTrio } from "@/lib/engine";
+import { currentTimeSlot, recommend } from "@/lib/engine";
 import { QUESTS } from "@/data/quests";
 import { NEARBY_STUDENTS } from "@/data/people";
-import { actions, useUserState } from "@/lib/store";
-import { EVENTS } from "@/data/events";
-import { PHOTOS } from "@/data/photos";
-import { questImage } from "@/lib/imagery";
+import { useUserState } from "@/lib/store";
 import { VIBES, VIBE_LABEL, type SessionContext, type Vibe } from "@/lib/types";
 
 export const Route = createFileRoute("/")({
@@ -78,7 +75,6 @@ function Discover() {
   const [area, setArea] = useState(AREAS[0]!);
   const [radiusMi, setRadius] = useState(3);
   const [adjusting, setAdjusting] = useState(false);
-  const [tonightOpen, setTonightOpen] = useState(false);
 
   const context: SessionContext = useMemo(
     () => ({
@@ -98,7 +94,6 @@ function Discover() {
   const allQuests = useMemo(() => [...state.createdQuests, ...QUESTS], [state.createdQuests]);
   const { results } = useMemo(() => recommend(context, state, allQuests, allQuests.length), [context, state, allQuests]);
   const deck = useMemo(() => results.filter(({ quest }) => !state.saved.includes(quest.id) && !state.completed.includes(quest.id)), [results, state.saved, state.completed]);
-  const trio = useMemo(() => tonightTrio(results), [results]);
   const squad = NEARBY_STUDENTS.filter((u) => state.squadIds.includes(u.id));
 
   const toggleVibe = (vibe: Vibe) =>
@@ -110,17 +105,16 @@ function Discover() {
     maxCost === null ? "any budget" : maxCost === 0 ? "free" : `$${maxCost}`,
   ].join(" · ");
 
-  const TRIO_LABEL = { safe: "Safe bet", perfect: "Your kind of thing", chaos: "Wildcard" } as const;
 
   return (
       <AppShell>
         <div className="mx-auto max-w-2xl">
-          <section className="pt-1 md:pt-8">
+          <section className="pt-0">
             <p className="font-hand text-lg">Minneapolis · a little detour from the usual</p>
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-              <h1 className="text-3xl font-semibold leading-tight md:text-5xl">Find your next story.</h1>
+            <div className="mt-1 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+              <h1 className="min-w-0 text-2xl font-semibold leading-tight sm:text-3xl md:text-4xl">Find your next story.</h1>
              <Button variant="outline" onClick={() => setAdjusting((v) => !v)} ariaLabel="Change the plan">
-               <SlidersHorizontal aria-hidden className="h-4 w-4" /> Change the plan
+               <SlidersHorizontal aria-hidden className="h-4 w-4" /> <span className="hidden sm:inline">Change the plan</span>
              </Button>
            </div>
            <p className="mt-3 text-sm text-muted-foreground">For {summary}{squad.length ? ` · with ${squad.map((s) => s.name).join(" & ")}` : ""}</p>
@@ -208,55 +202,8 @@ function Discover() {
         ) : null}
 
 
-       {tonightOpen && trio.length ? (
-          <section aria-labelledby="tonight" className="mt-10 border-b border-border pb-10">
-           <div className="flex items-baseline justify-between">
-             <h2 id="tonight" className="text-3xl font-medium">
-              Three ways to go
-            </h2>
-             <Button variant="ghost" onClick={() => setTonightOpen(false)}>Close</Button>
-          </div>
-            <div className="mt-6 grid gap-8 sm:grid-cols-3">
-            {trio.map(({ tone, item }) => (
-               <div key={tone} className="min-w-0">
-                 <p className="mb-2 font-hand text-lg">{TRIO_LABEL[tone]}</p>
-                 <Link to="/quest/$questId" params={{ questId: item.quest.id }} className="block">
-                   <img src={questImage(item.quest)} alt={item.quest.location.name} className="aspect-square w-full object-cover" />
-                   <h3 className="mt-2 text-base font-semibold">{item.quest.title}</h3>
-                 </Link>
-               </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
-         <SwipeDeck items={deck} />
-         <section className="mt-16 border-t border-border pt-5" aria-label="Local events">
-          <div className="mb-8 flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-             <div><p className="font-hand text-xl">out in the world</p><h2 className="text-2xl font-semibold">Happening around town</h2></div>
-            <Button variant="ghost" onClick={() => setTonightOpen(true)}>Three ways to go <span aria-hidden>→</span></Button>
-          </div>
-          <div className="space-y-14 md:space-y-24">
-             {EVENTS.map((event) => (
-               <article key={event.id} className="min-w-0">
-                 <p className="mb-3 font-hand text-xl">{event.when}</p>
-                <div className="bg-secondary p-2.5 sm:p-4">
-                   <img src={(PHOTOS[event.photo] ?? PHOTOS["isles"]!).url} alt={event.where} loading="lazy" className="aspect-[16/10] w-full bg-muted object-cover" />
-                </div>
-                <div className="mt-5 px-1 sm:px-3">
-                   <h3 className="text-2xl font-semibold leading-tight md:text-3xl">{event.title}</h3>
-                   <p className="mt-2 text-sm text-muted-foreground">{event.where} · {event.price}</p>
-                   <p className="mt-3 leading-relaxed">{event.blurb}</p>
-                   <a href={event.source.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex min-h-11 items-center gap-1 font-semibold underline decoration-primary underline-offset-4">Details via {event.source.name} <ArrowUpRight aria-hidden className="h-4 w-4" /></a>
-                </div>
-              </article>
-            ))}
-          </div>
-          <div className="pb-10 pt-20 text-center">
-            <span aria-hidden className="mx-auto block h-12 w-px bg-primary" />
-            <p className="mt-4 font-hand text-xl">that's the latest for now</p>
-            <p className="mt-4">Got your own idea? <Link to="/create" className="font-semibold underline decoration-primary underline-offset-4">Make a quest</Link></p>
-          </div>
-        </section>
+       <SwipeDeck items={deck} />
+         
         </div>
     </AppShell>
   );
