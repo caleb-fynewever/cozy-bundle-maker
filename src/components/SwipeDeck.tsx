@@ -98,7 +98,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
       </div>
       {current ? (
         <>
-          <div className="relative mb-4 pb-2 pr-2" aria-live="off">
+          <div className="relative mb-4 pb-8 pr-8" aria-live="off">
             {stack.map((item, depth) => {
               // Deepest card renders first so the nearest one sits on top.
               const level = stack.length - depth;
