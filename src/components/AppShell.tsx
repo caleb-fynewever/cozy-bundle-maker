@@ -37,7 +37,6 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
           ))}
         </nav>
         </div>
-         <div aria-hidden className="feed-progress h-[2px] w-full bg-primary" />
       </header>
 
       <main className={`mx-auto px-5 pb-16 pt-5 md:px-8 md:pt-10 ${wide ? "max-w-7xl" : "max-w-5xl"}`}>{children}</main>
