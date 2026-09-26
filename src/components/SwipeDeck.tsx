@@ -98,10 +98,11 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
       </div>
       {current ? (
         <>
-          <div className="relative mb-4 pb-8 pr-8" aria-live="off">
+          <div className="relative mb-4 pb-2 pr-2" aria-live="off">
             {stack.map((item, depth) => {
-              // Deepest card renders first so the nearest one sits on top.
-              const level = stack.length - depth;
+              // items[1] is next up: it sits on top of the deeper cards and is
+              // rendered at full strength so it becomes the top card seamlessly.
+              const level = depth + 1;
               const lift = Math.min(Math.abs(dragX) / 240, 1);
               const settle = 1 - lift * 0.5;
               return (
@@ -110,13 +111,13 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
                   aria-hidden
                   className="absolute inset-0 overflow-hidden border border-border bg-card transition-transform duration-200 ease-out"
                   style={{
-                    transform: `translate(${level * 4 * settle}px, ${level * 5 * settle}px) rotate(${level * 0.7 * (level % 2 === 0 ? -1 : 1) * settle}deg)`,
-                    zIndex: depth,
+                    transform: `translate(${level * 2 * settle}px, ${level * 3 * settle}px) rotate(${level * 0.4 * (level % 2 === 0 ? -1 : 1) * settle}deg)`,
+                    zIndex: stack.length - depth,
                   }}
                 >
                   <div className="flex h-full flex-col">
                     <div className="bg-secondary p-2 sm:p-3">
-                      <img src={questImage(item.quest)} alt="" draggable={false} className="h-[min(24dvh,230px)] w-full object-cover sm:h-[min(42dvh,430px)]" style={{ opacity: 0.3 }} />
+                      <img src={questImage(item.quest)} alt="" draggable={false} className="h-[min(24dvh,230px)] w-full object-cover sm:h-[min(42dvh,430px)]" style={{ opacity: level === 1 ? 1 : 0.45 }} />
                     </div>
                     <div className="px-4 py-3 sm:p-6">
                       <p className="font-hand text-base text-muted-foreground sm:text-lg">{reasonLine(item)}</p>
