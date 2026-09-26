@@ -1,11 +1,12 @@
-import { VIBE_EMOJI, VIBE_LABEL, type Vibe } from "@/lib/types";
+import { VIBE_LABEL, type Vibe } from "@/lib/types";
 import { topVibes } from "@/lib/engine";
 
+/** Favorite quest types as simple ink bars. */
 export function QuestDna({
   vibes,
-  title = "Quest DNA",
+  title = "What you're into",
   note,
-  count = 5,
+  count = 4,
 }: {
   vibes: Record<Vibe, number>;
   title?: string;
@@ -13,31 +14,30 @@ export function QuestDna({
   count?: number;
 }) {
   const rows = topVibes(vibes, count);
+  const max = Math.max(0.01, ...rows.map((r) => r.value));
   return (
-    <section className="rounded-3xl border border-border bg-card p-5">
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-lg font-bold">{title}</h3>
-        {note ? <p className="font-mono text-xs text-primary">{note}</p> : null}
-      </div>
+    <section>
+      <h2 className="text-lg font-bold">{title}</h2>
+      {note ? <p className="text-sm text-muted-foreground">{note}</p> : null}
       <ul className="mt-4 space-y-3">
-        {rows.map(({ vibe, value }) => {
-          const pct = Math.round(Math.max(0, Math.min(1, value)) * 100);
+        {rows.map(({ vibe, value }, i) => {
+          const pct = Math.round((Math.max(0, value) / max) * 100);
           return (
-            <li key={vibe} className="flex items-center gap-3">
-              <span className="w-28 shrink-0 text-sm">
-                {VIBE_EMOJI[vibe]} {VIBE_LABEL[vibe]}
-              </span>
+            <li key={vibe} className="grid grid-cols-[6.5rem_1fr] items-center gap-3">
+              <span className="text-sm font-medium">{VIBE_LABEL[vibe]}</span>
               <div
-                className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted"
+                className="h-2 overflow-hidden rounded-full bg-muted"
                 role="meter"
                 aria-valuenow={pct}
                 aria-valuemin={0}
                 aria-valuemax={100}
-                aria-label={`${VIBE_LABEL[vibe]} ${pct} percent`}
+                aria-label={VIBE_LABEL[vibe]}
               >
-                <div className="h-full acid-fill" style={{ width: `${Math.max(pct, 3)}%` }} />
+                <div
+                  className={`h-full rounded-full ${i === 0 ? "bg-primary" : "bg-foreground"}`}
+                  style={{ width: `${Math.max(pct, 4)}%` }}
+                />
               </div>
-              <span className="w-10 text-right font-mono text-xs text-muted-foreground">{pct}%</span>
             </li>
           );
         })}
