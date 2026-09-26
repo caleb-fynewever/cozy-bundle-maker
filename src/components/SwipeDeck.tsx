@@ -108,13 +108,13 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
                 <div
                   key={item.quest.id}
                   aria-hidden
-                  className="absolute inset-0 overflow-hidden border border-border bg-secondary transition-transform duration-200 ease-out"
+                  className="absolute inset-0 overflow-hidden border border-border bg-card transition-transform duration-200 ease-out"
                   style={{
-                    transform: `translate(${level * 8 * settle}px, ${level * 10 * settle}px) rotate(${level * (level % 2 === 0 ? -1.6 : 1.6) * settle}deg) scale(${1 - level * 0.03})`,
+                    transform: `translate(${level * 4 * settle}px, ${level * 5 * settle}px) rotate(${level * 0.7 * (level % 2 === 0 ? -1 : 1) * settle}deg)`,
                     zIndex: depth,
                   }}
                 >
-                  <img src={questImage(item.quest)} alt="" draggable={false} className="h-full w-full object-cover" style={{ opacity: 0.55 - level * 0.13 }} />
+                  <img src={questImage(item.quest)} alt="" draggable={false} className="h-full w-full object-cover" style={{ opacity: 0.28 - level * 0.08 }} />
                 </div>
               );
             })}
