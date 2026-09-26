@@ -240,7 +240,7 @@ function Discover() {
         </section>
       ) : null}
         <section className="mt-10 border-t border-border pt-5" aria-label="Discover feed">
-          <div className="mb-8 flex items-center justify-between gap-3">
+          <div className="mb-8 flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <p className="font-hand text-xl">the good stuff, one scroll at a time</p>
             <Button variant="ghost" onClick={() => setTonightOpen(true)}>Three ways to go <span aria-hidden>→</span></Button>
           </div>
