@@ -13,13 +13,13 @@ import { VIBES, VIBE_LABEL, type SessionContext, type Vibe } from "@/lib/types";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Side Quest — What's the move tonight?" },
+      { title: "wego — What's the move tonight?" },
       {
         name: "description",
         content:
-          "Side Quest turns 'what should we do?' into a real plan. Tell it your group, time, budget and mood, and it builds a personalized mission near you.",
+          "wego turns 'what should we do?' into a real plan. Tell it your group, time, budget and mood, and it builds a personalized mission near you.",
       },
-      { property: "og:title", content: "Side Quest — What's the move tonight?" },
+      { property: "og:title", content: "wego — What's the move tonight?" },
       {
         property: "og:description",
         content:

@@ -9,13 +9,13 @@ import { VIBES, VIBE_EMOJI, VIBE_LABEL, type Quest, type Vibe } from "@/lib/type
 export const Route = createFileRoute("/create")({
   head: () => ({
     meta: [
-      { title: "Create a quest — Side Quest" },
+      { title: "Create a quest — wego" },
       {
         name: "description",
         content:
           "Turn a plain idea into a real side quest: add a location, duration, cost and chaos level, then let the quest smartener sharpen it into a mission.",
       },
-      { property: "og:title", content: "Create a quest — Side Quest" },
+      { property: "og:title", content: "Create a quest — wego" },
       {
         property: "og:description",
         content: "Write a side quest for the campus, complete with objectives and a chaos rating.",

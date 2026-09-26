@@ -11,7 +11,7 @@
 
 # Project rules
 
-- Product is **Side Quest**: a student social-discovery app. Core principle: don't recommend
+- Product is **wego**: a student social-discovery app. Core principle: don't recommend
   places, create reasons to go.
 - All recommendation logic lives in `src/lib/engine.ts` (taste vectors, scoring, pipeline,
   compatibility, tonight trio). Weights are exported as `WEIGHTS` so behaviour is tuned in one

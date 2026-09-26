@@ -1,117 +1,90 @@
-import { useMemo } from "react";
 import type { ScoredQuest } from "@/lib/engine";
 import { questImage } from "@/lib/imagery";
+import { Link } from "@tanstack/react-router";
+import { metaLine } from "@/components/QuestCard";
 
-const BOUNDS = { north: 45.015, south: 44.905, west: -93.325, east: -93.19 };
-
-function project(lat: number, lng: number) {
-  const x = ((lng - BOUNDS.west) / (BOUNDS.east - BOUNDS.west)) * 100;
-  const y = ((BOUNDS.north - lat) / (BOUNDS.north - BOUNDS.south)) * 100;
-  return { x: Math.max(3, Math.min(97, x)), y: Math.max(4, Math.min(96, y)) };
-}
-
+/** OpenStreetMap embed centered on the selected quest, with a quest strip to switch between. */
 export function QuestMap({
   items,
   selectedId,
   onSelect,
-  origin,
 }: {
   items: ScoredQuest[];
   selectedId: string | null;
   onSelect: (id: string) => void;
-  origin: { lat: number; lng: number; label: string };
 }) {
-  const markers = useMemo(
-    () => items.map((item) => ({ item, pos: project(item.quest.location.lat, item.quest.location.lng) })),
-    [items],
-  );
-  const you = project(origin.lat, origin.lng);
+  const selected = items.find((i) => i.quest.id === selectedId) ?? items[0];
+
+  if (!selected) {
+    return (
+      <div className="grid aspect-[16/10] w-full place-items-center rounded-2xl border border-border bg-surface">
+        <p className="font-hand text-xl text-muted-foreground">nothing matches — loosen a filter</p>
+      </div>
+    );
+  }
+
+  const { lat, lng } = selected.quest.location;
+  const d = 0.012;
+  const bbox = [lng - d * 1.4, lat - d, lng + d * 1.4, lat + d].map((n) => n.toFixed(5)).join("%2C");
+  const src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lng}`;
+  const full = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`;
 
   return (
-    <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-border bg-map-land sm:aspect-[16/10]">
-      <svg
-        aria-hidden
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        className="absolute inset-0 h-full w-full"
-      >
-        {/* Mississippi river */}
-        <path
-          d="M 8 4 C 24 16, 30 26, 44 34 C 56 41, 62 52, 70 62 C 78 72, 86 82, 96 96"
-          stroke="var(--color-map-water)"
-          strokeWidth="7"
-          fill="none"
-          strokeLinecap="round"
+    <div>
+      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-border bg-map-land sm:aspect-[16/9]">
+        <iframe
+          key={selected.quest.id}
+          title={`Map of ${selected.quest.title}`}
+          src={src}
+          loading="lazy"
+          className="absolute inset-0 h-full w-full border-0"
         />
-        {/* Lakes */}
-        <ellipse cx="18" cy="42" rx="6" ry="9" fill="var(--color-map-water)" />
-        <ellipse cx="16" cy="70" rx="8" ry="10" fill="var(--color-map-water)" />
-        {/* Parks */}
-        <rect x="58" y="80" width="26" height="14" rx="5" fill="var(--color-map-park)" opacity="0.7" />
-        <rect x="30" y="18" width="16" height="10" rx="4" fill="var(--color-map-park)" opacity="0.6" />
-        {/* Street grid */}
-        {Array.from({ length: 11 }).map((_, i) => (
-          <line
-            key={`v${i}`}
-            x1={i * 10}
-            y1="0"
-            x2={i * 10}
-            y2="100"
-            stroke="var(--color-map-road)"
-            strokeWidth="0.35"
-          />
-        ))}
-        {Array.from({ length: 11 }).map((_, i) => (
-          <line
-            key={`h${i}`}
-            x1="0"
-            y1={i * 10}
-            x2="100"
-            y2={i * 10}
-            stroke="var(--color-map-road)"
-            strokeWidth="0.35"
-          />
-        ))}
-      </svg>
-
-      <div
-        className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
-        style={{ left: `${you.x}%`, top: `${you.y}%` }}
-      >
-        <span className="relative grid h-4 w-4 place-items-center">
-          <span className="absolute h-8 w-8 rounded-full bg-primary/15" />
-          <span className="h-3 w-3 rounded-full bg-primary ring-2 ring-background" />
-        </span>
-        <span className="sr-only">Your approximate area: {origin.label}</span>
+        <div className="absolute inset-x-3 bottom-3 z-10 rounded-xl border border-border bg-card p-4 sm:left-auto sm:w-80">
+          <p className="font-hand text-base text-muted-foreground">{selected.quest.location.area}</p>
+          <h2 className="text-lg font-semibold leading-tight">{selected.quest.title}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {metaLine(selected.distance, selected.quest.durationMin, selected.quest.costPerPerson)}
+          </p>
+          <div className="mt-3 flex items-center justify-between gap-3 text-sm font-medium">
+            <Link
+              to="/quest/$questId"
+              params={{ questId: selected.quest.id }}
+              className="inline-flex min-h-10 items-center rounded-full bg-foreground px-4 text-background"
+            >
+              See the quest
+            </Link>
+            <a href={full} target="_blank" rel="noreferrer" className="underline underline-offset-4">
+              Open full map ↗
+            </a>
+          </div>
+        </div>
       </div>
 
-      {markers.map(({ item, pos }) => {
-        const selected = selectedId === item.quest.id;
-        return (
-          <button
-            key={item.quest.id}
-            type="button"
-            onClick={() => onSelect(item.quest.id)}
-            aria-pressed={selected}
-            aria-label={`${item.quest.title}, ${item.distance.toFixed(1)} miles away`}
-            className={`absolute z-20 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 shadow-sm transition-transform ${
-              selected
-                ? "z-30 scale-125 border-primary"
-                : "border-card hover:scale-110"
-            }`}
-            style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
-          >
-            <img
-              src={questImage(item.quest)}
-              alt=""
-              loading="lazy"
-              width={1200}
-              height={912}
-              className="h-9 w-9 rounded-full object-cover"
-            />
-          </button>
-        );
-      })}
+      <div className="hide-scrollbar -mx-5 mt-4 flex gap-3 overflow-x-auto px-5 pb-2" role="list" aria-label="Quests on the map">
+        {items.slice(0, 20).map((item) => {
+          const active = item.quest.id === selected.quest.id;
+          return (
+            <button
+              key={item.quest.id}
+              type="button"
+              role="listitem"
+              onClick={() => onSelect(item.quest.id)}
+              aria-pressed={active}
+              className={`flex min-h-14 w-60 shrink-0 items-center gap-3 rounded-xl border bg-card p-2 text-left transition-colors ${
+                active ? "border-foreground" : "border-border hover:border-foreground/40"
+              }`}
+            >
+              <img src={questImage(item.quest)} alt="" loading="lazy" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-semibold">{item.quest.title}</span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {item.quest.location.area} · {item.distance.toFixed(1)} mi
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

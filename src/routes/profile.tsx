@@ -12,13 +12,13 @@ import { actions, useUserState } from "@/lib/store";
 export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
-      { title: "Your profile — Side Quest" },
+      { title: "Your profile — wego" },
       {
         name: "description",
         content:
           "Track your quest level, streak, saved and completed missions, and watch your Quest DNA change as the engine learns your taste.",
       },
-      { property: "og:title", content: "Your profile — Side Quest" },
+      { property: "og:title", content: "Your profile — wego" },
       {
         property: "og:description",
         content: "Levels, streaks, leaderboards and the taste profile powering your recommendations.",

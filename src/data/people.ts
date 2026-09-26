@@ -126,7 +126,7 @@ export const LEVELS = [
   { level: 2, name: "Explorer", xp: 250 },
   { level: 3, name: "Local", xp: 700 },
   { level: 4, name: "Adventurer", xp: 1500 },
-  { level: 5, name: "Side Quest Legend", xp: 3000 },
+  { level: 5, name: "wego Legend", xp: 3000 },
 ];
 
 export function levelFor(xp: number) {
