@@ -16,7 +16,7 @@ const BY_VIBE: Partial<Record<Vibe, string>> = {
 /** Real, licensed place photo for a quest (Wikimedia Commons). */
 export function questPhoto(quest: Quest): Photo {
   const key = QUEST_PHOTO[quest.id] ?? quest.vibes.map((v) => BY_VIBE[v]).find(Boolean) ?? "isles";
-  return PHOTOS[key] ?? PHOTOS.isles!;
+  return PHOTOS[key] ?? PHOTOS["isles"]!;
 }
 
 export function questImage(quest: Quest): string {
