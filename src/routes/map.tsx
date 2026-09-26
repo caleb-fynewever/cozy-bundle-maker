@@ -2,12 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { QuestMap } from "@/components/QuestMap";
-import { Chip, SectionTitle, Tag } from "@/components/ui-kit";
+import { X } from "lucide-react";
+import { Chip } from "@/components/ui-kit";
+import { metaLine } from "@/components/QuestCard";
 import { CAMPUS_ORIGIN, currentTimeSlot, recommend } from "@/lib/engine";
 import { QUESTS } from "@/data/quests";
 import { useUserState } from "@/lib/store";
 import { questImage } from "@/lib/imagery";
-import { VIBE_EMOJI, VIBE_LABEL } from "@/lib/types";
 
 export const Route = createFileRoute("/map")({
   head: () => ({
@@ -87,19 +88,16 @@ function MapPage() {
   const selected = filtered.find((item) => item.quest.id === selectedId) ?? null;
 
   return (
-    <AppShell>
-      <SectionTitle kicker="Explore" title="Quests around you" />
-
-      <div className="flex flex-wrap gap-2">
+    <AppShell wide>
+      <h1 className="sr-only">Quests on the map</h1>
+      <div className="hide-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-3" role="group" aria-label="Filters">
         {FILTERS.map((filter) => (
           <Chip
             key={filter}
             active={filters.includes(filter)}
             onClick={() =>
               setFilters((current) =>
-                current.includes(filter)
-                  ? current.filter((f) => f !== filter)
-                  : [...current, filter],
+                current.includes(filter) ? current.filter((f) => f !== filter) : [...current, filter],
               )
             }
           >
@@ -108,83 +106,48 @@ function MapPage() {
         ))}
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[1.7fr_1fr]">
-        <QuestMap
-          items={filtered}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-          origin={CAMPUS_ORIGIN}
-        />
-
-        <div className="space-y-3">
-          {selected ? (
-            <article className="overflow-hidden rounded-3xl border border-border bg-card">
-              <img
-                src={questImage(selected.quest)}
-                alt={selected.quest.location.name}
-                loading="lazy"
-                width={1200}
-                height={912}
-                className="h-36 w-full object-cover"
-              />
-              <div className="space-y-3 p-4">
-                <h3 className="text-xl font-bold">{selected.quest.title}</h3>
-                <p className="text-sm text-muted-foreground">{selected.quest.hook}</p>
-                <p className="font-mono text-xs text-muted-foreground">
-                  📍 {selected.distance.toFixed(1)} mi · ⏱ {selected.quest.durationMin} min · 🎲
-                  Weirdness {selected.quest.weirdness}/5
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {selected.quest.vibes.map((vibe) => (
-                    <Tag key={vibe}>
-                      {VIBE_EMOJI[vibe]} {VIBE_LABEL[vibe]}
-                    </Tag>
-                  ))}
-                </div>
-                <Link
-                  to="/quest/$questId"
-                  params={{ questId: selected.quest.id }}
-                  className="inline-flex min-h-12 w-full items-center justify-center rounded-full acid-fill text-sm font-semibold text-primary-foreground"
-                >
-                  View quest →
-                </Link>
-              </div>
-            </article>
-          ) : (
-            <p className="rounded-3xl border border-border bg-card p-5 text-sm text-muted-foreground">
-              Pick a marker to preview a quest. Markers show approximate quest locations only, never
-              anyone's live position.
-            </p>
-          )}
-
-          <ul className="space-y-2">
-            {filtered.slice(0, 8).map((item) => (
-              <li key={item.quest.id}>
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(item.quest.id)}
-                  className={`flex min-h-14 w-full items-center gap-3 rounded-2xl border px-3 text-left ${
-                    selectedId === item.quest.id ? "border-primary" : "border-border"
-                  }`}
-                >
-                  <img
-                    src={questImage(item.quest)}
-                    alt=""
-                    loading="lazy"
-                    width={1200}
-                    height={912}
-                    className="h-9 w-9 rounded-lg object-cover"
-                  />
-                  <span className="flex-1 text-sm font-medium">{item.quest.title}</span>
-                  <span className="font-mono text-xs text-muted-foreground">
-                    {item.distance.toFixed(1)} mi
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+      <div className="relative">
+        <QuestMap items={filtered} selectedId={selectedId} onSelect={setSelectedId} origin={CAMPUS_ORIGIN} />
+        {selected ? (
+          <div
+            role="dialog"
+            aria-label={selected.quest.title}
+            className="sheet absolute inset-x-3 bottom-3 z-40 flex items-center gap-4 rounded-2xl bg-card p-3 sm:left-auto sm:w-96"
+          >
+            <img
+              src={questImage(selected.quest)}
+              alt=""
+              width={1200}
+              height={912}
+              className="h-20 w-20 shrink-0 rounded-xl object-cover"
+            />
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-lg font-bold">{selected.quest.title}</h2>
+              <p className="text-sm text-muted-foreground">
+                {metaLine(selected.distance, selected.quest.durationMin, selected.quest.costPerPerson)}
+              </p>
+              <Link
+                to="/quest/$questId"
+                params={{ questId: selected.quest.id }}
+                className="mt-1 inline-flex min-h-9 items-center text-sm font-semibold text-primary"
+              >
+                View quest →
+              </Link>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedId(null)}
+              aria-label="Close"
+              className="grid h-10 w-10 shrink-0 place-items-center self-start rounded-full text-muted-foreground hover:bg-surface"
+            >
+              <X aria-hidden className="h-4 w-4" />
+            </button>
+          </div>
+        ) : null}
       </div>
+      <p className="mt-3 text-sm text-muted-foreground">
+        {filtered.length} quests nearby. Your spot is approximate.
+      </p>
     </AppShell>
   );
 }

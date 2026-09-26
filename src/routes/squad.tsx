@@ -1,10 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { BadgeCheck, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
-import { QuestDna } from "@/components/QuestDna";
-import { Button, Chip, SectionTitle, Tag } from "@/components/ui-kit";
+import { QuestCard } from "@/components/QuestCard";
+import { Avatar, Button, Chip } from "@/components/ui-kit";
 import { NEARBY_STUDENTS } from "@/data/people";
 import { QUESTS } from "@/data/quests";
 import {
@@ -84,195 +83,168 @@ function SquadPage() {
 
   const verifyEmail = () => {
     if (!/^[^@\s]+@[^@\s]+\.edu$/i.test(email)) {
-      toast.error("Use a .edu address, like you@umn.edu");
+      toast.error("That needs to be a .edu email.");
       return;
     }
     actions.verify(email);
-    toast.success("University verified");
+    toast("You're verified.");
   };
+
+  const invite = (id: string, name: string) => {
+    setRequested((r) => [...r, id]);
+    setTimeout(() => {
+      actions.toggleSquadMember(id);
+      toast(`${name} is in.`);
+    }, 1200);
+  };
+
+  const people = scope === "friends" ? nearby.filter((p) => p.user.level >= 3) : nearby;
 
   return (
     <AppShell>
-      <SectionTitle kicker="Squad" title="Who's coming?" />
+      <h1 className="mt-6 text-5xl font-extrabold leading-[0.95] sm:text-6xl">Your squad</h1>
 
-      {!state.verified ? (
-        <section className="rounded-3xl border border-border bg-card p-5">
-          <h3 className="text-lg font-bold">Verify your student email</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Nearby matching is students only. Your email is never shown on your profile.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <label className="sr-only" htmlFor="edu">
-              Student email
-            </label>
-            <input
-              id="edu"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="name@umn.edu"
-              className="min-h-12 flex-1 rounded-full border border-input bg-surface px-4 text-sm"
-            />
-            <Button onClick={verifyEmail}>Verify</Button>
-          </div>
-        </section>
+      {squad.length ? (
+        <ul className="mt-8 flex flex-wrap gap-5">
+          <li className="flex flex-col items-center gap-2">
+            <Avatar name={state.name} you size={56} />
+            <span className="text-sm font-medium">You</span>
+          </li>
+          {squad.map((m) => (
+            <li key={m.id} className="flex flex-col items-center gap-2">
+              <button
+                type="button"
+                onClick={() => actions.toggleSquadMember(m.id)}
+                aria-label={`Remove ${m.name} from squad`}
+                className="rounded-full"
+              >
+                <Avatar name={m.name} size={56} />
+              </button>
+              <span className="text-sm font-medium">{m.name}</span>
+            </li>
+          ))}
+        </ul>
       ) : (
-        <section className="flex flex-wrap items-center gap-3 rounded-3xl border border-border bg-card p-5">
-          <Tag tone="primary">
-            <BadgeCheck aria-hidden className="h-3.5 w-3.5" /> University verified
-          </Tag>
-          <p className="text-sm text-muted-foreground">
-            {state.name}'s squad · {groupSize}/4 players{" "}
-            {groupSize < 4 ? `· looking for ${4 - groupSize} more` : ""}
-          </p>
-        </section>
+        <p className="mt-3 text-lg text-muted-foreground">Just you right now.</p>
       )}
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <Chip active={scope === "friends"} onClick={() => setScope("friends")}>
-              Friends only
-            </Chip>
-            <Chip active={scope === "nearby"} onClick={() => setScope("nearby")}>
-              Nearby students
-            </Chip>
-            {[1, 3, 5].map((r) => (
-              <Chip key={r} active={radiusMi === r} onClick={() => setRadius(r)}>
-                {r} mile{r > 1 ? "s" : ""}
-              </Chip>
-            ))}
+      {groupQuest && squad.length ? (
+        <section className="mt-12">
+          <h2 className="text-2xl font-bold">Something you'd all like</h2>
+          <div className="mt-6">
+            <QuestCard item={groupQuest} />
           </div>
+        </section>
+      ) : null}
 
-          {!state.optInNearby ? (
-            <div className="rounded-3xl border border-border bg-card p-5">
-              <h3 className="flex items-center gap-2 text-lg font-bold">
-                <ShieldCheck aria-hidden className="h-5 w-5 text-primary" /> Nearby discovery is off
-              </h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Opt in to appear to other verified students. Your exact location is never shared —
-                others only see an approximate distance. You can leave the queue instantly.
-              </p>
-              <div className="mt-4">
-                <Button onClick={() => actions.setPrivacy({ optInNearby: true, shareLocation: true })}>
-                  Opt in to nearby discovery
-                </Button>
-              </div>
+      <section className="mt-16 border-t border-border pt-10">
+        <h2 className="text-3xl font-bold">Looking for people to join?</h2>
+
+        {!state.verified ? (
+          <div className="mt-4">
+            <p className="text-muted-foreground">
+              Only verified students show up nearby. Your email stays private.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <label className="sr-only" htmlFor="edu">
+                Student email
+              </label>
+              <input
+                id="edu"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="you@umn.edu"
+                className="min-h-12 flex-1 rounded-full border border-border-strong bg-card px-5 text-[15px]"
+              />
+              <Button variant="ink" onClick={verifyEmail}>
+                Verify
+              </Button>
             </div>
-          ) : (
-            <ul className="space-y-3">
-              {(scope === "friends" ? nearby.slice(0, 2) : nearby).map(({ user, score, shared }) => (
-                <li key={user.id} className="rounded-3xl border border-border bg-card p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="flex items-center gap-2 font-semibold">
-                        {user.name}
-                        {user.verified ? (
-                          <BadgeCheck aria-label="University verified" className="h-4 w-4 text-primary" />
-                        ) : null}
+          </div>
+        ) : !state.optInNearby ? (
+          <div className="mt-4">
+            <p className="text-muted-foreground">
+              Turn on nearby so other students can find you. We only ever show rough distance.
+            </p>
+            <div className="mt-5">
+              <Button variant="ink" onClick={() => actions.setPrivacy({ optInNearby: true })}>
+                Show me nearby
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="mt-5 flex flex-wrap items-center gap-2">
+              <Chip active={scope === "nearby"} onClick={() => setScope("nearby")}>
+                Nearby
+              </Chip>
+              <Chip active={scope === "friends"} onClick={() => setScope("friends")}>
+                Friends
+              </Chip>
+              <label className="sr-only" htmlFor="radius">
+                Distance
+              </label>
+              <select
+                id="radius"
+                value={radiusMi}
+                onChange={(e) => setRadius(Number(e.target.value))}
+                className="min-h-11 rounded-full border border-border bg-transparent px-4 text-sm"
+              >
+                {[1, 3, 5].map((r) => (
+                  <option key={r} value={r}>
+                    within {r} mi
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <ul className="mt-6 divide-y divide-border">
+              {people.map(({ user, score }) => {
+                const pending = requested.includes(user.id);
+                return (
+                  <li key={user.id} className="flex items-start gap-4 py-6">
+                    <Avatar name={user.name} size={52} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-lg font-bold leading-tight">{user.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {user.distanceMi} mi away · {score}% vibe match
                       </p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {user.distanceMi} mi away · Level {user.level} · {user.completed} quests
+                      <p className="mt-2 text-[15px]">
+                        {topVibes(user.taste, 3)
+                          .map((v) => `${VIBE_EMOJI[v.vibe]} ${VIBE_LABEL[v.vibe]}`)
+                          .join("   ")}
                       </p>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {topVibes(user.taste, 3).map(({ vibe }) => (
-                          <Tag key={vibe}>
-                            {VIBE_EMOJI[vibe]} {VIBE_LABEL[vibe]}
-                          </Tag>
-                        ))}
-                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">{user.bio}</p>
                     </div>
-                    <p className="shrink-0 text-right">
-                      <span className="font-mono text-2xl font-bold text-primary">{score}%</span>
-                      <span className="block text-xs text-muted-foreground">compatibility</span>
-                    </p>
-                  </div>
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    {shared.length
-                      ? `You both like ${shared.map((v) => VIBE_LABEL[v].toLowerCase()).join(" and ")} quests`
-                      : "Different taste — good for novelty"}
-                    , prefer groups of {user.preferredGroup[0]}–{user.preferredGroup[1]}, and are
-                    within {user.distanceMi} miles.
-                  </p>
-                  <div className="mt-3 flex gap-2">
-                    {requested.includes(user.id) ? (
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          actions.toggleSquadMember(user.id);
-                          setRequested((r) => r.filter((id) => id !== user.id));
-                          toast.success(`${user.name} accepted — squad updated`);
-                        }}
-                      >
-                        {user.name} accepted · add to squad
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={() => {
-                          setRequested((r) => [...r, user.id]);
-                          toast.success(`Request sent to ${user.name}`);
-                        }}
-                      >
-                        Request to join
-                      </Button>
-                    )}
-                  </div>
-                </li>
-              ))}
-              {nearby.length === 0 ? (
-                <li className="rounded-3xl border border-border bg-card p-5 text-sm text-muted-foreground">
-                  No verified students in this radius right now. Try widening it.
-                </li>
+                    <Button variant={pending ? "outline" : "ink"} disabled={pending} onClick={() => invite(user.id, user.name)}>
+                      {pending ? "Sent" : "Invite"}
+                    </Button>
+                  </li>
+                );
+              })}
+              {people.length === 0 ? (
+                <li className="py-6 text-muted-foreground">No one around right now. Try a wider distance.</li>
               ) : null}
             </ul>
-          )}
-        </div>
+            <button
+              type="button"
+              onClick={() => actions.setPrivacy({ optInNearby: false })}
+              className="mt-4 min-h-11 text-sm text-muted-foreground underline underline-offset-4"
+            >
+              Stop showing me nearby
+            </button>
+          </>
+        )}
+      </section>
 
-        <aside className="space-y-4">
-          <QuestDna vibes={groupVibes} title="Group vibe" note={`${groupSize} players`} />
-
-          <div className="rounded-3xl border border-border bg-card p-5">
-            <h3 className="text-lg font-bold">Your squad</h3>
-            <ul className="mt-3 space-y-2 text-sm">
-              <li className="flex items-center justify-between">
-                <span>{state.name} (you)</span>
-                <span className="font-mono text-xs text-muted-foreground">host</span>
-              </li>
-              {squad.map((member) => (
-                <li key={member.id} className="flex items-center justify-between">
-                  <span>{member.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => actions.toggleSquadMember(member.id)}
-                    className="min-h-11 text-xs text-muted-foreground underline"
-                  >
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {groupQuest ? (
-            <div className="rounded-3xl border border-border bg-card p-5">
-              <p className="font-mono text-xs uppercase tracking-[0.18em] text-signal">
-                Group quest generated
-              </p>
-              <h3 className="mt-2 text-xl font-bold">{groupQuest.quest.title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{groupQuest.quest.hook}</p>
-              <div className="mt-4">
-                <Link
-                  to="/quest/$questId"
-                  params={{ questId: groupQuest.quest.id }}
-                  className="inline-flex min-h-12 w-full items-center justify-center rounded-full acid-fill text-sm font-semibold text-primary-foreground"
-                >
-                  Open the mission
-                </Link>
-              </div>
-            </div>
-          ) : null}
-        </aside>
-      </div>
+      <p className="mt-12 text-muted-foreground">
+        See how your squad stacks up on{" "}
+        <Link to="/leaderboard" className="font-semibold text-foreground underline underline-offset-4">
+          Local Legends
+        </Link>
+        .
+      </p>
     </AppShell>
   );
 }

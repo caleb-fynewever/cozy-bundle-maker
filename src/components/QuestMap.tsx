@@ -28,7 +28,7 @@ export function QuestMap({
   const you = project(origin.lat, origin.lng);
 
   return (
-    <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl border border-border bg-map-land sm:aspect-[16/10]">
+    <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-border bg-map-land sm:aspect-[16/10]">
       <svg
         aria-hidden
         viewBox="0 0 100 100"
@@ -79,7 +79,7 @@ export function QuestMap({
         style={{ left: `${you.x}%`, top: `${you.y}%` }}
       >
         <span className="relative grid h-4 w-4 place-items-center">
-          <span className="absolute h-8 w-8 animate-ping rounded-full bg-primary/25" />
+          <span className="absolute h-8 w-8 rounded-full bg-primary/15" />
           <span className="h-3 w-3 rounded-full bg-primary ring-2 ring-background" />
         </span>
         <span className="sr-only">Your approximate area: {origin.label}</span>
@@ -94,10 +94,10 @@ export function QuestMap({
             onClick={() => onSelect(item.quest.id)}
             aria-pressed={selected}
             aria-label={`${item.quest.title}, ${item.distance.toFixed(1)} miles away`}
-            className={`absolute z-20 -translate-x-1/2 -translate-y-1/2 rounded-2xl border-2 transition-transform ${
+            className={`absolute z-20 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 shadow-sm transition-transform ${
               selected
-                ? "z-30 scale-110 border-primary glow"
-                : "border-background/80 hover:scale-105"
+                ? "z-30 scale-125 border-primary"
+                : "border-card hover:scale-110"
             }`}
             style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
           >
@@ -107,7 +107,7 @@ export function QuestMap({
               loading="lazy"
               width={1200}
               height={912}
-              className="h-10 w-10 rounded-xl object-cover"
+              className="h-9 w-9 rounded-full object-cover"
             />
           </button>
         );

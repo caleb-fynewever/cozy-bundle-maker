@@ -1,16 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { MapPin, Wand2 } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { QuestCard } from "@/components/QuestCard";
-import { QuestDna } from "@/components/QuestDna";
-import { PipelineTrace } from "@/components/PipelineTrace";
-import { Button, Chip, SectionTitle } from "@/components/ui-kit";
-import { CAMPUS_ORIGIN, currentTimeSlot, recommend, tonightTrio } from "@/lib/engine";
+import { Button, Chip } from "@/components/ui-kit";
+import { currentTimeSlot, recommend, tonightTrio } from "@/lib/engine";
 import { QUESTS } from "@/data/quests";
 import { NEARBY_STUDENTS } from "@/data/people";
 import { actions, useUserState } from "@/lib/store";
-import { VIBES, VIBE_EMOJI, VIBE_LABEL, type SessionContext, type Vibe } from "@/lib/types";
+import { VIBES, VIBE_LABEL, type SessionContext, type Vibe } from "@/lib/types";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -57,7 +55,7 @@ const BUDGETS = [
   { label: "Doesn't matter", value: null },
 ];
 
-const CHAOS_LABEL = ["Safe choice", "Mild", "Curious", "Reckless", "Unhinged"];
+const CHAOS_LABEL = ["Keep it easy", "Mild", "Curious", "Bold", "Unhinged"];
 
 const AREAS = [
   { label: "East Bank, UMN", lat: 44.9741, lng: -93.2277 },
@@ -72,12 +70,12 @@ function Discover() {
   const [groupSize, setGroupSize] = useState(3);
   const [timeBudgetMin, setTimeBudget] = useState(90);
   const [maxCost, setMaxCost] = useState<number | null>(25);
-  const [vibes, setVibes] = useState<Vibe[]>(["weird"]);
+  const [vibes, setVibes] = useState<Vibe[]>([]);
   const [chaos, setChaos] = useState(3);
   const [area, setArea] = useState(AREAS[0]!);
   const [radiusMi, setRadius] = useState(3);
+  const [adjusting, setAdjusting] = useState(false);
   const [tonightOpen, setTonightOpen] = useState(false);
-  const [working, setWorking] = useState(true);
 
   const context: SessionContext = useMemo(
     () => ({
@@ -95,79 +93,82 @@ function Discover() {
   );
 
   const allQuests = useMemo(() => [...state.createdQuests, ...QUESTS], [state.createdQuests]);
-  const { results, trace, taste, groupVibes } = useMemo(
-    () => recommend(context, state, allQuests),
-    [context, state, allQuests],
-  );
+  const { results } = useMemo(() => recommend(context, state, allQuests), [context, state, allQuests]);
   const trio = useMemo(() => tonightTrio(results), [results]);
   const squad = NEARBY_STUDENTS.filter((u) => state.squadIds.includes(u.id));
 
-  const contextKey = JSON.stringify(context);
-  useEffect(() => {
-    setWorking(true);
-    const timer = setTimeout(() => setWorking(false), 550);
-    return () => clearTimeout(timer);
-  }, [contextKey]);
-
   const toggleVibe = (vibe: Vibe) =>
-    setVibes((current) =>
-      current.includes(vibe) ? current.filter((v) => v !== vibe) : [...current, vibe],
-    );
+    setVibes((current) => (current.includes(vibe) ? current.filter((v) => v !== vibe) : [...current, vibe]));
+
+  const summary = [
+    groupSize === 1 ? "Solo" : `${groupSize}${groupSize === 4 ? "+" : ""} people`,
+    timeBudgetMin >= 240 ? "all night" : timeBudgetMin >= 60 ? `${timeBudgetMin / 60} hr` : `${timeBudgetMin} min`,
+    maxCost === null ? "any budget" : maxCost === 0 ? "free" : `$${maxCost}`,
+  ].join(" · ");
+
+  const TRIO_LABEL = { safe: "Safe bet", perfect: "Your kind of thing", chaos: "Wildcard" } as const;
 
   return (
     <AppShell>
-      <section className="rounded-3xl border border-border bg-card p-5 sm:p-8 lift">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">
-          {CAMPUS_ORIGIN.label.split(",")[1]?.trim() ?? "UMN"} · {currentTimeSlot()}
-        </p>
-        <h1 className="mt-2 text-4xl font-bold leading-[1.05] sm:text-6xl">What's the move?</h1>
-        <p className="mt-3 max-w-xl text-muted-foreground">
-          Don't recommend places — create reasons to go. Set the session and the engine builds a
-          mission for exactly this group, this budget and this hour.
-        </p>
+      <section className="pt-6 sm:pt-12">
+        <h1 className="text-6xl font-extrabold leading-[0.92] sm:text-8xl">
+          What's the
+          <br />
+          move<span className="text-primary">?</span>
+        </h1>
 
-        <div className="mt-6 space-y-5">
-          <Group label="Group">
-            {GROUPS.map((g) => (
-              <Chip key={g.value} active={groupSize === g.value} onClick={() => setGroupSize(g.value)}>
-                {g.label}
-              </Chip>
-            ))}
-          </Group>
+        <div className="mt-8 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setAdjusting((v) => !v)}
+            aria-expanded={adjusting}
+            aria-controls="adjust"
+            className="inline-flex min-h-12 items-center gap-3 rounded-full border border-border-strong px-5 text-[15px] font-medium hover:bg-surface"
+          >
+            {summary}
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <SlidersHorizontal aria-hidden className="h-4 w-4" /> Adjust
+            </span>
+          </button>
+          {squad.length ? (
+            <span className="text-sm text-muted-foreground">with {squad.map((s) => s.name).join(" & ")}</span>
+          ) : null}
+        </div>
 
-          <Group label="Time available">
-            {TIMES.map((t) => (
-              <Chip key={t.value} active={timeBudgetMin === t.value} onClick={() => setTimeBudget(t.value)}>
-                {t.label}
-              </Chip>
-            ))}
-          </Group>
-
-          <Group label="Budget">
-            {BUDGETS.map((b) => (
-              <Chip
-                key={String(b.value)}
-                active={maxCost === b.value}
-                onClick={() => setMaxCost(b.value)}
-              >
-                {b.label}
-              </Chip>
-            ))}
-          </Group>
-
-          <Group label="Vibe">
-            {VIBES.map((vibe) => (
-              <Chip key={vibe} active={vibes.includes(vibe)} onClick={() => toggleVibe(vibe)}>
-                {VIBE_EMOJI[vibe]} {VIBE_LABEL[vibe]}
-              </Chip>
-            ))}
-          </Group>
-
-          <div>
-            <label htmlFor="chaos" className="text-sm font-semibold">
-              How chaotic are we feeling?
-            </label>
-            <div className="mt-2 flex items-center gap-4">
+        {adjusting ? (
+          <div id="adjust" className="mt-6 space-y-6 border-t border-border pt-6">
+            <Group label="Who's coming">
+              {GROUPS.map((g) => (
+                <Chip key={g.value} active={groupSize === g.value} onClick={() => setGroupSize(g.value)}>
+                  {g.label}
+                </Chip>
+              ))}
+            </Group>
+            <Group label="How long">
+              {TIMES.map((t) => (
+                <Chip key={t.value} active={timeBudgetMin === t.value} onClick={() => setTimeBudget(t.value)}>
+                  {t.label}
+                </Chip>
+              ))}
+            </Group>
+            <Group label="Budget">
+              {BUDGETS.map((b) => (
+                <Chip key={String(b.value)} active={maxCost === b.value} onClick={() => setMaxCost(b.value)}>
+                  {b.label}
+                </Chip>
+              ))}
+            </Group>
+            <Group label="What are you feeling?">
+              {VIBES.map((vibe) => (
+                <Chip key={vibe} active={vibes.includes(vibe)} onClick={() => toggleVibe(vibe)}>
+                  {VIBE_LABEL[vibe]}
+                </Chip>
+              ))}
+            </Group>
+            <div>
+              <label htmlFor="chaos" className="text-sm font-semibold">
+                How adventurous? <span className="font-normal text-muted-foreground">{CHAOS_LABEL[chaos - 1]}</span>
+              </label>
               <input
                 id="chaos"
                 type="range"
@@ -176,154 +177,88 @@ function Discover() {
                 step={1}
                 value={chaos}
                 onChange={(event) => setChaos(Number(event.target.value))}
-                className="h-2 w-full max-w-sm accent-primary"
+                className="mt-3 block w-full max-w-sm accent-primary"
               />
-              <span className="font-mono text-sm text-primary">
-                {chaos} · {CHAOS_LABEL[chaos - 1]}
-              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <label htmlFor="area" className="font-semibold">
+                Near
+              </label>
+              <select
+                id="area"
+                value={area.label}
+                onChange={(event) => setArea(AREAS.find((a) => a.label === event.target.value) ?? AREAS[0]!)}
+                className="min-h-11 rounded-full border border-border bg-transparent px-4"
+              >
+                {AREAS.map((a) => (
+                  <option key={a.label} value={a.label}>
+                    {a.label}
+                  </option>
+                ))}
+              </select>
+              <label className="sr-only" htmlFor="radius">
+                Distance
+              </label>
+              <select
+                id="radius"
+                value={radiusMi}
+                onChange={(event) => setRadius(Number(event.target.value))}
+                className="min-h-11 rounded-full border border-border bg-transparent px-4"
+              >
+                {[1, 3, 5, 10].map((r) => (
+                  <option key={r} value={r}>
+                    within {r} mi
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
+        ) : null}
 
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="flex items-center gap-2 text-sm font-semibold">
-              <MapPin aria-hidden className="h-4 w-4 text-primary" /> Searching near
-            </span>
-            <label className="sr-only" htmlFor="area">
-              Search area
-            </label>
-            <select
-              id="area"
-              value={area.label}
-              onChange={(event) =>
-                setArea(AREAS.find((a) => a.label === event.target.value) ?? AREAS[0]!)
-              }
-              className="min-h-11 rounded-full border border-border bg-surface px-4 text-sm"
-            >
-              {AREAS.map((a) => (
-                <option key={a.label} value={a.label}>
-                  {a.label}
-                </option>
-              ))}
-            </select>
-            <label className="sr-only" htmlFor="radius">
-              Radius in miles
-            </label>
-            <select
-              id="radius"
-              value={radiusMi}
-              onChange={(event) => setRadius(Number(event.target.value))}
-              className="min-h-11 rounded-full border border-border bg-surface px-4 text-sm"
-            >
-              {[1, 3, 5, 10].map((r) => (
-                <option key={r} value={r}>
-                  {r} mi radius
-                </option>
-              ))}
-            </select>
-            <span className="text-xs text-muted-foreground">
-              Approximate area only — your exact location is never shared.
-            </span>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <Button onClick={() => setTonightOpen(true)}>
-              <Wand2 aria-hidden className="h-4 w-4" /> What should we do tonight?
-            </Button>
-            {state.completed.length === 0 ? (
-              <Button variant="outline" onClick={actions.loadDemo}>
-                Load demo profile
-              </Button>
-            ) : null}
-          </div>
+        <div className="mt-8 flex flex-wrap items-center gap-5">
+          <Button onClick={() => setTonightOpen(true)}>Find something to do</Button>
+          {state.completed.length === 0 ? (
+            <button type="button" onClick={actions.loadDemo} className="min-h-11 text-sm text-muted-foreground underline underline-offset-4">
+              Try with a demo profile
+            </button>
+          ) : null}
         </div>
       </section>
 
-      <div className="mt-4">
-        <PipelineTrace trace={trace} radiusMi={radiusMi} working={working} />
-      </div>
-
       {tonightOpen && trio.length ? (
-        <section className="mt-8">
-          <SectionTitle
-            kicker="Tonight"
-            title="Three radically different answers"
-            action={
-              <button
-                type="button"
-                onClick={() => setTonightOpen(false)}
-                className="text-sm text-muted-foreground underline"
-              >
-                Hide
-              </button>
-            }
-          />
-          <div className="grid gap-4 lg:grid-cols-3">
-            {trio.map(({ label, item }) => (
-              <div key={label} className="space-y-2">
-                <p className="font-mono text-xs uppercase tracking-[0.18em] text-signal">{label}</p>
-                <QuestCard item={item} />
-              </div>
+        <section aria-labelledby="tonight" className="mt-16">
+          <div className="flex items-baseline justify-between">
+            <h2 id="tonight" className="text-3xl font-bold">
+              Three ways to go
+            </h2>
+            <button type="button" onClick={() => setTonightOpen(false)} className="min-h-11 text-sm text-muted-foreground">
+              Close
+            </button>
+          </div>
+          <div className="mt-6 space-y-12">
+            {trio.map(({ tone, item }) => (
+              <QuestCard key={tone} item={item} label={TRIO_LABEL[tone]} />
             ))}
           </div>
         </section>
       ) : null}
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-        <div>
-          <SectionTitle
-            kicker={`${results.length} personalized quests`}
-            title={squad.length ? `For you + ${squad.map((s) => s.name).join(" & ")}` : "Picked for you"}
-          />
-          <div className="space-y-5">
-            {results.map((item, index) => (
-              <QuestCard key={item.quest.id} item={item} featured={index === 0} />
-            ))}
-            {results.length === 0 ? (
-              <p className="rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground">
-                Nothing fits those constraints. Widen the radius or budget.
-              </p>
-            ) : null}
-          </div>
+      <section className="mt-20">
+        <h2 className="text-3xl font-bold">Picked for you</h2>
+        <div className="mt-8 space-y-14">
+          {results.map((item, index) => (
+            <QuestCard key={item.quest.id} item={item} featured={index === 0} />
+          ))}
+          {results.length === 0 ? (
+            <p className="text-muted-foreground">Nothing fits that. Try a bigger budget or more time.</p>
+          ) : null}
         </div>
-
-        <aside className="space-y-4">
-          <QuestDna
-            vibes={groupVibes}
-            title={squad.length ? "Group vibe" : "Your Quest DNA"}
-            note={
-              taste.hasHistory
-                ? `${taste.signals} signals · taste evolving`
-                : "Complete a quest to train this"
-            }
-          />
-          <div className="rounded-3xl border border-border bg-card p-5">
-            <h3 className="text-lg font-bold">Squad</h3>
-            {squad.length ? (
-              <ul className="mt-3 space-y-2 text-sm">
-                {squad.map((member) => (
-                  <li key={member.id} className="flex items-center justify-between">
-                    <span>{member.name}</span>
-                    <span className="font-mono text-xs text-muted-foreground">
-                      {member.distanceMi} mi
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-2 text-sm text-muted-foreground">
-                Nobody in the squad yet. Group taste changes what you get recommended.
-              </p>
-            )}
-            <div className="mt-4">
-              <Link
-                to="/squad"
-                className="inline-flex min-h-11 items-center justify-center rounded-full border border-border-strong px-4 text-sm font-semibold"
-              >
-                Find nearby students
-              </Link>
-            </div>
-          </div>
-        </aside>
+        <p className="mt-16 text-muted-foreground">
+          Got your own idea?{" "}
+          <Link to="/create" className="font-semibold text-foreground underline underline-offset-4">
+            Make a quest
+          </Link>
+        </p>
       </section>
     </AppShell>
   );
@@ -332,7 +267,7 @@ function Discover() {
 function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <fieldset>
-      <legend className="mb-2 text-sm font-semibold">{label}</legend>
+      <legend className="mb-3 text-sm font-semibold">{label}</legend>
       <div className="flex flex-wrap gap-2">{children}</div>
     </fieldset>
   );

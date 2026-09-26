@@ -1,24 +1,24 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { BadgeCheck, Flame } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { QuestDna } from "@/components/QuestDna";
-import { Button, Meter, SectionTitle, Tag } from "@/components/ui-kit";
-import { LEVELS, NEARBY_STUDENTS, levelFor } from "@/data/people";
-import { QUESTS, getQuest } from "@/data/quests";
+import { Avatar, Verified } from "@/components/ui-kit";
+import { rankBoard } from "@/lib/leaderboard";
+import { levelFor } from "@/data/people";
+import { getQuest } from "@/data/quests";
 import { buildTasteVector } from "@/lib/engine";
 import { actions, useUserState } from "@/lib/store";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
-      { title: "Your profile and Quest DNA — Side Quest" },
+      { title: "Your profile — Side Quest" },
       {
         name: "description",
         content:
           "Track your quest level, streak, saved and completed missions, and watch your Quest DNA change as the engine learns your taste.",
       },
-      { property: "og:title", content: "Your profile and Quest DNA — Side Quest" },
+      { property: "og:title", content: "Your profile — Side Quest" },
       {
         property: "og:description",
         content: "Levels, streaks, leaderboards and the taste profile powering your recommendations.",
@@ -30,215 +30,130 @@ export const Route = createFileRoute("/profile")({
   component: ProfilePage,
 });
 
-const BOARDS = [
-  { key: "completed", title: "Most side quests", metric: (u: (typeof NEARBY_STUDENTS)[number]) => u.completed },
-  { key: "created", title: "Quest creator", metric: (u: (typeof NEARBY_STUDENTS)[number]) => u.created },
-  { key: "streak", title: "Streak", metric: (u: (typeof NEARBY_STUDENTS)[number]) => u.streak },
-] as const;
-
 function ProfilePage() {
   const state = useUserState();
   const taste = useMemo(() => buildTasteVector(state), [state]);
   const level = levelFor(state.xp);
+  const entries = useMemo(() => rankBoard(state, "completed", "friends"), [state]);
+  const myRank = entries.findIndex((e) => e.you) + 1;
+  const completed = state.completed.map((id) => getQuest(id)).filter(Boolean);
+  const saved = state.saved.map((id) => getQuest(id)).filter(Boolean);
+
+  const toggles = [
+    ["optInNearby", "Show me to students nearby"],
+    ["shareLocation", "Use my rough location"],
+    ["publicProfile", "Public profile"],
+  ] as const;
 
   return (
     <AppShell>
-      <section className="rounded-3xl border border-border bg-card p-5 sm:p-7 lift">
-        <div className="flex flex-wrap items-start justify-between gap-5">
-          <div>
-            <div className="flex items-center gap-3">
-              <span className="grid h-14 w-14 place-items-center rounded-2xl acid-fill font-display text-xl font-bold text-primary-foreground">
-                {state.name.slice(0, 1).toUpperCase()}
-              </span>
-              <div>
-                <h1 className="flex items-center gap-2 text-2xl font-bold">
-                  {state.name}
-                  {state.verified ? (
-                    <BadgeCheck aria-label="University verified" className="h-5 w-5 text-primary" />
-                  ) : null}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  @{state.handle}
-                  {state.verified ? " · University of Minnesota" : " · not verified yet"}
-                </p>
-              </div>
-            </div>
-            <p className="mt-3 max-w-md text-sm text-muted-foreground">{state.bio}</p>
-          </div>
-
-          <div className="min-w-56 flex-1">
-            <p className="font-mono text-xs uppercase tracking-[0.18em] text-primary">
-              Level {level.level} — {level.name}
-            </p>
-            <div className="mt-2">
-              <Meter
-                label={level.next ? `Toward ${level.next.xp} XP` : "Max level"}
-                value={level.progress}
-                hint={`${state.xp} XP`}
-              />
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Tag tone="signal">
-                <Flame aria-hidden className="h-3.5 w-3.5" /> {state.streak} day streak
-              </Tag>
-              <Tag>{state.completed.length} completed</Tag>
-              <Tag>{state.createdQuests.length} created</Tag>
-              <Tag>{state.saved.length} saved</Tag>
-            </div>
-          </div>
+      <section className="pt-6 text-center sm:text-left">
+        <div className="flex justify-center sm:justify-start">
+          <Avatar name={state.name} you size={104} />
         </div>
+        <h1 className="mt-5 text-5xl font-extrabold leading-none">{state.name}</h1>
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
+          <span className="text-sm text-muted-foreground">@{state.handle}</span>
+          {state.verified ? <Verified label="University of Minnesota" /> : null}
+        </div>
+        <p className="mt-4 text-lg">{state.bio}</p>
       </section>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-        <div className="space-y-4">
-          <QuestDna
-            vibes={taste.vibes}
-            title="Your Quest DNA"
-            note={
-              taste.hasHistory
-                ? `Your taste is evolving · ${taste.signals} signals`
-                : "Complete or rank a quest to start training this"
-            }
-          />
+      <dl className="mt-10 grid grid-cols-3 border-y border-border py-6 text-center sm:text-left">
+        {[
+          [state.completed.length, "quests done"],
+          [state.createdQuests.length, "created"],
+          [state.streak, "day streak"],
+        ].map(([n, label]) => (
+          <div key={label as string}>
+            <dt className="sr-only">{label}</dt>
+            <dd className="font-display text-4xl font-extrabold">{n}</dd>
+            <dd className="text-sm text-muted-foreground">{label}</dd>
+          </div>
+        ))}
+      </dl>
 
-          <QuestList title="Completed" ids={state.completed} />
-          <QuestList title="Saved" ids={state.saved} />
-          {state.createdQuests.length ? (
-            <section className="rounded-3xl border border-border bg-card p-5">
-              <h3 className="text-lg font-bold">Created by you</h3>
-              <ul className="mt-3 space-y-2">
-                {state.createdQuests.map((quest) => (
-                  <li key={quest.id}>
-                    <Link
-                      to="/quest/$questId"
-                      params={{ questId: quest.id }}
-                      className="flex min-h-12 items-center justify-between rounded-2xl border border-border px-4 text-sm"
-                    >
-                      {quest.title}
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {quest.durationMin} min
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-        </div>
-
-        <aside className="space-y-4">
-          <section className="rounded-3xl border border-border bg-card p-5">
-            <SectionTitle kicker="Leaderboards" title="Local legends" />
-            <div className="space-y-5">
-              {BOARDS.map((board) => {
-                const ranked = [...NEARBY_STUDENTS].sort((a, b) => board.metric(b) - board.metric(a));
-                return (
-                  <div key={board.key}>
-                    <h4 className="font-mono text-xs uppercase tracking-[0.18em] text-signal">
-                      {board.title}
-                    </h4>
-                    <ol className="mt-2 space-y-1.5">
-                      {ranked.slice(0, 4).map((user, index) => (
-                        <li key={user.id} className="flex items-center gap-3 text-sm">
-                          <span className="w-5 font-mono text-xs text-muted-foreground">
-                            {index + 1}
-                          </span>
-                          <span className="flex-1">{user.name}</span>
-                          <span className="font-mono text-xs text-primary">{board.metric(user)}</span>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-border bg-card p-5">
-            <h3 className="text-lg font-bold">Privacy</h3>
-            <ul className="mt-3 space-y-3 text-sm">
-              {[
-                ["Nearby discovery", "optInNearby"],
-                ["Share approximate area", "shareLocation"],
-                ["Public profile", "publicProfile"],
-              ].map(([label, key]) => {
-                const value = state[key as "optInNearby" | "shareLocation" | "publicProfile"];
-                return (
-                  <li key={label} className="flex items-center justify-between gap-3">
-                    <span>{label}</span>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={value}
-                      onClick={() => actions.setPrivacy({ [key as string]: !value })}
-                      className={`h-7 w-12 rounded-full border transition-colors ${
-                        value ? "border-primary bg-primary" : "border-border bg-muted"
-                      }`}
-                    >
-                      <span
-                        aria-hidden
-                        className={`block h-5 w-5 rounded-full bg-background transition-transform ${
-                          value ? "translate-x-6" : "translate-x-1"
-                        }`}
-                      />
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Exact coordinates are never stored or shown. Other students only ever see an
-              approximate distance, and your .edu address stays private.
-            </p>
-          </section>
-
-          <section className="rounded-3xl border border-border bg-card p-5">
-            <h3 className="text-lg font-bold">Demo mode</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Load a seeded profile with history, a squad and rankings — or wipe it and watch the
-              engine learn from scratch.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button onClick={actions.loadDemo}>Load demo profile</Button>
-              <Button variant="outline" onClick={actions.reset}>
-                Reset everything
-              </Button>
-            </div>
-            <p className="mt-3 font-mono text-xs text-muted-foreground">
-              Levels: {LEVELS.map((l) => l.name).join(" · ")}
-            </p>
-          </section>
-        </aside>
+      <div className="mt-6 flex items-center justify-between gap-4">
+        <p className="text-[15px]">
+          <span className="font-semibold">{level.name}</span>
+          <span className="text-muted-foreground">
+            {level.next ? ` · ${level.next.xp - state.xp} XP to ${level.next.name}` : " · top level"}
+          </span>
+        </p>
+        <Link to="/leaderboard" className="min-h-11 content-center text-sm font-semibold text-primary">
+          {entries.length > 1 ? `#${myRank} in your squad →` : "Leaderboard →"}
+        </Link>
       </div>
-    </AppShell>
-  );
-}
 
-function QuestList({ title, ids }: { title: string; ids: string[] }) {
-  const quests = ids.map((id) => getQuest(id) ?? QUESTS.find((q) => q.id === id)).filter(Boolean);
-  return (
-    <section className="rounded-3xl border border-border bg-card p-5">
-      <h3 className="text-lg font-bold">{title}</h3>
-      {quests.length === 0 ? (
-        <p className="mt-2 text-sm text-muted-foreground">Nothing here yet.</p>
-      ) : (
-        <ul className="mt-3 space-y-2">
-          {quests.map((quest) => (
-            <li key={quest!.id}>
-              <Link
-                to="/quest/$questId"
-                params={{ questId: quest!.id }}
-                className="flex min-h-12 items-center justify-between rounded-2xl border border-border px-4 text-sm"
-              >
-                {quest!.title}
-                <span className="font-mono text-xs text-muted-foreground">
-                  {quest!.location.area}
-                </span>
-              </Link>
+      <div className="mt-12">
+        <QuestDna vibes={taste.vibes} note={taste.hasHistory ? "Changes as you go." : "Do a few quests and this fills in."} />
+      </div>
+
+      {completed.length ? (
+        <section className="mt-12">
+          <h2 className="text-lg font-bold">Done</h2>
+          <ul className="mt-3 divide-y divide-border">
+            {completed.map((q) => (
+              <li key={q!.id}>
+                <Link to="/quest/$questId" params={{ questId: q!.id }} className="flex min-h-12 items-center justify-between py-3">
+                  <span className="font-medium">{q!.title}</span>
+                  <span className="text-sm text-muted-foreground">{q!.location.area}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {saved.length ? (
+        <section className="mt-10">
+          <h2 className="text-lg font-bold">Saved for later</h2>
+          <ul className="mt-3 divide-y divide-border">
+            {saved.map((q) => (
+              <li key={q!.id}>
+                <Link to="/quest/$questId" params={{ questId: q!.id }} className="flex min-h-12 items-center justify-between py-3">
+                  <span className="font-medium">{q!.title}</span>
+                  <span className="text-sm text-muted-foreground">{q!.durationMin} min</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <p className="mt-10">
+        <Link to="/create" className="font-semibold underline underline-offset-4">
+          Make a quest
+        </Link>
+      </p>
+
+      <section className="mt-16 border-t border-border pt-8">
+        <h2 className="text-lg font-bold">Privacy</h2>
+        <p className="text-sm text-muted-foreground">We never show your exact location. Only rough distance.</p>
+        <ul className="mt-4 space-y-1">
+          {toggles.map(([key, label]) => (
+            <li key={key}>
+              <label className="flex min-h-12 cursor-pointer items-center justify-between gap-4">
+                <span>{label}</span>
+                <input
+                  type="checkbox"
+                  checked={state[key]}
+                  onChange={(e) => actions.setPrivacy({ [key]: e.target.checked })}
+                  className="h-5 w-5 accent-primary"
+                />
+              </label>
             </li>
           ))}
         </ul>
-      )}
-    </section>
+        <div className="mt-6 flex gap-6 text-sm">
+          <button type="button" onClick={actions.loadDemo} className="min-h-11 text-muted-foreground underline underline-offset-4">
+            Load demo profile
+          </button>
+          <button type="button" onClick={actions.reset} className="min-h-11 text-muted-foreground underline underline-offset-4">
+            Start over
+          </button>
+        </div>
+      </section>
+    </AppShell>
   );
 }
