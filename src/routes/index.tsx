@@ -250,7 +250,7 @@ function Discover() {
           Happening around town
         </h2>
         <p className="mt-1 text-muted-foreground">Real events this week. Bring the squad.</p>
-        <div className="hide-scrollbar -mx-5 mt-6 flex snap-x gap-5 overflow-x-auto px-5 pb-2">
+        <div className="hide-scrollbar -mx-5 mt-6 flex snap-x scroll-px-5 gap-5 overflow-x-auto px-5 pb-2">
           {EVENTS.map((event) => {
             const photo = PHOTOS[event.photo] ?? PHOTOS.isles!;
             return (
