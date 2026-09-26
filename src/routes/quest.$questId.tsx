@@ -100,7 +100,15 @@ function QuestDetail() {
         </a>
 
         <p className="mt-8 text-sm text-muted-foreground">
-          {quest.location.name} · {quest.location.area}
+          {quest.location.name} · {quest.location.area} ·{" "}
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${quest.location.lat},${quest.location.lng}`}
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-2"
+          >
+            Open in Google Maps
+          </a>
         </p>
          <h1 className="mt-2 text-5xl font-medium leading-tight sm:text-6xl">{quest.title}</h1>
         <p className="mt-5 text-xl leading-relaxed">{quest.hook}</p>
