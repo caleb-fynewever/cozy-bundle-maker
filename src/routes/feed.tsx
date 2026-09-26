@@ -79,7 +79,7 @@ function Post({ post }: { post: FeedPost }) {
         <span aria-label={`Rated ${post.rating} of 5`} className="shrink-0 text-sm font-medium">{post.rating}/5</span>
       </header>
       {quest || post.photo ? (
-        <img src={post.photo ?? questImage(quest!)} alt={quest ? `${quest.location.name}` : "Quest photo"} loading="lazy" className="mt-3 aspect-[4/3] w-full border border-border bg-muted object-cover" />
+        <img src={post.photo ?? questImage(quest!)} alt={quest ? `${quest.location.name}` : "Quest photo"} loading="lazy" className="mx-auto mt-3 block aspect-[4/3] w-[86%] max-w-[420px] rounded-2xl border border-border bg-muted object-cover" />
       ) : null}
       {post.caption ? <p className="mt-3 leading-relaxed">{post.caption}</p> : null}
       <div className="mt-2 flex items-center gap-4">
