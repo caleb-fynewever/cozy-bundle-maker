@@ -40,7 +40,7 @@ export function QuestMap({
           className="absolute inset-0 h-full w-full border-0"
         />
         <div className="absolute inset-x-3 bottom-3 z-10 rounded-xl border border-border bg-card p-4 sm:left-auto sm:w-80">
-          <p className="font-hand text-base text-muted-foreground">{selected.quest.area}</p>
+          <p className="font-hand text-base text-muted-foreground">{selected.quest.location.area}</p>
           <h2 className="text-lg font-semibold leading-tight">{selected.quest.title}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {metaLine(selected.distance, selected.quest.durationMin, selected.quest.costPerPerson)}
@@ -78,7 +78,7 @@ export function QuestMap({
               <span className="min-w-0">
                 <span className="block truncate text-sm font-semibold">{item.quest.title}</span>
                 <span className="block truncate text-xs text-muted-foreground">
-                  {item.quest.area} · {item.distance.toFixed(1)} mi
+                  {item.quest.location.area} · {item.distance.toFixed(1)} mi
                 </span>
               </span>
             </button>
