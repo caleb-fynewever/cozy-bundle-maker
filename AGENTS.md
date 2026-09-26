@@ -8,3 +8,18 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+# Project rules
+
+- Product is **Side Quest**: a student social-discovery app. Core principle: don't recommend
+  places, create reasons to go.
+- All recommendation logic lives in `src/lib/engine.ts` (taste vectors, scoring, pipeline,
+  compatibility, tonight trio). Weights are exported as `WEIGHTS` so behaviour is tuned in one
+  place — never inline scoring rules in components.
+- Quest and user seed data lives in `src/data/` as plain TypeScript so the app works with zero
+  API keys or backend.
+- User state (saved, completed, passed, rankings, squad, XP, privacy) lives in `src/lib/store.ts`,
+  a localStorage-backed external store read through `useUserState()`. No global state in routes.
+- Privacy rule: never render or store exact user coordinates; only approximate distance.
+- Colors, gradients and shadows are semantic tokens in `src/styles.css`. No color utilities in
+  components.
