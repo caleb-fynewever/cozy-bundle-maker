@@ -21,7 +21,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const current = items[0];
   const next = items[1];
-  const turn = phase === "leaving" ? (choice === "save" ? 48 : -48) : Math.max(-34, Math.min(34, dragX / 8));
+  const turn = Math.max(-6, Math.min(6, dragX / 45));
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
@@ -103,7 +103,7 @@ export function SwipeDeck({ items }: { items: ScoredQuest[] }) {
             <article
               key={current.quest.id}
               className={`relative select-none overflow-hidden border border-border-strong bg-card shadow-sm ${phase === "leaving" ? "transition-transform duration-[420ms] ease-out" : dragX === 0 ? "transition-transform duration-200 ease-out" : ""}`}
-              style={{ transform: `perspective(1100px) translateX(${dragX}px) rotateY(${turn}deg) rotate(${Math.max(-5, Math.min(5, dragX / 65))}deg)`, transformOrigin: dragX >= 0 ? "left center" : "right center", touchAction: "pan-y" }}
+              style={{ transform: `translateX(${dragX}px) rotate(${turn}deg)`, touchAction: "pan-y" }}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={(event) => finish(event)}
