@@ -116,7 +116,7 @@ function CreatePage() {
 
   return (
     <AppShell>
-      <SectionTitle kicker="Create" title="Write a side quest" />
+      <h1 className="mt-6 text-5xl font-extrabold leading-[0.95]">Make a quest</h1>
 
       <form
         className="grid gap-4 lg:grid-cols-[1.4fr_1fr]"
@@ -125,7 +125,7 @@ function CreatePage() {
           publish();
         }}
       >
-        <div className="space-y-4 rounded-3xl border border-border bg-card p-5">
+        <div className="space-y-4 rounded-2xl border border-border p-5">
           <Field label="Title" htmlFor="title">
             <input
               id="title"
@@ -251,7 +251,7 @@ function CreatePage() {
           </div>
         </div>
 
-        <aside className="space-y-3 rounded-3xl border border-border bg-card p-5">
+        <aside className="space-y-3 rounded-2xl border border-border p-5">
           <h3 className="text-lg font-bold">Make it a mission, not an errand</h3>
           <p className="text-sm text-muted-foreground">
             "Go get ice cream" is a plan. "Ice Cream Draft Night" is a quest: everyone picks a
