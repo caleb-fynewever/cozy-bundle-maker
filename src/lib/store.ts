@@ -154,6 +154,10 @@ export function bindUser(userId: string | null) {
   hydrate();
 }
 
+export function getState() {
+  return state;
+}
+
 export function hydrate() {
   if (hydrated || typeof window === "undefined") return;
   hydrated = true;

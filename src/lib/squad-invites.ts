@@ -4,6 +4,8 @@ import { useAuth } from "@/lib/auth";
 import { actions, useUserState } from "@/lib/store";
 import { listSquadInvites, respondSquadInvite, type RemoteInvite } from "@/lib/squad-invites.functions";
 import { getProfileById } from "@/lib/profiles.functions";
+import { refreshSharedSquads } from "@/lib/shared-squads";
+import { UUID_RE } from "@/lib/store";
 
 const listeners = new Set<() => void>();
 /** Ask every mounted invite hook to refetch (e.g. right after sending one). */
@@ -53,7 +55,10 @@ export function useSquadInvites() {
 
   const answer = async (invite: RemoteInvite, accept: boolean) => {
     const row = await respond({ data: { id: invite.id, accept, name: state.name === "You" ? (session?.user.email?.split("@")[0] ?? "Friend") : state.name } });
-    if (accept) {
+    if (accept && UUID_RE.test(row.squad_key)) {
+      // Shared squad: the backend already added you; just pull it down.
+      refreshSharedSquads();
+    } else if (accept) {
       let leaderName = row.inviter_name;
       if (!leaderName || leaderName === "A friend") {
         try {
