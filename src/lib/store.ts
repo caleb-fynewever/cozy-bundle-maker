@@ -23,6 +23,8 @@ export type UserState = {
   squadIds: string[];
   squadLeaderId: string | null;
   squadInvites: SquadInvite[];
+  /** Real signed-up friends who joined your squads through email invites. */
+  friends: Friend[];
   xp: number;
   xpClaims: string[];
   streak: number;
@@ -43,6 +45,7 @@ export type UserState = {
 export type ApproximateLocation = { lat: number; lng: number; label: string };
 export type ScheduledQuest = { questId: string; when: string; endWhen?: string };
 export type UserSquad = { id: string; name: string; leaderId: string; memberIds: string[] };
+export type Friend = { id: string; name: string; email: string };
 export type SquadInvite = { id: string; personId: string; personName: string; squadId?: string; squadName?: string; direction: "sent" | "received"; at: number };
 export type XpKind = "complete" | "squad" | "create" | "join" | "verify";
 export type XpEvent = { kind: XpKind; xp: number; at: number; label: string; refId?: string };
@@ -70,6 +73,7 @@ const initialState: UserState = {
   squadIds: [],
   squadLeaderId: null,
   squadInvites: [],
+  friends: [],
   xp: 0,
   xpClaims: [],
   streak: 0,
@@ -345,6 +349,26 @@ export const actions = {
         squadInvites: s.squadInvites.filter((item) => item.id !== id),
         squadLeaderId: joinedSquad.leaderId,
       };
+    });
+  },
+  /** Inviter side: a real friend accepted, so add them to that squad. */
+  addFriendToSquad(squadId: string, friend: Friend) {
+    setState((s) => {
+      const squad = s.squads.find((item) => item.id === squadId);
+      if (!squad) return s;
+      const friends = s.friends.some((f) => f.id === friend.id) ? s.friends.map((f) => f.id === friend.id ? friend : f) : [...s.friends, friend];
+      if (squad.memberIds.includes(friend.id)) return { ...s, friends };
+      const squads = s.squads.map((item) => item.id === squadId ? { ...item, memberIds: [...item.memberIds, friend.id] } : item);
+      return { ...s, friends, squads, squadIds: [...new Set(squads.flatMap((item) => item.memberIds))] };
+    });
+  },
+  /** Invitee side: join the inviter's squad after accepting a real invite. */
+  joinFriendSquad(squadId: string, squadName: string, leader: Friend) {
+    setState((s) => {
+      const friends = s.friends.some((f) => f.id === leader.id) ? s.friends : [...s.friends, leader];
+      if (s.squads.some((item) => item.id === squadId)) return { ...s, friends, activeSquadId: squadId };
+      const squads = [...s.squads, { id: squadId, name: squadName, leaderId: leader.id, memberIds: [leader.id] }];
+      return { ...s, friends, squads, activeSquadId: squadId, squadLeaderId: leader.id, squadIds: [...new Set(squads.flatMap((item) => item.memberIds))] };
     });
   },
   dismissSquadInvite(id: string) {
