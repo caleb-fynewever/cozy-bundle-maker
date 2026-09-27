@@ -63,33 +63,59 @@ function placeLine(place: PlaceResult) {
 }
 
 /*
- * Place search is kept to the Twin Cities first (a box around Minneapolis and St Paul), so
- * "Stone Arch Bridge" finds the one by the river, not one in New Hampshire. Only when that finds
- * nothing does it widen to a search that still prefers the Twin Cities but can reach further.
+ * Place search uses Photon (OpenStreetMap data built for search-as-you-type): it matches partial
+ * words and small typos, and ranks results near campus first. It looks inside the Twin Cities
+ * first, and only widens (still biased toward campus) when that finds nothing.
  */
-const TWIN_CITIES_BOX = "-93.40,45.08,-93.00,44.87";
+const TWIN_CITIES_BBOX = "-93.60,44.70,-92.80,45.25";
+const CAMPUS = { lat: 44.974, lon: -93.232 };
 
-async function searchPlaces(query: string, signal: AbortSignal) {
+type PhotonFeature = {
+  properties: Record<string, string | undefined> & { name?: string };
+  geometry: { coordinates: [number, number] };
+};
+
+async function searchPlaces(query: string, signal: AbortSignal): Promise<PlaceResult[]> {
   const lookup = async (bounded: boolean) => {
     const params = new URLSearchParams({
       q: query,
-      format: "jsonv2",
-      addressdetails: "1",
-      limit: "5",
-      "accept-language": "en",
-      countrycodes: "us",
-      viewbox: TWIN_CITIES_BOX,
-      bounded: bounded ? "1" : "0",
+      lat: String(CAMPUS.lat),
+      lon: String(CAMPUS.lon),
+      limit: "8",
+      lang: "en",
+      location_bias_scale: "0.3",
     });
-    const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, { signal });
+    if (bounded) params.set("bbox", TWIN_CITIES_BBOX);
+    const response = await fetch(`https://photon.komoot.io/api/?${params}`, { signal });
     if (!response.ok) throw new Error("Search is temporarily unavailable.");
-    return (await response.json()) as PlaceResult[];
+    const data = (await response.json()) as { features?: PhotonFeature[] };
+    const seen = new Set<string>();
+    const results: PlaceResult[] = [];
+    for (const { properties: p, geometry } of data.features ?? []) {
+      const street = p["housenumber"] && p["street"] ? `${p["housenumber"]} ${p["street"]}` : p["street"];
+      const name = p.name ?? street;
+      if (!name) continue;
+      const city = p["city"] ?? p["county"] ?? p["state"] ?? "";
+      const key = `${name}|${city}`.toLowerCase();
+      if (seen.has(key)) continue; // the same bridge as a bridge and a path, etc.
+      seen.add(key);
+      const address: Record<string, string> = {};
+      const area = p["locality"] ?? p["district"];
+      if (area) address["neighbourhood"] = area;
+      if (city) address["city"] = city;
+      if (p["state"]) address["state"] = p["state"];
+      results.push({
+        display_name: [name, street && street !== name ? street : "", city].filter(Boolean).join(", "),
+        lat: String(geometry.coordinates[1]),
+        lon: String(geometry.coordinates[0]),
+        address,
+      });
+      if (results.length === 5) break;
+    }
+    return results;
   };
   const near = await lookup(true);
   if (near.length || signal.aborted) return near;
-  // OpenStreetMap's search asks for at most one request a second; wait before widening.
-  await new Promise((resolve) => window.setTimeout(resolve, 1000));
-  if (signal.aborted) return [];
   return lookup(false);
 }
 
@@ -146,7 +172,7 @@ export function CreateQuestForm({ embedded = false }: { embedded?: boolean }) {
       } finally {
         if (placeRequest.current === requestId) setPlaceLoading(false);
       }
-    }, 350);
+    }, 200);
     return () => {
       window.clearTimeout(timer);
       controller.abort();
