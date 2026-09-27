@@ -1318,3 +1318,92 @@ function RemoteProfile({ handle }: { handle: string }) {
     </AppShell>
   );
 }
+
+/** Invite a real wego account (found by handle) to one of your squads. */
+function RemoteInviteButton({ handle, name }: { handle: string; name: string }) {
+  const state = useUserState();
+  const sendByHandle = useServerFn(sendSquadInviteByHandle);
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const ledSquads = state.squads.filter((squad) => squad.leaderId === "me");
+
+  const invite = async (squad: (typeof ledSquads)[number]) => {
+    setBusy(squad.id);
+    try {
+      const result = await sendByHandle({
+        data: {
+          squadKey: squad.id,
+          squadName: squad.name,
+          inviterName: state.name,
+          handle,
+        },
+      });
+      toast(
+        result.already
+          ? `${name} already has a pending invite to ${squad.name}.`
+          : `Invite to ${squad.name} sent to ${name}.`,
+      );
+      setOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't send that invite.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          className={cn(buttonClass({ variant: "outline", size: "sm" }), "min-w-32")}
+          aria-label={`Invite ${name} to a squad`}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <UserPlus aria-hidden className="h-4 w-4" />
+            Invite
+          </span>
+        </button>
+      </DialogTrigger>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Invite {name}</DialogTitle>
+          <DialogDescription>Pick which squad to invite them to.</DialogDescription>
+        </DialogHeader>
+        {ledSquads.length ? (
+          <ul className="mt-2 space-y-2">
+            {ledSquads.map((squad) => (
+              <li key={squad.id}>
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => void invite(squad)}
+                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-border px-4 py-3 text-left transition-colors hover:bg-surface active:scale-[0.99] disabled:opacity-60"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold">{squad.name}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {squad.memberIds.length}{" "}
+                      {squad.memberIds.length === 1 ? "member" : "members"}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-sm font-semibold text-ring">
+                    {busy === squad.id ? "Sending…" : "Invite"}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 text-sm text-muted-foreground">
+            You don't lead a squad yet.{" "}
+            <Link to="/squad" className={textButtonClass} onClick={() => setOpen(false)}>
+              Make one on the Squad page
+            </Link>
+            .
+          </p>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
