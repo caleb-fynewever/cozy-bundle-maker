@@ -5,6 +5,8 @@ import { actions, hydrate, useUserState } from "@/lib/store";
 import { Button } from "@/components/ui-kit";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getQuest } from "@/data/quests";
+import { useSquadInvites } from "@/lib/squad-invites";
+import { toast } from "sonner";
 
 const NAV = [
   { to: "/feed", label: "Feed", icon: Newspaper },
@@ -16,6 +18,8 @@ const NAV = [
 export function AppShell({ children, wide = false, compact = false }: { children: ReactNode; wide?: boolean; compact?: boolean }) {
   const state = useUserState();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const remote = useSquadInvites();
+  const inviteCount = state.squadInvites.length + remote.received.length;
   const [headerVisible, setHeaderVisible] = useState(true);
   const lastScrollY = useRef(0);
   const scrollDelta = useRef(0);
@@ -125,13 +129,14 @@ export function AppShell({ children, wide = false, compact = false }: { children
           ) : null}
         </nav>
         <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
-          <button type="button" onClick={() => setNotificationsOpen(true)} aria-label={`Squad invites${state.squadInvites.length ? `, ${state.squadInvites.length} pending` : ""}`} className="relative grid h-10 w-10 place-items-center rounded-full border border-border hover:bg-surface">
+          <button type="button" onClick={() => setNotificationsOpen(true)} aria-label={`Squad invites${inviteCount ? `, ${inviteCount} pending` : ""}`} className="relative grid h-10 w-10 place-items-center rounded-full border border-border hover:bg-surface">
             <Bell aria-hidden className="h-5 w-5" />
-            {state.squadInvites.length ? <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{state.squadInvites.length}</span> : null}
+            {inviteCount ? <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{inviteCount}</span> : null}
           </button>
           <DialogContent>
             <DialogHeader><DialogTitle>Squad invites</DialogTitle><DialogDescription>Invites and updates for your squad.</DialogDescription></DialogHeader>
-            {state.squadInvites.length ? <ul className="divide-y divide-border">{state.squadInvites.map((invite) => <li key={invite.id} className="flex items-center gap-3 py-3"><div className="min-w-0 flex-1"><p className="font-medium">{invite.direction === "received" ? `${invite.personName} invited you` : `Invite sent to ${invite.personName}`}</p><p className="text-sm text-muted-foreground">{invite.direction === "received" ? `Join ${invite.squadName ?? "their squad"}?` : `For ${invite.squadName ?? "your squad"} · waiting for a response`}</p></div>{invite.direction === "received" ? <><Button onClick={() => actions.acceptSquadInvite(invite.id)}>Accept</Button><Button variant="ghost" onClick={() => actions.dismissSquadInvite(invite.id)}>Decline</Button></> : <Button variant="ghost" onClick={() => actions.dismissSquadInvite(invite.id)}>Dismiss</Button>}</li>)}</ul> : <p className="py-4 text-sm text-muted-foreground">You’re all caught up. Squad invites will show up here.</p>}
+            {remote.received.length ? <ul className="divide-y divide-border">{remote.received.map((invite) => <li key={invite.id} className="flex items-center gap-3 py-3"><div className="min-w-0 flex-1"><p className="font-medium">{invite.inviter_name} invited you</p><p className="text-sm text-muted-foreground">Join {invite.squad_name}?</p></div><Button onClick={() => remote.answer(invite, true).then(() => toast.success(`You joined ${invite.squad_name}.`), () => toast.error("That invite isn't available anymore."))}>Accept</Button><Button variant="ghost" onClick={() => void remote.answer(invite, false).catch(() => undefined)}>Decline</Button></li>)}</ul> : null}
+            {state.squadInvites.length ? <ul className="divide-y divide-border">{state.squadInvites.map((invite) => <li key={invite.id} className="flex items-center gap-3 py-3"><div className="min-w-0 flex-1"><p className="font-medium">{invite.direction === "received" ? `${invite.personName} invited you` : `Invite sent to ${invite.personName}`}</p><p className="text-sm text-muted-foreground">{invite.direction === "received" ? `Join ${invite.squadName ?? "their squad"}?` : `For ${invite.squadName ?? "your squad"} · waiting for a response`}</p></div>{invite.direction === "received" ? <><Button onClick={() => actions.acceptSquadInvite(invite.id)}>Accept</Button><Button variant="ghost" onClick={() => actions.dismissSquadInvite(invite.id)}>Decline</Button></> : <Button variant="ghost" onClick={() => actions.dismissSquadInvite(invite.id)}>Dismiss</Button>}</li>)}</ul> : remote.received.length ? null : <p className="py-4 text-sm text-muted-foreground">You’re all caught up. Squad invites will show up here.</p>}
           </DialogContent>
         </Dialog>
         </div>

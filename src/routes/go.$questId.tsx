@@ -162,7 +162,10 @@ function GoPage() {
   const selectedSquads = state.squads.filter((squad) => squadIds.includes(squad.id));
   const selectedMemberIds = [...new Set(selectedSquads.flatMap((squad) => squad.memberIds))];
   const canLeadSelectedSquads = selectedSquads.every((squad) => squad.leaderId === "me");
-  const people = NEARBY_STUDENTS.filter((person) => selectedMemberIds.includes(person.id));
+  const people: { id: string; name: string }[] = [
+    ...NEARBY_STUDENTS.filter((person) => selectedMemberIds.includes(person.id)),
+    ...state.friends.filter((friend) => selectedMemberIds.includes(friend.id)),
+  ];
   const chosen = canLeadSelectedSquads ? (crew ?? selectedMemberIds) : [];
   const miles = distanceMi(state.approximateLocation ?? CAMPUS_ORIGIN, quest.location);
   const walkMin = Math.max(2, Math.round(miles * 20));
