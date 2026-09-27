@@ -145,3 +145,14 @@ test("save and undo preserve order without awarding XP", () => {
   assert.deepEqual(snapshot().saved, ["a"]);
   assert.equal(snapshot().xp, 0);
 });
+
+test("ordinary squad members can start, schedule and complete quests", () => {
+  hydrateAccount({squads:[{id:"member_squad",name:"Friends",leaderId:"f_leader",memberIds:["f_leader"]}],activeSquadId:"member_squad"});
+  actions.scheduleQuest("q_plan", "2026-10-01T18:00");
+  assert.equal(snapshot().scheduledQuests[0].questId, "q_plan");
+  actions.startQuest("q_plan");
+  assert(snapshot().inProgress.includes("q_plan"));
+  actions.complete("q_plan", "A shared activity", true);
+  assert(snapshot().completed.includes("q_plan"));
+  assert.equal(snapshot().squads[0].leaderId, "f_leader");
+});

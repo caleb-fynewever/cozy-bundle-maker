@@ -21,6 +21,7 @@ for (const key of [
   "RESEND_API_KEY",
   "EMAIL_FROM",
   "EMAIL_VERIFICATION_SECRET",
+  "SUPABASE_SERVICE_ROLE_KEY",
 ]) {
   if (localEnv[key] && !processEnv[key]) processEnv[key] = localEnv[key];
 }

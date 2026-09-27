@@ -383,11 +383,8 @@ function GoPage() {
   }
 
   const selectedSquads = state.squads.filter((squad) => selectedSquadIds.includes(squad.id));
-  const isSquadLeader = selectedSquads.every((squad) => squad.leaderId === "me");
   const selectedMemberIds = [...new Set(selectedSquads.flatMap((squad) => squad.memberIds))];
-  const chosen = isSquadLeader
-    ? (crew ?? selectedMemberIds).filter((id) => selectedMemberIds.includes(id))
-    : [];
+  const chosen = (crew ?? selectedMemberIds).filter((id) => selectedMemberIds.includes(id));
   const people = [
     ...NEARBY_STUDENTS.filter((person) => selectedMemberIds.includes(person.id)),
     ...state.friends
@@ -481,13 +478,9 @@ function GoPage() {
     void takePhoto(event.dataTransfer.files[0]);
   }
 
-  // Always finishable: if someone else leads your squad you go solo (`chosen` is empty), never stuck.
+  // Every member can organize and complete their own squad activity.
   function finish() {
     if (swapping.current) return;
-    if (!isSquadLeader) {
-      toast.error("Only a selected squad’s leader can finish its activity.");
-      return;
-    }
     const fresh = !state.completed.includes(quest!.id);
     const withSquad = chosen.length > 0;
     const earned = actions.complete(quest!.id, quest!.title, withSquad);
@@ -498,10 +491,6 @@ function GoPage() {
 
   async function headOut() {
     if (swapping.current) return;
-    if (!isSquadLeader) {
-      toast.error("Only a selected squad’s leader can start its activity. Deselect it to go solo.");
-      return;
-    }
     actions.startQuest(quest!.id);
     setAnnounce(repeat ? "You’re out again." : "You’re out. Your quest is active.");
     swapStage("out");
@@ -526,12 +515,6 @@ function GoPage() {
   // repeat only gets the calendar step, and nothing claims it was saved.
   function scheduleQuest() {
     if (!when) return;
-    if (!isSquadLeader) {
-      toast.error(
-        "Only a selected squad’s leader can schedule its activity. Deselect it to go solo.",
-      );
-      return;
-    }
     const keeps = !alreadyDone && !state.inProgress.includes(quest!.id);
     if (keeps) actions.scheduleQuest(quest!.id, when, endWhen);
     setScheduledHere(when);
@@ -724,13 +707,7 @@ function GoPage() {
                   </Chip>
                 ))}
               </div>
-              {!isSquadLeader ? (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Only the leader of each selected squad can start or schedule its activity.
-                  Deselect that squad to go solo.
-                </p>
-              ) : null}
-              {isSquadLeader && selectedMemberIds.length === 0 ? (
+              {selectedMemberIds.length === 0 ? (
                 <p className="mt-2 text-sm text-muted-foreground">
                   No accepted squad members yet.{" "}
                   <Link
@@ -742,7 +719,7 @@ function GoPage() {
                   , or head out solo.
                 </p>
               ) : null}
-              {isSquadLeader && selectedMemberIds.length > 0 ? (
+              {selectedMemberIds.length > 0 ? (
                 <p className="mt-1 text-sm text-muted-foreground">
                   Tap anyone who can’t make it. You’re always in.
                 </p>
