@@ -50,7 +50,9 @@ export type SquadInvite = { id: string; personId: string; personName: string; sq
 export type XpKind = "complete" | "squad" | "create" | "join" | "verify";
 export type XpEvent = { kind: XpKind; xp: number; at: number; label: string; refId?: string };
 
-const KEY = "wego.state.v1";
+const BASE_KEY = "wego.state.v1";
+/** Signed-out devices share the base key; each account gets its own slot. */
+let activeKey = BASE_KEY;
 
 const initialState: UserState = {
   name: "You",
@@ -92,7 +94,7 @@ const listeners = new Set<() => void>();
 
 function persist() {
   try {
-    localStorage.setItem(KEY, JSON.stringify(state));
+    localStorage.setItem(activeKey, JSON.stringify(state));
   } catch {
     /* storage unavailable — in-memory only */
   }
@@ -102,11 +104,33 @@ function emit() {
   for (const listener of listeners) listener();
 }
 
+/**
+ * Points the store at the signed-in account's slot. First sign-in on a
+ * device carries over whatever the signed-out session had saved.
+ */
+export function bindUser(userId: string | null) {
+  if (typeof window === "undefined") return;
+  const nextKey = userId ? `${BASE_KEY}.u.${userId}` : BASE_KEY;
+  if (nextKey === activeKey && hydrated) return;
+  activeKey = nextKey;
+  hydrated = false;
+  state = initialState;
+  try {
+    if (userId && !localStorage.getItem(activeKey)) {
+      const legacy = localStorage.getItem(BASE_KEY);
+      if (legacy) localStorage.setItem(activeKey, legacy);
+    }
+  } catch {
+    /* storage unavailable */
+  }
+  hydrate();
+}
+
 export function hydrate() {
   if (hydrated || typeof window === "undefined") return;
   hydrated = true;
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(activeKey);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<UserState>;
       state = { ...initialState, ...parsed };
