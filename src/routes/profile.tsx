@@ -50,6 +50,7 @@ export const Route = createFileRoute("/profile")({
 
 function ProfilePage() {
   const state = useUserState();
+  const navigate = useNavigate();
   const { handle } = Route.useSearch();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsDraft, setSettingsDraft] = useState({ name: state.name, handle: state.handle, bio: state.bio, avatarUrl: state.avatarUrl, favoriteVibes: state.favoriteVibes, optInNearby: state.optInNearby, shareLocation: state.shareLocation, publicProfile: state.publicProfile });
