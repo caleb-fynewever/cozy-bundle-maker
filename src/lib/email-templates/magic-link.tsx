@@ -13,7 +13,7 @@ import {
 interface MagicLinkEmailProps {
   siteName: string
   confirmationUrl: string
-  token?: string
+  token?: string | undefined
 }
 
 export const MagicLinkEmail = ({
