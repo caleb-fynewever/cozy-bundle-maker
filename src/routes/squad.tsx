@@ -472,10 +472,16 @@ function SquadPage() {
             )}
           </section>
 
-        </div>
-        <aside className="squad-aside squad-manager" aria-label="Your squads and this week">
-          {state.squads.length ? <WeekTogether /> : null}
-          <section className="mt-8" aria-labelledby="your-squads-heading">
+      </div>
+    </AppShell>
+  );
+}
+
+function AllSquads() {
+  const state = useUserState();
+  const { sent: sentInvites } = useSquadInvites();
+  return (
+          <section aria-labelledby="your-squads-heading">
             <SectionHeading
               id="your-squads-heading"
               eyebrow="Your circles"
