@@ -202,7 +202,7 @@ function ProfilePage() {
                     </Button>
                   </div>
                   <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">Demo tools</summary><div className="mt-2 flex flex-wrap gap-2"><Button variant="ghost" onClick={actions.loadDemo}>Load demo</Button><Button variant="ghost" onClick={actions.reset}>Reset app</Button></div></details>
-                  <div className="flex gap-2"><DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose><Button onClick={() => { actions.saveSettings(settingsDraft); setSettingsOpen(false); }}>Save</Button></div>
+                  <div className="flex gap-2"><DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose><Button onClick={() => { actions.saveSettings(settingsDraft); setSettingsOpen(false); void syncMyProfile({ data: { handle: settingsDraft.handle, name: settingsDraft.name, bio: settingsDraft.bio, avatarUrl: settingsDraft.avatarUrl } }).catch((error) => toast.error(error instanceof Error ? error.message : "Couldn't share your profile.")); }}>Save</Button></div>
                 </div>
               </DialogContent>
             </Dialog>

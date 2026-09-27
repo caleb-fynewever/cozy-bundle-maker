@@ -33,6 +33,14 @@ function SetupPage() {
       toast.error("Pick a handle so people can find your profile.");
       return;
     }
+    setBusy(true);
+    try {
+      await syncProfile({ data: { handle: trimmedHandle, name: trimmedName, bio: bio.trim() || "New around here. Looking for something to do.", avatarUrl: null } });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't save your profile. Try again.");
+      setBusy(false);
+      return;
+    }
     setState((current) => ({
       ...current,
       configured: true,

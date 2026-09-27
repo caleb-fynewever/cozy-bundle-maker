@@ -12,7 +12,7 @@ import {
 } from "@/lib/engine";
 import { actions, useUserState, XP } from "@/lib/store";
 import { useServerFn } from "@tanstack/react-start";
-import { revokeSquadInvite, sendSquadInvite } from "@/lib/squad-invites.functions";
+import { revokeSquadInvite, sendSquadInvite, sendSquadInviteByHandle } from "@/lib/squad-invites.functions";
 import { refreshSquadInvites, useSquadInvites } from "@/lib/squad-invites";
 import { levelName, squadWeek } from "@/lib/progress";
 import { VIBE_EMOJI, VIBE_LABEL } from "@/lib/types";
@@ -152,18 +152,28 @@ function SquadPage() {
       toast.error(error instanceof Error ? error.message : "Couldn't revoke that invite.");
     }
   };
+  const sendInviteByHandle = useServerFn(sendSquadInviteByHandle);
   const inviteByEmail = async (event: FormEvent<HTMLFormElement>, squadId: string) => {
     event.preventDefault();
     const targetSquad = state.squads.find((item) => item.id === squadId);
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
-    const targetEmail = String(form.get("inviteEmail") ?? "").trim();
-    if (!targetSquad || !targetEmail) return;
+    const target = String(form.get("inviteEmail") ?? "").trim();
+    if (!targetSquad || !target) return;
+    const inviterName = state.name === "You" ? "A friend" : state.name;
     try {
-      const res = await sendInvite({ data: { squadKey: targetSquad.id, squadName: targetSquad.name, inviterName: state.name === "You" ? "A friend" : state.name, email: targetEmail } });
-      toast.success(res.already ? "Already invited" : "Invite sent", {
-        description: res.already ? `${targetEmail} already has a pending invite.` : `We emailed ${targetEmail}. It'll also wait under their bell when they sign in.`,
-      });
+      if (target.includes("@")) {
+        const res = await sendInvite({ data: { squadKey: targetSquad.id, squadName: targetSquad.name, inviterName, email: target.toLowerCase() } });
+        toast.success(res.already ? "Already invited" : "Invite sent", {
+          description: res.already ? `${target} already has a pending invite.` : `We emailed ${target}. It'll also wait under their bell when they sign in.`,
+        });
+      } else {
+        const handle = target.replace(/^@+/, "").toLowerCase();
+        const res = await sendInviteByHandle({ data: { squadKey: targetSquad.id, squadName: targetSquad.name, inviterName, handle } });
+        toast.success(res.already ? "Already invited" : "Invite sent", {
+          description: res.already ? `@${handle} already has a pending invite.` : `It's waiting under ${res.name}'s bell.`,
+        });
+      }
       formElement.reset();
       refreshSquadInvites();
     } catch (error) {
@@ -285,10 +295,10 @@ function SquadPage() {
                     {!members.length && !friends.length && !pendingHere.length ? <li className="py-3 text-sm text-muted-foreground">No members yet. Invite someone below.</li> : null}
                   </ul>
                   {isOwner ? <form onSubmit={(event) => void inviteByEmail(event, item.id)} className="mt-4">
-                    <label htmlFor={`invite-email-${item.id}`} className="font-semibold">Invite someone by email</label>
-                    <p className="mt-1 text-sm text-muted-foreground">They'll get an email, and the invite waits under their bell once they sign in.</p>
+                    <label htmlFor={`invite-email-${item.id}`} className="font-semibold">Invite someone</label>
+                    <p className="mt-1 text-sm text-muted-foreground">By handle if they're on wego, or by email if they're not yet.</p>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <input id={`invite-email-${item.id}`} name="inviteEmail" type="email" autoComplete="email" required maxLength={254} placeholder="friend@example.com" className="min-h-11 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm" />
+                      <input id={`invite-email-${item.id}`} name="inviteEmail" type="text" autoComplete="off" required maxLength={254} placeholder="@handle or friend@example.com" className="min-h-11 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm" />
                       <Button type="submit" variant="ink">Send invite</Button>
                     </div>
                   </form> : null}
