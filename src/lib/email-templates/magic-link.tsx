@@ -12,18 +12,16 @@ import {
 
 interface MagicLinkEmailProps {
   siteName: string
-  confirmationUrl: string
-  token?: string | undefined
+  token: string
 }
 
 export const MagicLinkEmail = ({
   siteName,
-  confirmationUrl,
   token,
 }: MagicLinkEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Your {siteName} sign-in code{token ? `: ${token}` : ''}</Preview>
+    <Preview>Your {siteName} sign-in code: {token}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Text style={wordmark}>wego</Text>
@@ -31,13 +29,10 @@ export const MagicLinkEmail = ({
         <Text style={text}>
           Type this code into {siteName} to get in. It expires shortly.
         </Text>
-        {token ? <Text style={code}>{token}</Text> : null}
+        <Text style={code}>{token}</Text>
         <Text style={text}>
-          Prefer a link?{' '}
-          <a href={confirmationUrl} style={link}>
-            Tap here to sign in
-          </a>
-          .
+          Enter this code on the sign-in screen. This email does not contain a
+          sign-in link.
         </Text>
         <Text style={footer}>
           If you didn't ask for this, you can safely ignore it.
@@ -81,5 +76,4 @@ const code = {
   padding: '16px 0',
   margin: '0 0 24px',
 }
-const link = { color: '#367850' }
 const footer = { fontSize: '12px', color: '#999999', margin: '28px 0 0' }
