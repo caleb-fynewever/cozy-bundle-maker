@@ -17,5 +17,5 @@ export function PageHelp() {
   const key = pathname.split("/")[1] || "quests";
   const help = PAGE_HELP[key];
   if (!help) return null;
-  return <HelpDot label={`About this page: ${help.title}`} title={help.title}>{help.text}</HelpDot>;
+  return <HelpDot className="self-center border-border bg-transparent font-normal hover:border-border-strong hover:bg-surface data-[state=open]:border-border-strong data-[state=open]:bg-surface data-[state=open]:text-foreground" label={`About this page: ${help.title}`} title={help.title}>{help.text}</HelpDot>;
 }

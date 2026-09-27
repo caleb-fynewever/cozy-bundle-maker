@@ -42,8 +42,8 @@ export function PageHeader({
           {leading}
           <div className="min-w-0">
             {kicker ? <p className="mb-1 font-hand text-lg leading-tight text-muted-foreground">{kicker}</p> : null}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <h1 className="text-[2rem] font-semibold leading-[1.08] tracking-[-0.02em] text-balance sm:text-[2.5rem]">{title}</h1>
+            <div className="flex items-center gap-2.5">
+              <h1 className="min-w-0 text-[2rem] font-semibold leading-[1.08] tracking-[-0.02em] text-balance sm:text-[2.5rem]">{title}</h1>
               <PageHelp />
             </div>
             {eyebrow ? <p className="mt-1.5 font-hand text-lg leading-tight text-muted-foreground">{eyebrow}</p> : null}
