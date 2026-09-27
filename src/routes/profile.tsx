@@ -318,7 +318,7 @@ function ProfilePage() {
 /** A real wego account, looked up by handle. */
 function RemoteProfile({ handle }: { handle: string }) {
   const findByHandle = useServerFn(findProfileByHandle);
-  const [profile, setProfile] = useState<PublicProfile | null | "loading">("loading");
+  const [profile, setProfile] = useState<RemotePublicProfile | null | "loading">("loading");
 
   useEffect(() => {
     let active = true;
