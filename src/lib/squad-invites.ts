@@ -17,6 +17,7 @@ export function useSquadInvites() {
   const state = useUserState();
   const list = useServerFn(listSquadInvites);
   const respond = useServerFn(respondSquadInvite);
+  const getProfile = useServerFn(getProfileById);
   const [received, setReceived] = useState<RemoteInvite[]>([]);
   const [sent, setSent] = useState<RemoteInvite[]>([]);
 
