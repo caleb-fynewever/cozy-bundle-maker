@@ -188,6 +188,16 @@ function ProfilePage() {
                   </fieldset>
                 </div>
                 <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        void signOut().then(() => navigate({ to: "/auth" }));
+                      }}
+                    >
+                      Sign out
+                    </Button>
+                  </div>
                   <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">Demo tools</summary><div className="mt-2 flex flex-wrap gap-2"><Button variant="ghost" onClick={actions.loadDemo}>Load demo</Button><Button variant="ghost" onClick={actions.reset}>Reset app</Button></div></details>
                   <div className="flex gap-2"><DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose><Button onClick={() => { actions.saveSettings(settingsDraft); setSettingsOpen(false); }}>Save</Button></div>
                 </div>
