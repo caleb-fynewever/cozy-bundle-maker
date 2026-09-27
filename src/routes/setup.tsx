@@ -25,7 +25,7 @@ function SetupPage() {
   const [busy, setBusy] = useState(false);
   const syncProfileFn = useServerFn(syncProfile);
 
-  function onSave(event: FormEvent) {
+  async function onSave(event: FormEvent) {
     event.preventDefault();
     const trimmedName = name.trim();
     const trimmedHandle = handle.trim().replace(/^@+/, "").toLowerCase();

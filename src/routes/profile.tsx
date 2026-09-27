@@ -340,7 +340,7 @@ function RemoteProfile({ handle }: { handle: string }) {
   return (
     <AppShell>
       <div className="mx-auto max-w-3xl">
-        <BackButton fallback="/squad" label="Back" className="mb-4 underline underline-offset-4" />
+        <BackButton fallback="/leaderboard" label="Back" className="mb-4 underline underline-offset-4" />
         <PageHeader eyebrow="wego profile" title={profile.name} leading={<Avatar name={profile.name} size={68} imageUrl={profile.avatar_url} />} />
         <div className="-mt-3 mb-6">
           <p className="text-sm text-muted-foreground">@{profile.handle}</p>
