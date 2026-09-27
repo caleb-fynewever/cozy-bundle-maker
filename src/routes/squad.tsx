@@ -302,14 +302,6 @@ function SquadPage() {
                               {isOwner ? "You’re the creator" : "You’re a member"}
                             </p>
                             <div className="flex flex-wrap items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => actions.setActiveSquad(item.id)}
-                                disabled={state.activeSquadId === item.id}
-                              >
-                                {state.activeSquadId === item.id ? "Selected" : "Select squad"}
-                              </Button>
                               {isOwner ? (
                                 <Button
                                   variant="ghost"
