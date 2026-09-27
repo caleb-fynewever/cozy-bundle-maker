@@ -278,7 +278,7 @@ function SquadPage() {
                       <input id={`invite-email-${item.id}`} name="inviteEmail" type="email" autoComplete="email" required maxLength={254} placeholder="friend@example.com" className="min-h-11 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm" />
                       <Button type="submit" variant="ink">Send invite</Button>
                     </div>
-                  </form>
+                  </form> : null}
                     </div>
                   </details>
                 </li>
