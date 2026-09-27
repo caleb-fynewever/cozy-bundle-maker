@@ -435,12 +435,12 @@ export function SwipeDeck({ items: ranked }: { items: ScoredQuest[] }) {
     else resetDrag();
   }
 
-  const note = last ? (last.choice === "pass" ? "passed" : last.choice === "save" ? "saved to Lists" : last.earned ? `did it · +${last.earned} XP` : "did it") : null;
+  const note = last ? (last.choice === "pass" ? "passed" : last.choice === "save" ? "saved to My quests" : last.earned ? `did it · +${last.earned} XP` : "did it") : null;
   const status = last
     ? last.choice === "pass"
       ? `Passed ${last.title}.`
       : last.choice === "save"
-        ? `Saved ${last.title} to Lists.`
+        ? `Saved ${last.title} to My quests.`
         : `Did ${last.title}.${last.earned ? ` Plus ${last.earned} XP.` : ""}`
     : "";
 
@@ -680,7 +680,7 @@ function EmptyDeck({ deal, focusRef }: { deal: Deal; focusRef: RefObject<HTMLDiv
         <p className="mx-auto mt-2 max-w-sm text-pretty text-muted-foreground">
           Check back soon, or find saved quests in{" "}
           <Link to="/" search={{ tab: "mine" }} className="font-medium text-foreground underline decoration-foreground/30 decoration-[1.5px] underline-offset-4 transition-colors hover:decoration-foreground">
-            Lists
+            My quests
           </Link>
           .
         </p>
@@ -696,7 +696,7 @@ function DeckHelp() {
     <HelpDot label="How Quests work" title="How Quests work" side="top" align="center" className="font-sans">
       <ul className="space-y-1.5">
         <li>
-          Swipe right or tap <span className={ui}>Save</span> to keep it in Lists.
+          Swipe right or tap <span className={ui}>Save</span> to keep it in My quests.
         </li>
         <li>
           Swipe left or tap <span className={ui}>Pass</span> to skip it for now.

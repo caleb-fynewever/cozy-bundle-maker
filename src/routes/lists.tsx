@@ -4,6 +4,6 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 export const Route = createFileRoute("/lists")({
   staticData: { sitemap: false },
   beforeLoad: ({ location }) => {
-    throw redirect({ to: "/", search: { tab: "mine" }, hash: location.hash || undefined });
+    throw redirect({ to: "/", search: { tab: "mine" }, ...(location.hash ? { hash: location.hash } : {}) });
   },
 });

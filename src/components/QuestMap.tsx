@@ -374,7 +374,7 @@ export function QuestMap({
         <div className="max-w-xs">
           <p className="font-medium">This browser can't draw the map.</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Turn on WebGL or try another browser. Every quest is still in Quests and Lists.
+            Turn on WebGL or try another browser. Every quest is still in Quests.
           </p>
         </div>
       </div>

@@ -12,7 +12,7 @@ import { walkLabel } from "@/lib/maps";
 import { EASE_IN, flip, reducedMotion } from "@/lib/motion";
 import { parseWhen, whenLabel } from "@/lib/when";
 import { QuestDirections } from "@/components/QuestDirections";
-import { PageHeader, SectionHeading, Tally, buttonClass, textButtonClass } from "@/components/ui-kit";
+import { SectionHeading, Tally, buttonClass, textButtonClass } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
 

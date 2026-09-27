@@ -618,7 +618,7 @@ function GoPage() {
           </Link>
         ) : from === "lists" ? (
           <Link to="/" search={{ tab: "mine" }} className={backClass}>
-            <BackArrow /> Back to Lists
+            <BackArrow /> Back to My quests
           </Link>
         ) : (
           <Link to="/" className={backClass}>
@@ -928,7 +928,7 @@ function GoPage() {
                   className={cn(buttonClass(), "max-sm:flex-1")}
                 >
                   <ListChecks aria-hidden className="h-5 w-5" />
-                  See it in Lists
+                  See it in My quests
                 </Link>
               ) : (
                 <Button

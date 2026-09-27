@@ -289,7 +289,7 @@ function QuestDetail() {
         </Link>
       ) : from === "lists" ? (
         <Link to="/" search={{ tab: "mine" }} className={backClass}>
-          <BackArrow /> Back to Lists
+          <BackArrow /> Back to My quests
         </Link>
       ) : (
         <Link to="/" className={backClass}>
