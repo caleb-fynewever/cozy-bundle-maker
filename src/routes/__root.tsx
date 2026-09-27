@@ -14,7 +14,8 @@ import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
 import { useAuth } from "../lib/auth";
-import { bindUser, useUserState } from "../lib/store";
+import { bindUser, setState, useUserState } from "../lib/store";
+import { getMyProfile } from "../lib/profiles.functions";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
