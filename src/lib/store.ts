@@ -1,8 +1,11 @@
 import { useSyncExternalStore } from "react";
 import type { Quest, Vibe } from "@/lib/types";
 import type { FeedComment, FeedPost } from "@/data/feed";
+import { FOUNDERS_SQUAD } from "@/data/people";
 
 export type UserState = {
+  /** Set once the founders squad has been added, so leaving it sticks. */
+  foundersJoined?: boolean;
   /** False until the account finishes first-time setup. */
   configured: boolean;
   name: string;
@@ -73,6 +76,7 @@ const BASE_KEY = "wego.state.v1";
 let activeKey = BASE_KEY;
 
 const initialState: UserState = {
+  foundersJoined: true,
   configured: false,
   name: "You",
   handle: "sidequester",
@@ -89,9 +93,9 @@ const initialState: UserState = {
   inProgress: [],
   completed: [],
   passed: [],
-  squads: [],
-  activeSquadId: null,
-  squadIds: [],
+  squads: [{ ...FOUNDERS_SQUAD, memberIds: [...FOUNDERS_SQUAD.memberIds] }],
+  activeSquadId: FOUNDERS_SQUAD.id,
+  squadIds: [...FOUNDERS_SQUAD.memberIds],
   squadLeaderId: null,
   squadInvites: [],
   friends: [],
@@ -182,6 +186,10 @@ export function hydrate() {
         state.activeSquadId = "squad_main";
       }
       state.squads = Array.isArray(state.squads) ? state.squads : [];
+      // Everyone gets the founders squad once; leaving it later sticks.
+      if (!parsed.foundersJoined && !state.squads.some((sq) => sq.id === FOUNDERS_SQUAD.id))
+        state.squads = [...state.squads, { ...FOUNDERS_SQUAD, memberIds: [...FOUNDERS_SQUAD.memberIds] }];
+      state.foundersJoined = true;
       if (!state.squads.some((squad) => squad.id === state.activeSquadId))
         state.activeSquadId = state.squads[0]?.id ?? null;
       state.squadIds = [...new Set(state.squads.flatMap((squad) => squad.memberIds))];
