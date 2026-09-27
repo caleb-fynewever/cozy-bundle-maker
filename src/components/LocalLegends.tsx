@@ -28,7 +28,7 @@ const TOP = 5;
 /** How far the board tabs' faded edges reach, in px (matches .legends-boards in squad.css). */
 const EDGE = 40;
 
-const SCOPE_LABEL: Record<Scope, string> = { friends: "Your Squads", everyone: "Global" };
+const SCOPE_LABEL: Record<Scope, string> = { friends: "Squads", everyone: "Global" };
 
 /**
  * A quiet choice in a section heading's action slot ("within 3 mi", "Your squad"): the value in ink,
@@ -374,26 +374,26 @@ export function LocalLegends({ className }: { className?: string }) {
   return (
     <section id="ranks" aria-labelledby="ranks-heading" className={`scroll-mt-24 ${className ?? ""}`}>
       <PageHeader
-          title={<span id="ranks-heading">Ranks</span>}
-          eyebrow="a little friendly competition"
-          action={
-            <div className="legends-scope" role="group" aria-label="Who to compare with" data-scope={scope}>
-              <span className="legends-scope-indicator" aria-hidden />
-              {SCOPES.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  aria-pressed={scope === option}
-                  aria-controls="legends-panel"
-                  onClick={() => {
-                    if (scope !== option) change(() => setScope(option));
-                  }}
-                >
-                  {SCOPE_LABEL[option]}
-                </button>
-              ))}
-            </div>
-          }
+        title={<span id="ranks-heading">Ranks</span>}
+        eyebrow="a little friendly competition"
+        action={
+          <div className="legends-scope" role="group" aria-label="Who to compare with" data-scope={scope}>
+            <span className="legends-scope-indicator" aria-hidden />
+            {SCOPES.map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={scope === option}
+                aria-controls="legends-panel"
+                onClick={() => {
+                  if (scope !== option) change(() => setScope(option));
+                }}
+              >
+                {SCOPE_LABEL[option]}
+              </button>
+            ))}
+          </div>
+        }
       />
 
       <div ref={boardsRef} className="legends-boards hide-scrollbar -mx-5 mt-3 overflow-x-auto px-5 py-1 md:-mx-1 md:px-1">
