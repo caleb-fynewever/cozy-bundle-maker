@@ -22,6 +22,50 @@ const sendSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
 });
 
+const sendByHandleSchema = z.object({
+  squadKey: z.string().min(1).max(100),
+  squadName: z.string().trim().min(1).max(60),
+  inviterName: z.string().trim().min(1).max(60),
+  handle: z.string().trim().toLowerCase().min(2).max(24),
+});
+
+/** Invites someone who already has a wego account, found by their handle. */
+export const sendSquadInviteByHandle = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => sendByHandleSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: profile, error: lookupError } = await context.supabase
+      .from("profiles")
+      .select("id, handle, name, email")
+      .ilike("handle", data.handle)
+      .maybeSingle();
+    if (lookupError) throw new Error("Couldn't look that up. Try again.");
+    if (!profile) throw new Error(`Nobody on wego has @${data.handle} yet. Invite them by email instead.`);
+    if (profile.id === context.userId) throw new Error("That's you.");
+
+    const { data: existing } = await context.supabase
+      .from("squad_invites")
+      .select("id")
+      .eq("inviter_id", context.userId)
+      .eq("squad_key", data.squadKey)
+      .eq("invitee_id", profile.id)
+      .eq("status", "pending")
+      .maybeSingle();
+    if (existing) return { ok: true, already: true, name: profile.name as string };
+
+    const { error } = await context.supabase.from("squad_invites").insert({
+      squad_key: data.squadKey,
+      squad_name: data.squadName,
+      inviter_id: context.userId,
+      inviter_name: data.inviterName,
+      invitee_email: String(profile.email ?? "").toLowerCase() || `@${data.handle}`,
+      invitee_id: profile.id,
+      invitee_name: profile.name,
+    });
+    if (error) throw new Error("Couldn't send that invite. Try again.");
+    return { ok: true, already: false, name: profile.name as string };
+  });
+
 export const sendSquadInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => sendSchema.parse(data))
@@ -78,7 +122,7 @@ export const listSquadInvites = createServerFn({ method: "GET" })
     const myEmail = String(context.claims.email ?? "").toLowerCase();
     const rows = (data ?? []) as RemoteInvite[];
     return {
-      received: rows.filter((r) => r.status === "pending" && r.invitee_email.toLowerCase() === myEmail && r.inviter_id !== context.userId),
+      received: rows.filter((r) => r.status === "pending" && r.inviter_id !== context.userId && (r.invitee_id === context.userId || r.invitee_email.toLowerCase() === myEmail)),
       sent: rows.filter((r) => r.inviter_id === context.userId),
     };
   });
