@@ -3,6 +3,8 @@ import type { Quest, Vibe } from "@/lib/types";
 import type { FeedComment, FeedPost } from "@/data/feed";
 
 export type UserState = {
+  /** False until the account finishes first-time setup. */
+  configured: boolean;
   name: string;
   handle: string;
   bio: string;
@@ -55,6 +57,7 @@ const BASE_KEY = "wego.state.v1";
 let activeKey = BASE_KEY;
 
 const initialState: UserState = {
+  configured: false,
   name: "You",
   handle: "sidequester",
   bio: "New around here. Looking for something to do.",
@@ -134,6 +137,12 @@ export function hydrate() {
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<UserState>;
       state = { ...initialState, ...parsed };
+      // Accounts from before setup existed count as configured if they have real activity.
+      if (parsed.configured === undefined) {
+        state.configured = Boolean(
+          parsed.xp || parsed.squads?.length || parsed.completed?.length || (parsed.name && parsed.name !== "You"),
+        );
+      }
       state.inProgress = state.inProgress.filter((id) => !state.completed.includes(id)).slice(-1);
       state.scheduledQuests = state.scheduledQuests.filter((item) => !state.completed.includes(item.questId) && !state.inProgress.includes(item.questId));
       if (!Array.isArray(parsed.squads) && state.squadIds.length) {

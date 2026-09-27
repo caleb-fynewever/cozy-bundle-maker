@@ -14,6 +14,7 @@ import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
 import { useAuth } from "../lib/auth";
+import { bindUser, useUserState } from "../lib/store";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
@@ -130,12 +131,20 @@ function RootComponent() {
   const { session, loading } = useAuth();
   const pathname = useRouterState({ select: (routerState) => routerState.location.pathname });
   const onAuthPage = pathname === "/auth";
+  const onSetupPage = pathname === "/setup";
+
+  useEffect(() => {
+    if (!loading) bindUser(session?.user.id ?? null);
+  }, [loading, session?.user.id]);
+  const userState = useUserState();
 
   let body: ReactNode;
   if (loading) {
     body = <div className="min-h-screen bg-background" />;
   } else if (!session && !onAuthPage) {
     body = <Navigate to="/auth" replace />;
+  } else if (session && !userState.configured && !onSetupPage) {
+    body = <Navigate to="/setup" replace />;
   } else {
     body = <Outlet />;
   }
