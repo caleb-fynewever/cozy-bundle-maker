@@ -30,10 +30,7 @@ export const MagicLinkEmail = ({
           Type this code into {siteName} to get in. It expires shortly.
         </Text>
         <Text style={code}>{token}</Text>
-        <Text style={text}>
-          Enter this code on the sign-in screen. This email does not contain a
-          sign-in link.
-        </Text>
+        <Text style={text}>Enter this code on the sign-in screen.</Text>
         <Text style={footer}>
           If you didn't ask for this, you can safely ignore it.
         </Text>
