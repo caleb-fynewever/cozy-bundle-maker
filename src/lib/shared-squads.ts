@@ -1,7 +1,8 @@
+import { setDemoMember } from "@/lib/database.functions";
 import { useCallback, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth";
-import { actions, getState, UUID_RE } from "@/lib/store";
+import { actions, getState, getBoundUserId, UUID_RE } from "@/lib/store";
 import { FOUNDERS_SQUAD } from "@/data/people";
 import {
   createRemoteSquad,
@@ -24,9 +25,10 @@ export function useSharedSquadSync() {
   const { session } = useAuth();
   const list = useServerFn(listMySquads);
   const create = useServerFn(createRemoteSquad);
+  const demoMember = useServerFn(setDemoMember);
 
   const load = useCallback(async () => {
-    if (!session) return;
+    if (!session || getBoundUserId() !== session.user.id) return;
     try {
       // Squads you made before sharing existed get uploaded once.
       if (!uploading) {
@@ -35,18 +37,29 @@ export function useSharedSquadSync() {
           for (const sq of getState().squads) {
             if (sq.leaderId !== "me" || UUID_RE.test(sq.id) || sq.id === FOUNDERS_SQUAD.id) continue;
             const { id } = await create({ data: { name: sq.name } });
+            if (getBoundUserId() !== session.user.id) return;
             actions.replaceSquadId(sq.id, id);
+            for (const personId of sq.memberIds.filter(id => id.startsWith("u_"))) await demoMember({data: {squadId: id, personId, remove: false}});
           }
         } finally {
           uploading = false;
         }
       }
+      for (const sq of getState().squads) {
+        if (sq.leaderId !== "me" || !UUID_RE.test(sq.id)) continue;
+        const key = `wego.demo-members.v1.${session.user.id}.${sq.id}`;
+        if (localStorage.getItem(key)) continue;
+        for (const personId of sq.memberIds.filter(id => id.startsWith("u_")))
+          await demoMember({data: {squadId: sq.id, personId, remove: false}});
+        localStorage.setItem(key, "done");
+      }
       const res = await list();
+      if (getBoundUserId() !== res.me) return;
       actions.syncRemoteSquads(res.me, res.squads);
     } catch {
       /* offline — keep what we have */
     }
-  }, [session, list, create]);
+  }, [session, list, create, demoMember]);
 
   useEffect(() => {
     void load();
@@ -66,6 +79,7 @@ export function useSharedSquadSync() {
 export function useSquadMutations() {
   const { session } = useAuth();
   const create = useServerFn(createRemoteSquad);
+  const demoMember = useServerFn(setDemoMember);
   const rename = useServerFn(renameRemoteSquad);
   const remove = useServerFn(deleteRemoteSquad);
   const removeMember = useServerFn(removeRemoteMember);
@@ -79,8 +93,8 @@ export function useSquadMutations() {
       return id;
     },
     async renameSquad(id: string, name: string) {
-      actions.renameSquad(id, name);
       if (session && UUID_RE.test(id)) await rename({ data: { id, name } });
+      actions.renameSquad(id, name);
     },
     async deleteSquad(id: string) {
       if (session && UUID_RE.test(id)) await remove({ data: { id } });
@@ -96,6 +110,8 @@ export function useSquadMutations() {
       const removing = squad?.memberIds.includes(memberId);
       if (session && removing && memberId.startsWith("f_") && UUID_RE.test(squadId))
         await removeMember({ data: { squadId, userId: memberId.slice(2) } });
+      if (session && UUID_RE.test(squadId) && memberId.startsWith("u_"))
+        await demoMember({data: {squadId, personId: memberId, remove: Boolean(removing)}});
       actions.toggleSquadMember(memberId, name, squadId);
     },
   };

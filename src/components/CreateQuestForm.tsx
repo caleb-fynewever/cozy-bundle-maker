@@ -1,3 +1,4 @@
+import { publishQuest } from "@/lib/database.functions";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
@@ -5,7 +6,7 @@ import { MapPin, PenLine } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Chip, PageHeader, Tally, buttonClass, textButtonClass } from "@/components/ui-kit";
 import { HelpDot } from "@/components/HelpDot";
-import { actions } from "@/lib/store";
+import { getBoundUserId, actions } from "@/lib/store";
 import { punchUpQuest } from "@/lib/punch-up.server";
 import { VIBES, VIBE_LABEL, type Quest, type Vibe } from "@/lib/types";
 import { VIBE_ICON } from "@/lib/vibes";
@@ -130,6 +131,8 @@ function shake(el: HTMLElement) {
 
 export function CreateQuestForm({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
+  const saveQuest = useServerFn(publishQuest);
+  const [isPublishing, setIsPublishing] = useState(false);
   const runPunchUp = useServerFn(punchUpQuest);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -186,7 +189,8 @@ export function CreateQuestForm({ embedded = false }: { embedded?: boolean }) {
   const [steps, setSteps] = useState<string[]>([]);
   const [isPunching, setIsPunching] = useState(false);
 
-  const publish = () => {
+  const publish = async () => {
+    if (isPublishing) return;
     const found: Errors = {};
     if (!title.trim()) found.title = "Give the quest a title";
     if (!place) found.place = "Search for and choose a location";
@@ -201,7 +205,7 @@ export function CreateQuestForm({ embedded = false }: { embedded?: boolean }) {
     }
     if (!place) return;
     const quest: Quest = {
-      id: `q_user_${Date.now()}`,
+      id: `q_user_${crypto.randomUUID()}`,
       title: title.trim(),
       hook: description.trim().slice(0, 120) || "A quest made by a student, for students.",
       mission: description.trim() || title.trim(),
@@ -223,9 +227,15 @@ export function CreateQuestForm({ embedded = false }: { embedded?: boolean }) {
       indoor: false,
       createdBy: "you",
     };
-    actions.addQuest(quest);
-    toast.success("Quest published — +90 XP");
-    void navigate({ to: "/quest/$questId", params: { questId: quest.id } });
+    setIsPublishing(true);
+    try {
+      await saveQuest({data: {...quest, expectedUserId: getBoundUserId() ?? undefined}});
+      actions.addQuest(quest);
+      toast.success("Quest published — +90 XP");
+      void navigate({ to: "/quest/$questId", params: { questId: quest.id } });
+    } catch {
+      toast.error("Could not publish your quest. Your draft is still here; try again.");
+    } finally { setIsPublishing(false); }
   };
 
   const makeSmarter = async () => {
@@ -301,7 +311,7 @@ export function CreateQuestForm({ embedded = false }: { embedded?: boolean }) {
         className={cn("grid gap-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-12", !embedded && "mt-6 lg:mt-0")}
         onSubmit={(event) => {
           event.preventDefault();
-          publish();
+          void publish();
         }}
       >
         <div className="min-w-0 space-y-6">
@@ -504,7 +514,7 @@ export function CreateQuestForm({ embedded = false }: { embedded?: boolean }) {
           </div>
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2">
-            <Button type="submit">Publish quest</Button>
+            <Button type="submit" disabled={isPublishing}>{isPublishing ? "Publishing…" : "Publish quest"}</Button>
             <span className="font-hand text-lg text-muted-foreground">+90 XP</span>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import { findQuest } from "@/lib/catalog";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Doodle } from "@/components/Doodle";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
@@ -6,7 +7,6 @@ import { AppShell } from "@/components/AppShell";
 import { RatingRing } from "@/components/RatingRing";
 import { Avatar, PageHeader, PhotoPrint, Tally } from "@/components/ui-kit";
 import { FRIEND_POSTS, type FeedComment, type FeedPost } from "@/data/feed";
-import { getQuest } from "@/data/quests";
 import { questImage } from "@/lib/imagery";
 import { DURATION, EASE_IN, EASE_OUT, SPRING, burst, reducedMotion } from "@/lib/motion";
 import { actions, useUserState } from "@/lib/store";
@@ -73,7 +73,7 @@ function FeedPage() {
 
   // The feed is your squads: your own posts and posts from anyone in one of them.
   const squadmateIds = new Set(state.squadIds);
-  const posts = [...state.posts, ...FRIEND_POSTS]
+  const posts = [...new Map([...FRIEND_POSTS, ...state.posts, ...state.remotePosts].map(post => [post.id, post])).values()]
     .filter((post) => post.authorId === "me" || squadmateIds.has(post.authorId))
     .sort((a, b) => b.at - a.at);
 
@@ -120,7 +120,7 @@ type Pending = { before: Map<string, number>; focus: boolean; landed: boolean };
 
 function Post({ post, priority }: { post: FeedPost; priority: boolean }) {
   const state = useUserState();
-  const quest = state.createdQuests.find((q) => q.id === post.questId) ?? getQuest(post.questId);
+  const quest = findQuest(state, post.questId);
   const mine = post.authorId === "me";
   const hearted = state.hearted.includes(post.id);
   const heartCount = post.hearts + (hearted ? 1 : 0);

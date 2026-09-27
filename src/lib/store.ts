@@ -1,11 +1,13 @@
+import type { DirectoryPerson } from "@/lib/database.types";
 import { useSyncExternalStore } from "react";
-import type { Quest, Vibe } from "@/lib/types";
+import type { Quest, Vibe, DemoUser } from "@/lib/types";
 import type { FeedComment, FeedPost } from "@/data/feed";
 import { FOUNDERS_SQUAD } from "@/data/people";
 
 export type UserState = {
   /** Set once the founders squad has been added, so leaving it sticks. */
   foundersJoined?: boolean;
+  hiddenDemoSquadIds: string[];
   /** False until the account finishes first-time setup. */
   configured: boolean;
   name: string;
@@ -34,6 +36,11 @@ export type UserState = {
   xpClaims: string[];
   streak: number;
   createdQuests: Quest[];
+  catalogLoaded: boolean;
+  remoteQuests: Quest[];
+  remoteArchivedQuests: Quest[];
+  remotePeople: DemoUser[];
+  directory: DirectoryPerson[];
   favoriteVibes: Vibe[];
   /** Every XP gain, newest first. Drives weekly boards and the profile history. */
   log: XpEvent[];
@@ -41,6 +48,7 @@ export type UserState = {
   lastQuestDay: string | null;
   /** Posts you shared after finishing a quest. */
   posts: FeedPost[];
+  remotePosts: FeedPost[];
   /** Post ids you hearted. */
   hearted: string[];
   /** Your comments on any post, keyed by post id. */
@@ -79,6 +87,7 @@ let activeKey = BASE_KEY;
 
 const initialState: UserState = {
   foundersJoined: true,
+  hiddenDemoSquadIds: [],
   configured: false,
   name: "You",
   handle: "sidequester",
@@ -105,10 +114,16 @@ const initialState: UserState = {
   xpClaims: [],
   streak: 0,
   createdQuests: [],
+  catalogLoaded: false,
+  remoteQuests: [],
+  remoteArchivedQuests: [],
+  remotePeople: [],
+  directory: [],
   favoriteVibes: [],
   log: [],
   lastQuestDay: null,
   posts: [],
+  remotePosts: [],
   hearted: [],
   comments: {},
   xpSeen: 0,
@@ -154,6 +169,10 @@ export function bindUser(userId: string | null) {
   hydrate();
 }
 
+export function getBoundUserId() {
+  return activeKey.startsWith(`${BASE_KEY}.u.`) ? activeKey.slice(`${BASE_KEY}.u.`.length) : null;
+}
+
 export function getState() {
   return state;
 }
@@ -166,6 +185,7 @@ export function hydrate() {
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<UserState>;
       state = { ...initialState, ...parsed };
+      if (!parsed.hiddenDemoSquadIds && parsed.foundersJoined && parsed.squads && !parsed.squads.some(sq => sq.id === FOUNDERS_SQUAD.id)) state.hiddenDemoSquadIds = [FOUNDERS_SQUAD.id];
       // Accounts from before setup existed count as configured if they have real activity.
       if (parsed.configured === undefined) {
         state.configured = Boolean(
@@ -241,7 +261,7 @@ export function setState(update: (current: UserState) => UserState) {
   emit();
 }
 
-function subscribe(listener: () => void) {
+export function subscribe(listener: () => void) {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
@@ -481,6 +501,7 @@ export const actions = {
       const activeSquadId = s.activeSquadId === id ? (squads[0]?.id ?? null) : s.activeSquadId;
       return {
         ...s,
+        hiddenDemoSquadIds: UUID_RE.test(id) ? s.hiddenDemoSquadIds : [...new Set([...s.hiddenDemoSquadIds, id])],
         squads,
         activeSquadId,
         squadIds: [...new Set(squads.flatMap((item) => item.memberIds))],
@@ -592,22 +613,20 @@ export const actions = {
       };
     });
   },
-  /** Mirror the shared squads from the backend; demo members stay on this device. */
+  /** Mirror shared squads and demo memberships from the backend. */
   syncRemoteSquads(
     me: string,
-    remote: { id: string; name: string; leaderId: string; members: { id: string; name: string }[] }[],
+    remote: { id: string; name: string; leaderId: string; members: { id: string; name: string; demo?: boolean }[] }[],
   ) {
     setState((s) => {
       const isShared = (id: string) => UUID_RE.test(id);
       const mapped: UserSquad[] = remote.map((r) => {
-        const local = s.squads.find((sq) => sq.id === r.id);
-        const demo = (local?.memberIds ?? []).filter((m) => !m.startsWith("f_"));
         return {
           id: r.id,
           name: r.name,
           leaderId: r.leaderId === me ? "me" : `f_${r.leaderId}`,
           memberIds: [
-            ...new Set([...r.members.filter((m) => m.id !== me).map((m) => `f_${m.id}`), ...demo]),
+            ...new Set([...r.members.filter((m) => m.id !== me).map((m) => m.demo ? m.id : `f_${m.id}`)]),
           ],
         };
       });
@@ -615,7 +634,7 @@ export const actions = {
       const friends = [...s.friends];
       for (const r of remote)
         for (const m of r.members) {
-          if (m.id === me) continue;
+          if (m.id === me || m.demo) continue;
           const fid = `f_${m.id}`;
           const i = friends.findIndex((f) => f.id === fid);
           if (i === -1) friends.push({ id: fid, name: m.name, email: "" });

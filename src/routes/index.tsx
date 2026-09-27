@@ -1,10 +1,10 @@
+import { questCatalog } from "@/lib/catalog";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { ChevronDown, MapPin } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { SwipeDeck } from "@/components/SwipeDeck";
 import { CAMPUS_ORIGIN, currentTimeSlot, recommend } from "@/lib/engine";
-import { QUESTS } from "@/data/quests";
 import { actions, useUserState } from "@/lib/store";
 import type { SessionContext, TimeSlot } from "@/lib/types";
 import { MyQuests } from "@/components/MyQuests";
@@ -116,7 +116,7 @@ function Discover() {
     );
   }
 
-  const allQuests = useMemo(() => [...state.createdQuests, ...QUESTS], [state.createdQuests]);
+  const allQuests = useMemo(() => questCatalog(state), [state.createdQuests, state.remoteQuests, state.remoteArchivedQuests]);
   // Passed quests aren't gone: they come back after everything fresh, oldest pass first.
   const { results } = useMemo(
     () => recommend(defaultContext(state.squadIds, origin, timeSlot), { ...state, passed: [] }, allQuests, allQuests.length),

@@ -49,8 +49,8 @@ function AuthPage() {
   async function onVerify(event: FormEvent) {
     event.preventDefault();
     const trimmed = code.trim();
-    if (trimmed.length !== 8) {
-      toast.error("The code is 8 digits.");
+    if (!/^\d{6,10}$/.test(trimmed)) {
+      toast.error("Enter the full code from your email (6–10 digits).");
       return;
     }
     setBusy(true);
@@ -75,7 +75,7 @@ function AuthPage() {
         <p className="mt-2 text-sm text-muted-foreground">
           {stage === "email"
             ? "No password. We email you a code, you type it in, you're set."
-            : `We sent an 8-digit code to ${email}. It expires in a few minutes.`}
+            : `We sent a sign-in code to ${email}. Enter the code from your email.`}
         </p>
 
         {stage === "email" ? (
@@ -106,8 +106,8 @@ function AuthPage() {
               autoFocus
               inputMode="numeric"
               autoComplete="one-time-code"
-              maxLength={8}
-              placeholder="12345678"
+              maxLength={10}
+              placeholder="Email code"
               value={code}
               onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
               className="min-h-12 w-full rounded-lg border border-input bg-card px-4 text-center text-2xl font-semibold tracking-[0.5em] text-foreground placeholder:tracking-[0.5em] placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"

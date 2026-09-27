@@ -1,3 +1,4 @@
+import { questCatalog } from "@/lib/catalog";
 import { useServerFn } from "@tanstack/react-start";
 import { signOut } from "@/lib/auth";
 import { toast } from "sonner";
@@ -115,7 +116,8 @@ function ProfilePage() {
   const { handle } = Route.useSearch();
 
   if (handle && handle !== state.handle) {
-    const person = NEARBY_STUDENTS.find((candidate) => candidate.handle === handle);
+    if (state.directory.some(p=>p.handle===handle)) return <RemoteProfile key={handle} handle={handle} />;
+    const person = (state.catalogLoaded ? state.remotePeople : NEARBY_STUDENTS).find((candidate) => candidate.handle === handle);
     if (!person) return <RemoteProfile key={handle} handle={handle} />;
     return <PublicProfile person={person} />;
   }
@@ -130,7 +132,7 @@ const shortDate = (at: number) =>
 
 function OwnProfile() {
   const state = useUserState();
-  const allQuests = useMemo(() => [...state.createdQuests, ...ALL_QUESTS], [state.createdQuests]);
+  const allQuests = useMemo(() => questCatalog(state, true), [state.createdQuests, state.remoteQuests, state.remoteArchivedQuests]);
   const questById = useMemo(
     () => new Map(allQuests.map((quest) => [quest.id, quest] as const)),
     [allQuests],
@@ -1126,7 +1128,7 @@ function PublicProfile({ person }: { person: DemoUser }) {
         Back
       </Link>
       <PageHeader
-        eyebrow={`level ${person.level} · ${level.toLowerCase()}`}
+        eyebrow={`demo profile · level ${person.level} · ${level.toLowerCase()}`}
         title={person.name}
         leading={<Avatar name={person.name} size={72} imageUrl={person.photo ?? null} />}
         action={
@@ -1266,6 +1268,8 @@ function PublicProfile({ person }: { person: DemoUser }) {
 }
 
 function RemoteProfile({ handle }: { handle: string }) {
+  const state = useUserState();
+  const stats = state.directory.find(p=>p.handle===handle);
   const findByHandle = useServerFn(findProfileByHandle);
   const [profile, setProfile] = useState<RemotePublicProfile | null | "loading">("loading");
 
@@ -1314,7 +1318,10 @@ function RemoteProfile({ handle }: { handle: string }) {
             <p className="mt-2 max-w-xl text-muted-foreground">{profile.bio}</p>
           ) : null}
         </div>
-        <p className="font-hand text-lg text-muted-foreground">fresh face on wego.</p>
+        {stats ? <StatLedger items={[
+          {label: "XP", value: stats.xp}, {label: "quests finished", value: stats.completed},
+          {label: "quests made", value: stats.created}, {label: "weekly streak", value: stats.weekly_streak},
+        ]} /> : <p className="font-hand text-lg text-muted-foreground">fresh face on wego.</p>}
       </div>
     </AppShell>
   );

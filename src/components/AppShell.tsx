@@ -1,3 +1,5 @@
+import { findQuest } from "@/lib/catalog";
+import { useDatabaseSync } from "@/lib/database-sync";
 import { useSharedSquadSync } from "@/lib/shared-squads";
 import { useSquadInvites } from "@/lib/squad-invites";
 import { toast } from "sonner";
@@ -31,7 +33,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { GlassTabBar, type GlassTab } from "@/components/GlassTabBar";
-import { getQuest } from "@/data/quests";
 import { EASE_OUT, reducedMotion } from "@/lib/motion";
 
 const NAV = [
@@ -61,13 +62,14 @@ export function AppFrame({ children }: { children: ReactNode }) {
   const state = useUserState();
   const remote = useSquadInvites();
   useSharedSquadSync();
+  useDatabaseSync();
   const inviteCount = state.squadInvites.length + remote.received.length;
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const activeQuestId = state.inProgress.at(-1);
   const activeQuest = activeQuestId
-    ? (state.createdQuests.find((quest) => quest.id === activeQuestId) ?? getQuest(activeQuestId))
+    ? (findQuest(state, activeQuestId))
     : undefined;
 
   useEffect(() => {

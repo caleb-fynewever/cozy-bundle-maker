@@ -1,3 +1,4 @@
+import { useRemoteQuest } from "@/lib/use-remote-quest";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { Doodle } from "@/components/Doodle";
 import {
@@ -75,7 +76,7 @@ export const Route = createFileRoute("/go/$questId")({
   }),
   loader: ({ params }) => {
     const quest = getQuest(params.questId);
-    // A quest you made lives in this browser's storage, so the server can't know its title yet.
+    // Authenticated database records load on the client; seed titles are available during SSR.
     return { title: quest?.title ?? null, local: params.questId.startsWith("q_user_") };
   },
   head: ({ loaderData }) => ({
@@ -234,10 +235,8 @@ function GoPage() {
   const state = useUserState();
   const ready = useHydrated();
   const navigate = useNavigate();
-  const quest = useMemo(
-    () => state.createdQuests.find((q) => q.id === questId) ?? getQuest(questId),
-    [questId, state.createdQuests],
-  );
+  const questLookup = useRemoteQuest(questId);
+  const {quest} = questLookup;
   const [selectedSquadIds, setSelectedSquadIds] = useState<string[]>(() =>
     state.activeSquadId ? [state.activeSquadId] : [],
   );
@@ -364,7 +363,8 @@ function GoPage() {
   }, [quest, knownTitle]);
 
   if (!quest) {
-    if (!ready) {
+    if (questLookup.status === "error") return <AppShell><p role="alert">Could not load this quest.</p><button type="button" className="underline" onClick={questLookup.retry}>Try again</button></AppShell>;
+    if (!ready || questLookup.status === "loading") {
       return (
         <AppShell>
           <div aria-busy="true" className="mx-auto max-w-2xl pt-12">
@@ -383,11 +383,8 @@ function GoPage() {
   }
 
   const selectedSquads = state.squads.filter((squad) => selectedSquadIds.includes(squad.id));
-  const isSquadLeader = selectedSquads.every((squad) => squad.leaderId === "me");
   const selectedMemberIds = [...new Set(selectedSquads.flatMap((squad) => squad.memberIds))];
-  const chosen = isSquadLeader
-    ? (crew ?? selectedMemberIds).filter((id) => selectedMemberIds.includes(id))
-    : [];
+  const chosen = (crew ?? selectedMemberIds).filter((id) => selectedMemberIds.includes(id));
   const people = [
     ...NEARBY_STUDENTS.filter((person) => selectedMemberIds.includes(person.id)),
     ...state.friends
@@ -481,13 +478,9 @@ function GoPage() {
     void takePhoto(event.dataTransfer.files[0]);
   }
 
-  // Always finishable: if someone else leads your squad you go solo (`chosen` is empty), never stuck.
+  // Every member can organize and complete their own squad activity.
   function finish() {
     if (swapping.current) return;
-    if (!isSquadLeader) {
-      toast.error("Only a selected squad’s leader can finish its activity.");
-      return;
-    }
     const fresh = !state.completed.includes(quest!.id);
     const withSquad = chosen.length > 0;
     const earned = actions.complete(quest!.id, quest!.title, withSquad);
@@ -498,10 +491,6 @@ function GoPage() {
 
   async function headOut() {
     if (swapping.current) return;
-    if (!isSquadLeader) {
-      toast.error("Only a selected squad’s leader can start its activity. Deselect it to go solo.");
-      return;
-    }
     actions.startQuest(quest!.id);
     setAnnounce(repeat ? "You’re out again." : "You’re out. Your quest is active.");
     swapStage("out");
@@ -526,12 +515,6 @@ function GoPage() {
   // repeat only gets the calendar step, and nothing claims it was saved.
   function scheduleQuest() {
     if (!when) return;
-    if (!isSquadLeader) {
-      toast.error(
-        "Only a selected squad’s leader can schedule its activity. Deselect it to go solo.",
-      );
-      return;
-    }
     const keeps = !alreadyDone && !state.inProgress.includes(quest!.id);
     if (keeps) actions.scheduleQuest(quest!.id, when, endWhen);
     setScheduledHere(when);
@@ -724,13 +707,7 @@ function GoPage() {
                   </Chip>
                 ))}
               </div>
-              {!isSquadLeader ? (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Only the leader of each selected squad can start or schedule its activity.
-                  Deselect that squad to go solo.
-                </p>
-              ) : null}
-              {isSquadLeader && selectedMemberIds.length === 0 ? (
+              {selectedMemberIds.length === 0 ? (
                 <p className="mt-2 text-sm text-muted-foreground">
                   No accepted squad members yet.{" "}
                   <Link
@@ -742,7 +719,7 @@ function GoPage() {
                   , or head out solo.
                 </p>
               ) : null}
-              {isSquadLeader && selectedMemberIds.length > 0 ? (
+              {selectedMemberIds.length > 0 ? (
                 <p className="mt-1 text-sm text-muted-foreground">
                   Tap anyone who can’t make it. You’re always in.
                 </p>

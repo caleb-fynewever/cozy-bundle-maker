@@ -10,8 +10,10 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "node --experimental-strip-types --test tests/*.test.mjs",
-    "typecheck": "tsc --noEmit"
+    "test": "node --experimental-strip-types --import ./tests/register-ts.mjs --test tests/*.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "db:seed:generate": "node --experimental-strip-types scripts/generate-database-seed.mjs",
+    "test:database": "node scripts/test-database.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"

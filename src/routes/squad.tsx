@@ -77,7 +77,7 @@ function SquadPage() {
 
   const nearby = useMemo(
     () =>
-      NEARBY_STUDENTS.filter(
+      (state.catalogLoaded ? state.remotePeople : NEARBY_STUDENTS).filter(
         (user) =>
           user.optInNearby &&
           user.distanceMi <= radiusMi &&
@@ -85,7 +85,7 @@ function SquadPage() {
       )
         .map((user) => ({ user, ...compatibility(taste, user, { groupSize, radiusMi }) }))
         .sort((a, b) => b.score - a.score),
-    [radiusMi, activeSquad, taste, groupSize],
+    [radiusMi, activeSquad, taste, groupSize, state.catalogLoaded, state.remotePeople],
   );
 
   const sendVerificationCode = async () => {
@@ -215,19 +215,16 @@ function SquadPage() {
     const form = new FormData(event.currentTarget);
     const name = String(form.get("squadName") ?? "").trim();
     if (!name) return;
-    void squadOps.renameSquad(squadId, name);
-    toast.success("Squad renamed.");
+    void squadOps.renameSquad(squadId, name).then(() => toast.success("Squad renamed.")).catch(() => toast.error("Could not rename this squad."));
   };
 
   const confirmSquadAction = () => {
     if (!pendingSquadAction) return;
     const squad = state.squads.find((item) => item.id === pendingSquadAction.id);
     if (pendingSquadAction.kind === "delete") {
-      void squadOps.deleteSquad(pendingSquadAction.id).catch(() => toast.error("Couldn't delete it. Try again."));
-      toast.success(`${squad?.name ?? "Squad"} deleted.`);
+      void squadOps.deleteSquad(pendingSquadAction.id).then(() => toast.success(`${squad?.name ?? "Squad"} deleted.`)).catch(() => toast.error("Couldn't delete it. Try again."));
     } else {
-      void squadOps.leaveSquad(pendingSquadAction.id).catch(() => toast.error("Couldn't leave. Try again."));
-      toast.success(`You left ${squad?.name ?? "the squad"}.`);
+      void squadOps.leaveSquad(pendingSquadAction.id).then(() => toast.success(`You left ${squad?.name ?? "the squad"}.`)).catch(() => toast.error("Couldn't leave. Try again."));
     }
     setPendingSquadAction(null);
   };
@@ -278,7 +275,7 @@ function SquadPage() {
               <ul className="mt-4 space-y-4">
                 {state.squads.map((item) => {
                   const isOwner = item.leaderId === "me";
-                  const members = NEARBY_STUDENTS.filter((person) =>
+                  const members = (state.catalogLoaded ? state.remotePeople : NEARBY_STUDENTS).filter((person) =>
                     item.memberIds.includes(person.id),
                   );
                   const friends = state.friends.filter((f) => item.memberIds.includes(f.id));

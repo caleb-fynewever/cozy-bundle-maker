@@ -461,7 +461,7 @@ export function LocalLegends({ className }: { className?: string }) {
                         )}
                       </span>
                     ) : (
-                      <span className="block truncate text-sm text-muted-foreground">{entry.level}</span>
+                      <span className="block truncate text-sm text-muted-foreground">{entry.id.startsWith("u_") ? "Demo · " : ""}{entry.level}</span>
                     )}
                     {sharedSquads.length > 0 ? (
                       <span className="legend-squads" aria-label={entry.you ? "Your squads" : "Shared squads"}>
