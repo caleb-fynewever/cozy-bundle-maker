@@ -12,13 +12,6 @@ import { loadEnv } from "vite";
 const mode = processEnv["NODE_ENV"] === "production" ? "production" : "development";
 const localEnv = loadEnv(mode, process.cwd(), "");
 
-// Keep the browser auth client usable when the deployment builder omits the
-// managed VITE_* aliases. These values are public connection identifiers, not
-// privileged credentials.
-processEnv["VITE_SUPABASE_URL"] ??= "https://lhsjyrqhujftuawwshav.supabase.co";
-processEnv["VITE_SUPABASE_PUBLISHABLE_KEY"] ??=
-  "sb_publishable_CnQHNZirCr8CkFC44irEzg_iMPYLO1F";
-
 for (const key of [
   "SUPABASE_URL",
   "SUPABASE_PUBLISHABLE_KEY",
@@ -30,6 +23,18 @@ for (const key of [
   "EMAIL_VERIFICATION_SECRET",
 ]) {
   if (localEnv[key] && !processEnv[key]) processEnv[key] = localEnv[key];
+}
+
+// Browser and authenticated server functions use the same public connection settings.
+// Accept either naming convention locally; Lovable supplies the server names in production.
+// These are publishable identifiers, never a service-role key or other server secret.
+for (const [serverKey, browserKey, fallback] of [
+  ["SUPABASE_URL", "VITE_SUPABASE_URL", "https://lhsjyrqhujftuawwshav.supabase.co"],
+  ["SUPABASE_PUBLISHABLE_KEY", "VITE_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_CnQHNZirCr8CkFC44irEzg_iMPYLO1F"],
+] as const) {
+  const value = processEnv[serverKey] || processEnv[browserKey] || localEnv[serverKey] || localEnv[browserKey] || fallback;
+  processEnv[serverKey] = value;
+  processEnv[browserKey] = value;
 }
 
 export default defineConfig({

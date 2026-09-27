@@ -29,7 +29,7 @@ function vibeDoodle(vibe: Vibe): ComponentType<LucideProps> {
       "aria-hidden": true,
       draggable: false,
       decoding: "async",
-      className: ["doodle inline-block shrink-0 select-none object-contain", className].filter(Boolean).join(" "),
+      className: ["doodle inline-block shrink-0 select-none object-contain", vibe === "chill" && "doodle-moon", className].filter(Boolean).join(" "),
       style: { ...(size ? { width: size, height: size } : {}), ...style },
     });
   Icon.displayName = `VibeDoodle(${vibe})`;

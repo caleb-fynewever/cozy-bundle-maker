@@ -37,7 +37,7 @@ export function Doodle({
       draggable={false}
       loading="lazy"
       decoding="async"
-      className={cn("doodle shrink-0 select-none object-contain", block ? "block" : "inline-block", faint && "doodle-faint", className)}
+      className={cn("doodle shrink-0 select-none object-contain", block ? "block" : "inline-block", name === "chill" && "doodle-moon", faint && "doodle-faint", className)}
       style={{ width: size, height: size, ...style }}
     />
   );

@@ -1,3 +1,4 @@
+import { PageHelp } from "@/components/PageHelp";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Bookmark, Navigation, X } from "lucide-react";
@@ -144,6 +145,7 @@ function MapPage() {
     <AppShell bleed>
       <h1 className="sr-only">Map</h1>
       <div ref={stage} className="relative h-full w-full">
+        <div className="absolute right-4 top-4 z-20 rounded-full bg-card p-3"><PageHelp /></div>
         <QuestMap
           quests={quests}
           origin={origin}

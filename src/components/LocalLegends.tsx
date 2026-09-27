@@ -3,7 +3,7 @@ import { ChevronDown } from "lucide-react";
 import { Doodle } from "@/components/Doodle";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { Avatar, SectionHeading, Tally, textButtonClass } from "@/components/ui-kit";
+import { Avatar, PageHeader, Tally, textButtonClass } from "@/components/ui-kit";
 import { Stamp } from "@/components/Stamp";
 import { Tabs } from "@/components/Tabs";
 import { BOARDS, SCOPES, boardKeyOf, nextUp, passedLine, passedSince, rankBoard, rankOf, type BoardKey, type Entry, type Scope } from "@/lib/leaderboard";
@@ -28,9 +28,7 @@ const TOP = 5;
 /** How far the board tabs' faded edges reach, in px (matches .legends-boards in squad.css). */
 const EDGE = 40;
 
-const SCOPE_LABEL: Record<Scope, string> = { friends: "Your squad", everyone: "Around campus" };
-/** Phones: the short words, so the heading keeps its width. */
-const SCOPE_SHORT: Record<Scope, string> = { friends: "Squad", everyone: "Campus" };
+const SCOPE_LABEL: Record<Scope, string> = { friends: "Squads", everyone: "Global" };
 
 /**
  * A quiet choice in a section heading's action slot ("within 3 mi", "Your squad"): the value in ink,
@@ -375,30 +373,26 @@ export function LocalLegends({ className }: { className?: string }) {
 
   return (
     <section id="ranks" aria-labelledby="ranks-heading" className={`scroll-mt-24 ${className ?? ""}`}>
-      {/* One underline on this section (the boards); who you're compared with is a quiet choice. */}
-      <SectionHeading
-        id="ranks-heading"
-        eyebrow={<span className="whitespace-nowrap">a little friendly competition</span>}
-        title="Local Legends"
+      <PageHeader
+        title={<span id="ranks-heading">Ranks</span>}
+        eyebrow="a little friendly competition"
         action={
-          <>
-            <QuietSelect
-              id="legends-scope-short"
-              label="Who to compare with"
-              value={scope}
-              onChange={(next) => change(() => setScope(next))}
-              options={SCOPES.map((s) => ({ value: s, label: SCOPE_SHORT[s] }))}
-              className="sm:hidden"
-            />
-            <QuietSelect
-              id="legends-scope"
-              label="Who to compare with"
-              value={scope}
-              onChange={(next) => change(() => setScope(next))}
-              options={SCOPES.map((s) => ({ value: s, label: SCOPE_LABEL[s] }))}
-              className="max-sm:hidden"
-            />
-          </>
+          <div className="legends-scope" role="group" aria-label="Who to compare with" data-scope={scope}>
+            <span className="legends-scope-indicator" aria-hidden />
+            {SCOPES.map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={scope === option}
+                aria-controls="legends-panel"
+                onClick={() => {
+                  if (scope !== option) change(() => setScope(option));
+                }}
+              >
+                {SCOPE_LABEL[option]}
+              </button>
+            ))}
+          </div>
         }
       />
 
@@ -418,6 +412,9 @@ export function LocalLegends({ className }: { className?: string }) {
           {rows.map((row) => {
             if (row.kind === "gap") return <li key={row.id} aria-hidden className="legend-gap" />;
             const { entry, rank } = row;
+            const sharedSquads = scope === "friends"
+              ? state.squads.filter((squad) => entry.you || squad.memberIds.includes(entry.id) || squad.leaderId === entry.id)
+              : [];
             // Mid-overtake, you and the people you passed show the old order's ranks, then all roll together.
             const passedRow = rolling?.passed.includes(entry.id) ?? false;
             const before = rolling && rolling.rank !== null ? (entry.you ? rolling.rank : passedRow ? rank - 1 : null) : null;
@@ -436,7 +433,7 @@ export function LocalLegends({ className }: { className?: string }) {
                   to="/profile"
                   search={{ handle: entry.handle }}
                   data-row
-                  aria-label={`${shown}. ${entry.name}${entry.you ? " (you)" : ""}, ${board.unit(entry.value)}`}
+                  aria-label={`${shown}. ${entry.name}${entry.you ? " (you)" : ""}, ${board.unit(entry.value)}${sharedSquads.length ? `, squads: ${sharedSquads.map((squad) => squad.name).join(", ")}` : ""}`}
                   className="legend-row"
                 >
                   {shown === 1 ? (
@@ -466,6 +463,13 @@ export function LocalLegends({ className }: { className?: string }) {
                     ) : (
                       <span className="block truncate text-sm text-muted-foreground">{entry.level}</span>
                     )}
+                    {sharedSquads.length > 0 ? (
+                      <span className="legend-squads" aria-label={entry.you ? "Your squads" : "Shared squads"}>
+                        {sharedSquads.map((squad) => (
+                          <span className="legend-squad" key={squad.id}>{squad.name}</span>
+                        ))}
+                      </span>
+                    ) : null}
                     {entry.you && note && !holding ? (
                       <span aria-hidden className="legend-stamp max-sm:hidden">
                         <Stamp label="passed" size={58} tilt={-9} slam={note.fresh} />

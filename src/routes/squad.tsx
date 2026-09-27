@@ -1,3 +1,4 @@
+import { Doodle } from "@/components/Doodle";
 import { cn } from "@/lib/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, type FormEvent } from "react";
@@ -624,10 +625,13 @@ function SquadPage() {
                           <p className="text-sm text-muted-foreground">
                             {user.distanceMi} mi away · {score}% vibe match
                           </p>
-                          <p className="mt-2 text-[15px]">
-                            {topVibes(user.taste, 3)
-                              .map((v) => `${VIBE_EMOJI[v.vibe]} ${VIBE_LABEL[v.vibe]}`)
-                              .join("   ")}
+                          <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[15px]">
+                            {topVibes(user.taste, 3).map(({ vibe }) => (
+                              <span key={vibe} className="inline-flex items-center gap-1">
+                                {vibe === "chill" ? <Doodle name="chill" size={20} /> : VIBE_EMOJI[vibe]}
+                                {VIBE_LABEL[vibe]}
+                              </span>
+                            ))}
                           </p>
                           <p className="mt-1 text-sm text-muted-foreground">{user.bio}</p>
                         </div>
