@@ -1,8 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Bell, Compass, Footprints, Newspaper, Trophy, Users, User } from "lucide-react";
-import { actions, bindUser, useUserState } from "@/lib/store";
-import { useAuth } from "@/lib/auth";
+import { actions, useUserState } from "@/lib/store";
 import { Button } from "@/components/ui-kit";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getQuest } from "@/data/quests";
@@ -39,12 +38,6 @@ export function AppShell({ children, wide = false, compact = false }: { children
         : pathname === "/leaderboard" ? 3
           : pathname === "/profile" ? 4
             : 1;
-  const { session, loading: authLoading } = useAuth();
-  useEffect(() => {
-    if (authLoading) return;
-    bindUser(session?.user.id ?? null);
-  }, [authLoading, session?.user.id]);
-
   useEffect(() => {
     const mobileViewport = window.matchMedia("(max-width: 767px)");
     const resetScrollTracking = () => {
