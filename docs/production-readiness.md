@@ -20,7 +20,7 @@ Repository-wide lint fails: 2,005 errors and 17 warnings, with 1,998 errors mark
 
 ## Release blockers
 
-1. Configure the deployment to use the new Supabase public URL/key and matching server service key. Local .env is ignored by Git and does not configure Lovable. Existing public fallback values still refer to the old project.
+1. Configure the Lovable deployment secrets `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` for the new owned project. `vite.config.ts` now falls back to the verified new project's public URL/key so browser builds without Vite aliases no longer target the legacy project. The server still requires `SUPABASE_URL` and the server-only service key; local `.env` does not configure Lovable.
 2. Account migration completed from the September 27 export: 10 accounts, 10 identities, 7 profiles, 4 squads, 5 memberships, and 6 invitations. Reconcile changes made in the old database after this snapshot before switching.
 3. Configure and verify new-project authentication email delivery and code templates. Lovable's displayed signup template currently shows a confirmation link. The app requires a code. Verify signup, returning-user sign-in, expiry, and sign-out on the deployed backend.
 4. Configure RESEND_API_KEY, EMAIL_FROM, and EMAIL_VERIFICATION_SECRET (at least 32 characters) for student verification. They are absent locally and absent from Lovable's displayed project secret list. Set the service key only on the server.
