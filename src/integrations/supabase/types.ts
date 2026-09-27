@@ -86,12 +86,62 @@ export type Database = {
         }
         Relationships: []
       }
+      squad_members: {
+        Row: {
+          joined_at: string
+          squad_id: string
+          user_id: string
+        }
+        Insert: {
+          joined_at?: string
+          squad_id: string
+          user_id: string
+        }
+        Update: {
+          joined_at?: string
+          squad_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "squad_members_squad_id_fkey"
+            columns: ["squad_id"]
+            isOneToOne: false
+            referencedRelation: "squads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      squads: {
+        Row: {
+          created_at: string
+          id: string
+          leader_id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          leader_id: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          leader_id?: string
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_squad_member: {
+        Args: { _squad: string; _user: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

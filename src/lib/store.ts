@@ -72,6 +72,8 @@ export type XpKind = "complete" | "squad" | "create" | "join" | "verify";
 export type XpEvent = { kind: XpKind; xp: number; at: number; label: string; refId?: string };
 
 const BASE_KEY = "wego.state.v1";
+/** Squads with a uuid id are shared rows in the backend; others are device-only. */
+export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Signed-out devices share the base key; each account gets its own slot. */
 let activeKey = BASE_KEY;
 
@@ -150,6 +152,10 @@ export function bindUser(userId: string | null) {
     /* storage unavailable */
   }
   hydrate();
+}
+
+export function getState() {
+  return state;
 }
 
 export function hydrate() {
@@ -419,8 +425,8 @@ export const actions = {
           },
     );
   },
-  createSquad(name: string) {
-    const id = `squad_${Date.now()}`;
+  createSquad(name: string, sharedId?: string) {
+    const id = sharedId ?? `squad_${Date.now()}`;
     const squad: UserSquad = {
       id,
       name: name.trim() || "New squad",
@@ -585,6 +591,61 @@ export const actions = {
         squadIds: [...new Set(squads.flatMap((item) => item.memberIds))],
       };
     });
+  },
+  /** Mirror the shared squads from the backend; demo members stay on this device. */
+  syncRemoteSquads(
+    me: string,
+    remote: { id: string; name: string; leaderId: string; members: { id: string; name: string }[] }[],
+  ) {
+    setState((s) => {
+      const isShared = (id: string) => UUID_RE.test(id);
+      const mapped: UserSquad[] = remote.map((r) => {
+        const local = s.squads.find((sq) => sq.id === r.id);
+        const demo = (local?.memberIds ?? []).filter((m) => !m.startsWith("f_"));
+        return {
+          id: r.id,
+          name: r.name,
+          leaderId: r.leaderId === me ? "me" : `f_${r.leaderId}`,
+          memberIds: [
+            ...new Set([...r.members.filter((m) => m.id !== me).map((m) => `f_${m.id}`), ...demo]),
+          ],
+        };
+      });
+      const squads = [...s.squads.filter((sq) => !isShared(sq.id)), ...mapped];
+      const friends = [...s.friends];
+      for (const r of remote)
+        for (const m of r.members) {
+          if (m.id === me) continue;
+          const fid = `f_${m.id}`;
+          const i = friends.findIndex((f) => f.id === fid);
+          if (i === -1) friends.push({ id: fid, name: m.name, email: "" });
+          else friends[i] = { ...friends[i]!, name: m.name };
+        }
+      const activeSquadId = squads.some((sq) => sq.id === s.activeSquadId)
+        ? s.activeSquadId
+        : (squads[0]?.id ?? null);
+      const next = {
+        ...s,
+        squads,
+        friends,
+        activeSquadId,
+        squadIds: [...new Set(squads.flatMap((sq) => sq.memberIds))],
+        squadLeaderId: squads.find((sq) => sq.id === activeSquadId)?.leaderId ?? null,
+      };
+      return JSON.stringify(next.squads) === JSON.stringify(s.squads) &&
+        JSON.stringify(next.friends) === JSON.stringify(s.friends)
+        ? s
+        : next;
+    });
+  },
+  /** A local-only squad was uploaded; swap in its shared id. */
+  replaceSquadId(oldId: string, newId: string) {
+    setState((s) => ({
+      ...s,
+      squads: s.squads.map((sq) => (sq.id === oldId ? { ...sq, id: newId } : sq)),
+      activeSquadId: s.activeSquadId === oldId ? newId : s.activeSquadId,
+      squadInvites: s.squadInvites.map((i) => (i.squadId === oldId ? { ...i, squadId: newId } : i)),
+    }));
   },
   dismissSquadInvite(id: string) {
     setState((s) => ({ ...s, squadInvites: s.squadInvites.filter((invite) => invite.id !== id) }));

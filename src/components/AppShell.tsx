@@ -1,3 +1,4 @@
+import { useSharedSquadSync } from "@/lib/shared-squads";
 import { useSquadInvites } from "@/lib/squad-invites";
 import { toast } from "sonner";
 import { Link, useRouter, useRouterState } from "@tanstack/react-router";
@@ -59,6 +60,7 @@ const Framed = createContext(false);
 export function AppFrame({ children }: { children: ReactNode }) {
   const state = useUserState();
   const remote = useSquadInvites();
+  useSharedSquadSync();
   const inviteCount = state.squadInvites.length + remote.received.length;
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });

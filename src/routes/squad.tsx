@@ -16,6 +16,7 @@ import {
   sendSquadInviteByHandle,
 } from "@/lib/squad-invites.functions";
 import { refreshSquadInvites, useSquadInvites } from "@/lib/squad-invites";
+import { useSquadMutations } from "@/lib/shared-squads";
 import { levelName } from "@/lib/progress";
 import { VIBE_EMOJI, VIBE_LABEL } from "@/lib/types";
 import {
@@ -140,6 +141,7 @@ function SquadPage() {
   const sendInvite = useServerFn(sendSquadInvite);
   const revokeInvite = useServerFn(revokeSquadInvite);
   const { sent: sentInvites } = useSquadInvites();
+  const squadOps = useSquadMutations();
   const revokeById = async (id: string, inviteeEmail: string) => {
     try {
       await revokeInvite({ data: { id } });
@@ -197,10 +199,14 @@ function SquadPage() {
   const createSquad = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!newSquadName.trim()) return;
-    actions.createSquad(newSquadName);
-    setNewSquadName("");
-    setCreateSquadOpen(false);
-    toast.success("Squad created.");
+    squadOps
+      .createSquad(newSquadName)
+      .then(() => {
+        setNewSquadName("");
+        setCreateSquadOpen(false);
+        toast.success("Squad created.");
+      })
+      .catch(() => toast.error("Couldn't create that squad. Try again."));
   };
 
   const renameSquad = (event: FormEvent<HTMLFormElement>, squadId: string) => {
@@ -208,7 +214,7 @@ function SquadPage() {
     const form = new FormData(event.currentTarget);
     const name = String(form.get("squadName") ?? "").trim();
     if (!name) return;
-    actions.renameSquad(squadId, name);
+    void squadOps.renameSquad(squadId, name);
     toast.success("Squad renamed.");
   };
 
@@ -216,10 +222,10 @@ function SquadPage() {
     if (!pendingSquadAction) return;
     const squad = state.squads.find((item) => item.id === pendingSquadAction.id);
     if (pendingSquadAction.kind === "delete") {
-      actions.deleteSquad(pendingSquadAction.id);
+      void squadOps.deleteSquad(pendingSquadAction.id).catch(() => toast.error("Couldn't delete it. Try again."));
       toast.success(`${squad?.name ?? "Squad"} deleted.`);
     } else {
-      actions.leaveSquad(pendingSquadAction.id);
+      void squadOps.leaveSquad(pendingSquadAction.id).catch(() => toast.error("Couldn't leave. Try again."));
       toast.success(`You left ${squad?.name ?? "the squad"}.`);
     }
     setPendingSquadAction(null);
@@ -371,7 +377,7 @@ function SquadPage() {
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    actions.toggleSquadMember(member.id, member.name, item.id)
+                                    void squadOps.toggleMember(member.id, member.name, item.id)
                                   }
                                   aria-label={`Remove ${member.name} from ${item.name}`}
                                   className="min-h-11 px-2 text-sm text-muted-foreground underline underline-offset-4"
@@ -393,7 +399,7 @@ function SquadPage() {
                                   <button
                                     type="button"
                                     onClick={() =>
-                                      actions.toggleSquadMember(friend.id, friend.name, item.id)
+                                      void squadOps.toggleMember(friend.id, friend.name, item.id)
                                     }
                                     aria-label={`Remove ${friend.name} from ${item.name}`}
                                     className="min-h-11 px-2 text-sm text-muted-foreground underline underline-offset-4"

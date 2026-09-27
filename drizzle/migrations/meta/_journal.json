@@ -15,6 +15,13 @@
       "when": 1790481759961,
       "tag": "0001_create_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790533351523,
+      "tag": "0002_shared_squads",
+      "breakpoints": true
     }
   ]
 }
