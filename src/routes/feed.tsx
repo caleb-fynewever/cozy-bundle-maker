@@ -70,19 +70,36 @@ const HEART_PATH =
 
 function FeedPage() {
   const state = useUserState();
-  const posts = [...state.posts, ...FRIEND_POSTS].sort((a, b) => b.at - a.at);
+
+  // The feed is your squads: your own posts and posts from anyone in one of them.
+  const squadmateIds = new Set(state.squadIds);
+  const posts = [...state.posts, ...FRIEND_POSTS]
+    .filter((post) => post.authorId === "me" || squadmateIds.has(post.authorId))
+    .sort((a, b) => b.at - a.at);
 
   return (
     <AppShell>
       <div className="mx-auto max-w-xl lg:max-w-[640px]">
         <PageHeader eyebrow="from your people" title="Feed" />
-        <ul className="divide-y divide-border sm:mt-2">
-          {posts.map((post, index) => (
-            <li key={post.id} className="py-6 sm:py-8">
-              <Post post={post} priority={index === 0} />
-            </li>
-          ))}
-        </ul>
+        {posts.length ? (
+          <ul className="divide-y divide-border sm:mt-2">
+            {posts.map((post, index) => (
+              <li key={post.id} className="py-6 sm:py-8">
+                <Post post={post} priority={index === 0} />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-4 rounded-md border border-dashed border-border bg-surface/50 px-4 py-10 text-center font-hand text-lg leading-snug text-muted-foreground">
+            quiet in your squads right now ·{" "}
+            <Link
+              to="/squad"
+              className="underline decoration-primary decoration-2 underline-offset-4 transition-[text-decoration-color,color] duration-(--dur-quick) hover:text-foreground hover:decoration-foreground"
+            >
+              pull some people together
+            </Link>
+          </p>
+        )}
         <p className="border-t border-border py-10 text-center font-hand text-lg text-muted-foreground">
           {/* Block, so the moon sits centred on its own line above the note instead of inline before it. */}
           <Doodle name="chill" size={32} className="mx-auto mb-2 block rotate-12" />
