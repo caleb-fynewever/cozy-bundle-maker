@@ -472,16 +472,7 @@ function SquadPage() {
             )}
           </section>
 
-      </div>
-    </AppShell>
-  );
-}
-
-function AllSquads() {
-  const state = useUserState();
-  const { sent: sentInvites } = useSquadInvites();
-  return (
-          <section aria-labelledby="your-squads-heading">
+          <section className="mt-12" aria-labelledby="your-squads-heading">
             <SectionHeading
               id="your-squads-heading"
               eyebrow="Your circles"
