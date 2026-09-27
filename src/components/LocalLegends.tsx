@@ -373,26 +373,12 @@ export function LocalLegends({ className }: { className?: string }) {
 
   return (
     <section id="ranks" aria-labelledby="ranks-heading" className={`scroll-mt-24 ${className ?? ""}`}>
-      <SectionHeading
-        id="ranks-heading"
-        eyebrow={<span className="whitespace-nowrap">a little friendly competition</span>}
-        title="Local Legends"
-      />
-      <div className="legends-scope" role="group" aria-label="Who to compare with" data-scope={scope}>
-        <span className="legends-scope-indicator" aria-hidden />
-        {SCOPES.map((option) => (
-          <button
-            key={option}
-            type="button"
-            aria-pressed={scope === option}
-            aria-controls="legends-panel"
-            onClick={() => {
-              if (scope !== option) change(() => setScope(option));
-            }}
-          >
-            {SCOPE_LABEL[option]}
-          </button>
-        ))}
+      <div className="legends-heading">
+        <SectionHeading
+          id="ranks-heading"
+          title="Local Legends"
+
+        />
       </div>
 
       <div ref={boardsRef} className="legends-boards hide-scrollbar -mx-5 mt-3 overflow-x-auto px-5 py-1 md:-mx-1 md:px-1">

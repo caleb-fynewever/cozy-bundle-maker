@@ -372,12 +372,16 @@
     position: relative;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: min(100%, 18rem);
-    margin-top: 1rem;
+    width: 14rem;
     padding: 0.25rem;
     border: 1px solid var(--border);
     border-radius: 999px;
     background: var(--surface);
+  }
+
+  .legends-heading > .flex {
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .legends-scope-indicator {
@@ -413,6 +417,24 @@
   .legends-scope button:focus-visible {
     outline: 2px solid var(--foreground);
     outline-offset: 2px;
+  }
+
+  @media (max-width: 39.999rem) {
+    .legends-heading h2 {
+      font-size: 1.125rem;
+      white-space: nowrap;
+    }
+
+    .legends-scope {
+      width: 9rem;
+    }
+
+    .legends-scope button {
+      min-height: 2rem;
+      padding: 0.25rem;
+      font-size: 0.6875rem;
+      white-space: nowrap;
+    }
   }
 
   .legend-squads {
