@@ -292,7 +292,7 @@ function SquadPage() {
                       ? `Enter the six-digit code we sent to ${email}. Your email stays private.`
                       : "Enter your .edu email to get a six-digit verification code. Your email stays private."}
                   </p>
-                  <div className="mt-5 flex flex-wrap gap-3">
+                  <div className="mt-5 flex flex-wrap justify-center gap-3">
                     <label className="sr-only" htmlFor="edu">
                       {verificationToken ? "Verification code" : "Student email"}
                     </label>
