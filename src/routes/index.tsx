@@ -22,6 +22,7 @@ import { CreateQuestForm } from "@/components/CreateQuestForm";
 import { PageHeader, SectionHeading } from "@/components/ui-kit";
 
 export const Route = createFileRoute("/")({
+  staticData: { sitemap: false },
   validateSearch: (search: Record<string, unknown>) => ({
     ...(search["tab"] === "yours" ? { tab: "yours" as const } : {}),
   }),

@@ -29,6 +29,7 @@ import {
 } from "@/lib/email-verification.server";
 
 export const Route = createFileRoute("/squad")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Your squad — wego" },

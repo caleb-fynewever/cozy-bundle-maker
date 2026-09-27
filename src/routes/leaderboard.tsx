@@ -6,6 +6,7 @@ import { BOARDS, nextUp, rankBoard, type BoardKey } from "@/lib/leaderboard";
 import { useUserState } from "@/lib/store";
 
 export const Route = createFileRoute("/leaderboard")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Local Legends — wego" },

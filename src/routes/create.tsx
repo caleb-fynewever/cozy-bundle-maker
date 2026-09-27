@@ -3,6 +3,7 @@ import { AppShell } from "@/components/AppShell";
 import { CreateQuestForm } from "@/components/CreateQuestForm";
 
 export const Route = createFileRoute("/create")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Create a quest — wego" },

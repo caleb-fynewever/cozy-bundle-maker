@@ -15,6 +15,7 @@ import { Route as CreateRouteImport } from './routes/create'
 import { Route as FeedRouteImport } from './routes/feed'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SquadRouteImport } from './routes/squad'
 import { Route as GoQuestIdRouteImport } from './routes/go.$questId'
 import { Route as QuestQuestIdRouteImport } from './routes/quest.$questId'
@@ -51,6 +52,11 @@ const ProfileRoute = ProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SquadRoute = SquadRouteImport.update({
   id: '/squad',
   path: '/squad',
@@ -84,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/feed': typeof FeedRoute
   '/leaderboard': typeof LeaderboardRoute
   '/profile': typeof ProfileRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/squad': typeof SquadRoute
   '/go/$questId': typeof GoQuestIdRoute
   '/quest/$questId': typeof QuestQuestIdRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/feed': typeof FeedRoute
   '/leaderboard': typeof LeaderboardRoute
   '/profile': typeof ProfileRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/squad': typeof SquadRoute
   '/go/$questId': typeof GoQuestIdRoute
   '/quest/$questId': typeof QuestQuestIdRoute
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/feed': typeof FeedRoute
   '/leaderboard': typeof LeaderboardRoute
   '/profile': typeof ProfileRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/squad': typeof SquadRoute
   '/go/$questId': typeof GoQuestIdRoute
   '/quest/$questId': typeof QuestQuestIdRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/feed'
     | '/leaderboard'
     | '/profile'
+    | '/sitemap.xml'
     | '/squad'
     | '/go/$questId'
     | '/quest/$questId'
@@ -139,6 +149,7 @@ export interface FileRouteTypes {
     | '/feed'
     | '/leaderboard'
     | '/profile'
+    | '/sitemap.xml'
     | '/squad'
     | '/go/$questId'
     | '/quest/$questId'
@@ -152,6 +163,7 @@ export interface FileRouteTypes {
     | '/feed'
     | '/leaderboard'
     | '/profile'
+    | '/sitemap.xml'
     | '/squad'
     | '/go/$questId'
     | '/quest/$questId'
@@ -166,6 +178,7 @@ export interface RootRouteChildren {
   FeedRoute: typeof FeedRoute
   LeaderboardRoute: typeof LeaderboardRoute
   ProfileRoute: typeof ProfileRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SquadRoute: typeof SquadRoute
   GoQuestIdRoute: typeof GoQuestIdRoute
   QuestQuestIdRoute: typeof QuestQuestIdRoute
@@ -217,6 +230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/squad': {
       id: '/squad'
       path: '/squad'
@@ -262,6 +282,7 @@ const rootRouteChildren: RootRouteChildren = {
   FeedRoute: FeedRoute,
   LeaderboardRoute: LeaderboardRoute,
   ProfileRoute: ProfileRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   SquadRoute: SquadRoute,
   GoQuestIdRoute: GoQuestIdRoute,
   QuestQuestIdRoute: QuestQuestIdRoute,

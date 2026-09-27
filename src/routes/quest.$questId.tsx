@@ -14,6 +14,7 @@ import { QuestRouteMap } from "@/components/QuestRouteMap";
 import { BackButton } from "@/components/BackButton";
 
 export const Route = createFileRoute("/quest/$questId")({
+  staticData: { sitemap: false },
   validateSearch: (search: Record<string, unknown>) => ({
     ...(search["from"] === "feed" ? { from: "feed" as const } : {}),
   }),

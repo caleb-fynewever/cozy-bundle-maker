@@ -24,6 +24,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { QuestRouteMap } from "@/components/QuestRouteMap";
 
 export const Route = createFileRoute("/go/$questId")({
+  staticData: { sitemap: false },
   loader: ({ params }) => {
     const quest = getQuest(params.questId);
     return { title: quest?.title ?? null };
