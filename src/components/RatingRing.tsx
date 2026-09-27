@@ -1,17 +1,16 @@
 import { useLayoutEffect, useRef } from "react";
-import { EASE_OUT, reducedMotion } from "@/lib/motion";
+import { reducedMotion } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 const RADIUS = 20;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-const STAR = "M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z";
 
 const format = (n: number, decimals: number) => (decimals ? n.toFixed(1) : String(Math.round(n)));
 
 /**
  * A Beli-style score: a deep clover arc around the number, on a pale track, printed on a white disc.
  * The first time it sits comfortably in view the arc fills and the number counts up with it (a post
- * you just shared fills right away). A 9 or better earns a small star. Reduced motion shows the
+ * you just shared fills right away). Reduced motion shows the
  * final score at once.
  */
 export function RatingRing({
@@ -29,11 +28,9 @@ export function RatingRing({
   const score = Math.min(10, Math.max(0, rating));
   const decimals = Number.isInteger(score) ? 0 : 1;
   const display = format(score, decimals);
-  const earned = score >= 9;
   const root = useRef<HTMLDivElement>(null);
   const arc = useRef<SVGCircleElement>(null);
   const number = useRef<HTMLSpanElement>(null);
-  const star = useRef<HTMLSpanElement>(null);
 
   useLayoutEffect(() => {
     const el = root.current;
@@ -49,26 +46,9 @@ export function RatingRing({
       ring.style.opacity = filled > 0.005 ? "1" : "0";
       if (text) text.nodeValue = format(score * p, decimals);
     };
-    const land = (animate: boolean) => {
-      const mark = star.current;
-      if (!mark) return;
-      mark.style.opacity = "1";
-      if (animate) {
-        mark.animate(
-          [
-            { transform: "scale(0) rotate(-60deg)", opacity: 0 },
-            { transform: "scale(1.35) rotate(12deg)", opacity: 1, offset: 0.55 },
-            { transform: "scale(1) rotate(0deg)", opacity: 1 },
-          ],
-          { duration: 460, easing: EASE_OUT },
-        );
-      }
-    };
-
     if (reducedMotion() || typeof IntersectionObserver === "undefined") {
       paint(1);
       figure.style.opacity = "1";
-      land(false);
       return;
     }
 
@@ -84,7 +64,6 @@ export function RatingRing({
         const t = Math.min(1, (now - start) / duration);
         paint(1 - Math.pow(1 - t, 4));
         if (t < 1) raf = requestAnimationFrame(tick);
-        else land(true);
       };
       raf = requestAnimationFrame(tick);
     };
@@ -143,13 +122,6 @@ export function RatingRing({
       >
         {display}
       </span>
-      {earned ? (
-        <span ref={star} aria-hidden className="xp-star pointer-events-none absolute -right-0.5 -top-0.5 size-3 opacity-0">
-          <svg viewBox="0 0 10 10" className="size-full">
-            <path fill="currentColor" d={STAR} />
-          </svg>
-        </span>
-      ) : null}
     </div>
   );
 }
