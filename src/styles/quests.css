@@ -1,0 +1,545 @@
+/* quests page styles. Colors only through the semantic tokens in ../styles.css. */
+@layer components {
+  /* ------------------------------------------------------------------------------------------
+   * The deck (src/components/SwipeDeck.tsx): postcards on paper. The top card is the one you
+   * hold; the ones waiting underneath are the same size and fan out only at their bottom edges.
+   * --lift (0..1, written per frame on each waiting card while dragging) lets them rise toward
+   * the top. --rot-k scales their tilt: a degree across a 900px card swings its edge far more
+   * than across a phone card, so wide cards tilt less and the edges never cross. SwipeDeck reads
+   * --rot-k too, so a card rising out of the stack starts exactly where it rested.
+   * ------------------------------------------------------------------------------------------ */
+  .deck {
+    position: relative;
+    --rot-k: 1;
+  }
+
+  @media (width >= 40rem) {
+    .deck {
+      --rot-k: 0.45;
+    }
+  }
+
+  @media (width >= 64rem) {
+    .deck {
+      --rot-k: 0.3;
+    }
+  }
+
+  .deck-card {
+    border: 1px solid var(--border-strong);
+    border-radius: calc(var(--radius) - 3px);
+    background: var(--card);
+    transform-origin: 50% 100%;
+  }
+
+  /* 8px per level: always more than the tilt swings an edge, so the layers stack, never cross. */
+  /* A waiting card is the top card's size; a longer face (a wrapped line) is cut at its own edge. */
+  .deck-under {
+    --settle: calc(1 - 0.45 * var(--lift, 0));
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    overflow: clip;
+    pointer-events: none;
+    transform: translateY(calc(var(--n) * 8px * var(--settle))) scale(calc(1 - var(--n) * 0.035 * var(--settle)))
+      rotate(calc(var(--rot) * var(--rot-k) * var(--settle)));
+    transition: transform var(--dur-slow) var(--ease-spring);
+  }
+
+  /* Deeper cards recede: a softer edge, so the stack reads as depth rather than extra lines. */
+  .deck-under[data-n="2"],
+  .deck-under[data-n="3"] {
+    border-color: color-mix(in srgb, var(--border-strong) 40%, var(--border));
+  }
+
+  /* A card newly joining the bottom of the stack fades in (no movement: it was always there). */
+  .deck-under-in {
+    animation: deck-fade var(--dur-base) var(--ease-out) backwards;
+  }
+
+  .deck[data-dragging] .deck-under {
+    transition: none;
+  }
+
+  .deck-top {
+    position: relative;
+    z-index: 10;
+    touch-action: pan-y;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: transform var(--dur-slow) var(--ease-spring);
+  }
+
+  .deck-top img {
+    -webkit-user-drag: none;
+  }
+
+  /* Paper lifting off paper: only for the card under your hand. Opacity, never box-shadow. */
+  .deck-top::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    box-shadow: var(--shadow-paper);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur-quick) var(--ease-out);
+  }
+
+  .deck-top[data-dragging] {
+    cursor: grabbing;
+    transition: none;
+    will-change: transform;
+  }
+
+  .deck-top[data-dragging]::after {
+    opacity: 1;
+    transition: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .deck-top {
+      cursor: grab;
+    }
+
+    .deck-top:hover::after {
+      opacity: 1;
+    }
+  }
+
+  /* The printed photo's edge: a hairline so bright skies don't bleed into the white margin. */
+  .deck-photo-edge {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 10%, transparent);
+    pointer-events: none;
+  }
+
+  /*
+   * The address line. Portrait cards (and laptops without the height) keep it as one line under
+   * the hook; the landscape card, when it's tall enough to leave room, writes it on the back of
+   * the postcard: three ruled lines anchored to the bottom of the copy half.
+   */
+  .deck-meta-inline {
+    margin-top: 0.75rem;
+  }
+
+  .deck-meta-lines {
+    display: none;
+  }
+
+  @media (width >= 40rem) {
+    .deck-meta-inline {
+      margin-top: 1rem;
+    }
+  }
+
+  /* The postage stamp: the quest's vibe doodle in a perforated square, in the top corner. */
+  .deck-postage {
+    display: none;
+  }
+
+  /* On the landscape postcard (laptops) the text half is the back of the card: centre rule and all. */
+  @media (width >= 64rem) {
+    .deck-copy {
+      position: relative;
+    }
+
+    .deck-copy::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 1.5rem;
+      bottom: 1.5rem;
+      width: 1px;
+      background: var(--border);
+    }
+
+    .deck-meta-inline {
+      margin-top: auto;
+      padding-top: 1rem;
+    }
+
+    .deck-postage {
+      float: right;
+      display: grid;
+      place-items: center;
+      width: 3.5rem;
+      height: 3.5rem;
+      margin: 0.125rem 0 0.5rem 1rem;
+      border: 2px dotted var(--border-strong);
+      border-radius: 2px;
+      background: var(--card);
+      rotate: 3deg;
+    }
+  }
+
+  @media (width >= 64rem) and (height >= 50rem) {
+    .deck-meta-inline {
+      display: none;
+    }
+
+    .deck-meta-lines {
+      display: block;
+      margin-top: auto;
+      padding-top: 1.25rem;
+    }
+  }
+
+  /*
+   * Phones: the card is sized to the screen and the photo takes whatever the copy leaves (never
+   * under 96px), so a title that runs to three lines or an address line that wraps shortens the
+   * photo instead of pushing Pass/Save under the floating tab bar. The hint line and its "?" stay
+   * above the bar too. (Tablets size the photo with SwipeDeck's PHOTO_H; the landscape card, lg,
+   * has its own rule there.)
+   */
+  @media (width < 40rem) {
+    .deck-face {
+      display: flex;
+      flex-direction: column;
+      min-height: min(calc(100svh - 430px), 585px);
+    }
+
+    .deck-face-photo {
+      display: flex;
+      flex: 1 1 0%;
+      flex-direction: column;
+    }
+
+    .deck-face-photo > figure {
+      flex: 1 1 0%;
+      min-height: 96px;
+    }
+  }
+
+  /*
+   * Short phones (an iPhone in Safari with its toolbar showing is ~664px tall): the page tightens
+   * above the deck and around the hint line (index.tsx and SwipeDeck, max-height variants; the gap
+   * over Pass/Save stays, it clears the stack's fanned edges) and the photo gives up the most, so
+   * Pass/Save and the hint with its "?" all stay above the tab bar.
+   */
+  @media (width < 40rem) and (height <= 45rem) {
+    .deck-face {
+      min-height: calc(100svh - 395px);
+    }
+
+    .deck-face-photo > figure {
+      min-height: 84px;
+    }
+
+    .deck-meta-inline {
+      margin-top: 0.5rem;
+    }
+  }
+
+  /*
+   * Drag colour: the card takes on the colour of where it's heading, a soft wash rising from that
+   * side: red from the left for a pass, clover from the right for a save. --wash (0..1, written per
+   * frame on each wash while dragging) is how far the drag is toward counting; the colour's own
+   * strength tops out around 40%, so the photo and title still read through it. Letting go without
+   * deciding fades it back out. On a phone the side it's heading toward is already off the screen
+   * when letting go counts, so both washes carry well into the half you still see, and the save
+   * one mixes in the save stamp's ink (--ring): light clover on white paper reads far fainter than
+   * the same amount of red.
+   */
+  .deck-wash {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: var(--wash, 0);
+    transition: opacity var(--dur-base) var(--ease-out);
+  }
+
+  .deck-wash[data-kind="pass"] {
+    background: linear-gradient(to right, color-mix(in srgb, var(--destructive) 40%, transparent), color-mix(in srgb, var(--destructive) 20%, transparent) 50%, transparent 90%);
+  }
+
+  .deck-wash[data-kind="save"] {
+    --wash-ink: color-mix(in srgb, var(--primary) 45%, var(--ring));
+    background: linear-gradient(to left, color-mix(in srgb, var(--wash-ink) 50%, transparent), color-mix(in srgb, var(--wash-ink) 34%, transparent) 50%, transparent 90%);
+  }
+
+  .deck[data-dragging] .deck-wash {
+    transition: none;
+  }
+
+  /*
+   * Drag intent: a rubber stamp inks onto the photo as you drag, "save" in deep clover ink on the
+   * left, "pass" in red ink on the right. Its opacity is how close letting go is to counting.
+   */
+  .deck-intent {
+    position: absolute;
+    z-index: 2;
+    top: clamp(1.25rem, 5%, 2rem);
+    padding: 0.15rem 0.7rem 0.05rem;
+    border: 2.5px solid currentColor;
+    border-radius: calc(var(--radius) - 3px);
+    background: color-mix(in srgb, var(--card) 84%, transparent);
+    font-family: var(--font-hand);
+    font-size: 1.75rem;
+    line-height: 1.15;
+    pointer-events: none;
+    transition: opacity var(--dur-quick) var(--ease-out);
+  }
+
+  .deck-intent[data-kind="save"] {
+    left: 1.5rem;
+    color: var(--ring);
+    opacity: var(--save, 0);
+    transform: rotate(-9deg) scale(calc(0.9 + 0.1 * var(--save, 0)));
+  }
+
+  .deck-intent[data-kind="pass"] {
+    right: 1.5rem;
+    color: var(--destructive);
+    opacity: var(--pass, 0);
+    transform: rotate(9deg) scale(calc(0.9 + 0.1 * var(--pass, 0)));
+  }
+
+  .deck[data-dragging] .deck-intent {
+    transition: none;
+  }
+
+  @media (width >= 40rem) {
+    .deck-intent {
+      font-size: 2.25rem;
+    }
+  }
+
+  /*
+   * The button a release would press leans in, so the gesture and the buttons are one control.
+   * (Each also lights up in its colour, red or deeper clover: data-armed: utilities in SwipeDeck.)
+   */
+  .deck-action[data-armed] {
+    transform: scale(1.05);
+  }
+
+  /* Postmark: the round "did it" stamp straddles the seam between photo and paper. */
+  .deck-postmark {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0;
+    z-index: 2;
+    translate: 0 50%;
+    scale: 0.82;
+    pointer-events: none;
+  }
+
+  @media (width >= 40rem) {
+    .deck-postmark {
+      right: 1.75rem;
+      scale: 1;
+    }
+  }
+
+  @media (width >= 64rem) {
+    .deck-postmark {
+      right: 0;
+      bottom: 2.25rem;
+      translate: 50% 0;
+    }
+  }
+
+  /*
+   * "+120 XP": a handwritten slip of paper that rises off the postmark. It crosses the photo, so it
+   * is written on paper (with the ink hairline every printed thing has) to read over any picture.
+   */
+  .deck-xp-note {
+    position: fixed;
+    z-index: 70;
+    padding: 0.2rem 0.55rem 0.05rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    background: var(--card);
+    pointer-events: none;
+    font-family: var(--font-hand);
+    font-size: 1.375rem;
+    line-height: 1.1;
+    white-space: nowrap;
+    color: var(--primary-deep);
+  }
+
+  /* The deck's one line of feedback under the buttons (hint, what just happened, undo). */
+  .deck-undo {
+    position: relative;
+    color: var(--foreground);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--foreground) 35%, transparent);
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 4px;
+    cursor: pointer;
+    transition: text-decoration-color var(--dur-quick) var(--ease-out);
+  }
+
+  .deck-undo:hover {
+    text-decoration-color: var(--foreground);
+  }
+
+  /* A 44px hit area around a word-sized control. */
+  .deck-undo::after {
+    content: "";
+    position: absolute;
+    inset: -0.875rem -0.5rem;
+  }
+
+  .deck-kbd {
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.375rem;
+    height: 1.375rem;
+    padding: 0 0.3rem;
+    border: 1px solid color-mix(in srgb, var(--border-strong) 45%, transparent);
+    border-radius: 4px;
+    background: var(--card);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--border-strong) 30%, transparent);
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--foreground);
+  }
+
+  /* All caught up: the empty slot where the next postcard will land. */
+  .deck-empty {
+    border: 1px dashed color-mix(in srgb, var(--border-strong) 35%, transparent);
+    border-radius: calc(var(--radius) - 3px);
+  }
+
+  .deck-empty-in {
+    animation: deck-rise var(--dur-base) var(--ease-out) backwards;
+  }
+
+  /*
+   * The deal: on the first visit of a page load the waiting cards are dealt onto the table under
+   * the top card, deepest first. The top card the server painted is already there (it's the
+   * page's main image, so it never waits for scripts); only a "fresh" top card, one that this
+   * device's saved state put on top after load, is held back and dealt last. "pending" is the
+   * server/first render; if scripts never arrive the held cards show up by themselves after 2s.
+   */
+  .deck-section[data-deal="pending"] :is(.deck-under, .deck-top[data-fresh]) {
+    animation: deck-hold 1ms 2s backwards;
+  }
+
+  .deck-section[data-deal="run"] :is(.deck-under, .deck-top[data-fresh]) {
+    animation: deck-deal var(--dur-slow) var(--ease-spring) backwards;
+    animation-delay: calc(var(--deal-i, 0) * 70ms);
+  }
+
+  /* ------------------------------------------------------------------------------------------
+   * Quests page chrome (src/routes/index.tsx).
+   * ------------------------------------------------------------------------------------------ */
+  .quests-panel-in {
+    animation: deck-rise var(--dur-base) var(--ease-out) backwards;
+  }
+
+  /* ------------------------------------------------------------------------------------------
+   * Create a quest (src/components/CreateQuestForm.tsx).
+   * ------------------------------------------------------------------------------------------ */
+  .quest-number {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+
+  .quest-number::-webkit-inner-spin-button,
+  .quest-number::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /*
+   * Adventure level uses the app's one slider (.quest-range, defined with the rating slider in
+   * quest.css); these are its five stops, lined up with the 26px thumb's centre.
+   */
+  .quest-range-ticks {
+    display: flex;
+    justify-content: space-between;
+    margin-top: -0.375rem;
+    padding-inline: 12.5px;
+  }
+
+  .quest-range-ticks > span {
+    width: 1px;
+    height: 6px;
+    background: var(--border);
+    transition: background-color var(--dur-quick) var(--ease-out);
+  }
+
+  .quest-range-ticks > span[data-on] {
+    background: color-mix(in srgb, var(--border-strong) 45%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .deck-section[data-deal] :is(.deck-card, .deck-after),
+    .deck-under-in,
+    .deck-empty-in,
+    .quests-panel-in {
+      animation: none;
+    }
+
+    .deck-top,
+    .deck-under,
+    .deck-wash {
+      transition: none;
+    }
+  }
+}
+
+/*
+ * The drag writes these every frame. Registered as non-inheriting numbers, and written on the one
+ * element that reads each (the two drag stamps, the two colour washes, the waiting cards), so a
+ * frame never restyles the whole deck subtree.
+ */
+@property --wash {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --lift {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --pass {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --save {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@keyframes deck-deal {
+  from {
+    opacity: 0;
+    transform: translateY(28px) rotate(var(--deal-rot, 0deg)) scale(0.96);
+  }
+}
+
+@keyframes deck-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes deck-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes deck-hold {
+  from,
+  to {
+    opacity: 0;
+  }
+}

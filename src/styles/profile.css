@@ -1,0 +1,443 @@
+/* profile page styles. Colors only through the semantic tokens in ../styles.css. */
+@layer components {
+  /*
+   * Page layout. Phone: level, stamps, trail, into, done. Tablet: the same, with into and done side
+   * by side. Desktop: a main column (level, trail, done) and a sticky rail (stamps, into). The rail
+   * is `display: contents` below desktop so its two sections can take their own places in the grid.
+   */
+  .profile-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "level" "stamps" "trail" "into" "done";
+    align-items: start;
+    row-gap: 2.75rem;
+  }
+
+  .profile-rail {
+    display: contents;
+  }
+
+  .profile-grid [data-area="level"] {
+    grid-area: level;
+  }
+
+  .profile-grid [data-area="stamps"] {
+    grid-area: stamps;
+  }
+
+  .profile-grid [data-area="trail"] {
+    grid-area: trail;
+  }
+
+  .profile-grid [data-area="into"] {
+    grid-area: into;
+  }
+
+  .profile-grid [data-area="done"] {
+    grid-area: done;
+  }
+
+  @media (width >= 48rem) {
+    .profile-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-areas: "level level" "stamps stamps" "trail trail" "into done";
+      column-gap: 2.5rem;
+      row-gap: 3rem;
+    }
+  }
+
+  @media (width >= 64rem) {
+    .profile-grid {
+      grid-template-columns: minmax(0, 1fr) 18rem;
+      grid-template-rows: auto auto 1fr;
+      grid-template-areas: "level rail" "trail rail" "done rail";
+      column-gap: 3rem;
+    }
+
+    .profile-rail {
+      display: flex;
+      flex-direction: column;
+      gap: 3rem;
+      grid-area: rail;
+      position: sticky;
+      top: 6rem;
+    }
+  }
+
+  /* Someone else's profile: the same width and rail as your own. Phone: stats, vibes, trail. */
+  .public-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "stats" "into" "trail";
+    align-items: start;
+    row-gap: 2.75rem;
+  }
+
+  .public-grid [data-area="stats"] {
+    grid-area: stats;
+  }
+
+  .public-grid [data-area="into"] {
+    grid-area: into;
+  }
+
+  .public-grid [data-area="trail"] {
+    grid-area: trail;
+  }
+
+  @media (width >= 64rem) {
+    .public-grid {
+      grid-template-columns: minmax(0, 1fr) 18rem;
+      grid-template-rows: auto 1fr;
+      grid-template-areas: "stats into" "trail into";
+      column-gap: 3rem;
+      row-gap: 3rem;
+    }
+
+    .public-grid [data-area="into"] {
+      position: sticky;
+      top: 6rem;
+    }
+  }
+
+  /*
+   * The stamp sheet: a passport page. Three to a row with the last two set between them on phones
+   * and in the desktop rail, one row of five on tablets. --mark is the stamp size.
+   */
+  .stamp-sheet {
+    --mark: min(6rem, 28vw);
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    row-gap: 0.75rem;
+  }
+
+  .stamp-sheet > li {
+    display: flex;
+    grid-column: span 2;
+    justify-content: center;
+  }
+
+  .stamp-sheet > li:nth-child(4) {
+    grid-column: 2 / span 2;
+  }
+
+  @media (width >= 48rem) {
+    .stamp-sheet {
+      --mark: 6.5rem;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .stamp-sheet > li,
+    .stamp-sheet > li:nth-child(4) {
+      grid-column: auto;
+    }
+  }
+
+  @media (width >= 64rem) {
+    /* The rail is 18rem, so each of the three columns is 6rem: the marks fill it with a hair to spare. */
+    .stamp-sheet {
+      --mark: 5.75rem;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      row-gap: 0.25rem;
+    }
+
+    .stamp-sheet > li {
+      grid-column: span 2;
+    }
+
+    .stamp-sheet > li:nth-child(4) {
+      grid-column: 2 / span 2;
+    }
+  }
+
+  .stamp-cell {
+    display: grid;
+    width: var(--mark);
+    height: var(--mark);
+    place-items: center;
+    transition: transform var(--dur-quick) var(--ease-spring);
+  }
+
+  .stamp-cell > * {
+    grid-area: 1 / 1;
+  }
+
+  /* A little nudge under the pointer, like touching paper. Only where there is a real pointer. */
+  @media (hover: hover) and (pointer: fine) {
+    .stamp-cell[data-earned]:hover {
+      transform: rotate(3deg);
+    }
+  }
+
+  /* An empty slot: the stamp's outline pencilled in, with its progress traced in clover. */
+  .stamp-slot {
+    position: relative;
+    display: grid;
+    width: 100%;
+    height: 100%;
+    place-items: center;
+  }
+
+  /*
+   * The stamp is coming down on it. The pencilled name goes at once (so no two labels are ever drawn
+   * through each other) and only the dashed ring and its arc fade under the landing ink. The stamp
+   * starts large and transparent, so it covers the handoff.
+   */
+  .stamp-slot[data-leaving] {
+    opacity: 0;
+    transition: opacity var(--dur-press) var(--ease-in);
+  }
+
+  .stamp-slot[data-leaving] > span {
+    visibility: hidden;
+  }
+
+  .stamp-slot-ring {
+    stroke: color-mix(in srgb, var(--muted-foreground) 50%, transparent);
+  }
+
+  /* Progress is clover (like the vial); only an earned stamp is in deep stamp ink. */
+  .stamp-slot-arc {
+    stroke: var(--primary);
+  }
+
+  /* Pencil sized to match an inked stamp's label, so earning one never makes its name harder to read. */
+  .stamp-slot-name {
+    font-size: calc(var(--mark) * 0.15);
+  }
+
+  .stamp-slot-count {
+    font-size: calc(var(--mark) * 0.12);
+  }
+
+  /* Vibe bars: the fill is a full-width strip slid left, like the XP vial (transform only). */
+  .dna-fill {
+    transform: translateX(calc((var(--p, 0) - 1) * 100%));
+  }
+
+  /*
+   * The XP trail: a dashed path down the left with a node per stop (clover for a finished quest,
+   * an ink ring for everything else), and each day's name written in the margin.
+   */
+  /* Kept to a notebook column, so each +XP stays within reach of the line it belongs to. */
+  .xp-trail {
+    max-width: 32rem;
+  }
+
+  .xp-trail {
+    position: relative;
+    padding-left: 1.75rem;
+  }
+
+  .xp-trail::before {
+    content: "";
+    position: absolute;
+    top: 0.5rem;
+    bottom: 1.5rem;
+    left: 7px;
+    border-left: 1.5px dashed color-mix(in srgb, var(--muted-foreground) 45%, transparent);
+  }
+
+  .xp-trail-day {
+    position: relative;
+    padding-top: 1rem;
+  }
+
+  .xp-trail > li:first-child .xp-trail-day {
+    padding-top: 0;
+  }
+
+  .xp-trail-row {
+    position: relative;
+  }
+
+  .xp-node {
+    position: absolute;
+    top: 50%;
+    left: calc(-1.75rem + 3px);
+    width: 10px;
+    height: 10px;
+    margin-top: -5px;
+    border: 1.5px solid var(--foreground);
+    border-radius: 9999px;
+    background: var(--card);
+    box-shadow: 0 0 0 3px var(--background);
+  }
+
+  .xp-node[data-kind="complete"],
+  .xp-node[data-kind="squad"] {
+    background: var(--primary);
+  }
+
+  /*
+   * The quest journey (src/components/LevelJourney.tsx): the levels as stops on one trail that climbs
+   * the sheet, Wanderer at the bottom. The pencilled dashes run the whole way (like the XP trail);
+   * the clover part is what you've walked, laid in pieces (one per stop and road below you) so its
+   * length never has to be measured. Your stretch of road is longer, and --p (0..1, how far you are
+   * toward the next level) splits it around your marker.
+   */
+  .journey {
+    --disc: 2.5rem;
+    --road: 2.25rem;
+    --free: 5.5rem;
+    position: relative;
+    isolation: isolate;
+  }
+
+  @media (width >= 40rem) {
+    .journey {
+      --road: 2.75rem;
+      --free: 7rem;
+    }
+  }
+
+  .journey::before {
+    content: "";
+    position: absolute;
+    top: calc(var(--disc) / 2);
+    bottom: 0;
+    left: calc(var(--disc) / 2 - 1px);
+    border-left: 2px dashed color-mix(in srgb, var(--muted-foreground) 45%, transparent);
+  }
+
+  .journey-road {
+    position: relative;
+    height: var(--road);
+  }
+
+  .journey-road[data-you] {
+    height: auto;
+  }
+
+  .journey-gap {
+    position: relative;
+  }
+
+  .journey-gap[data-part="ahead"] {
+    height: calc(0.5rem + var(--free) * (1 - var(--p, 0)));
+  }
+
+  .journey-gap[data-part="behind"] {
+    height: calc(0.5rem + var(--free) * var(--p, 0));
+  }
+
+  .journey-gap[data-part="summit"] {
+    height: var(--road);
+  }
+
+  .journey-row,
+  .journey-you {
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--disc) minmax(0, 1fr);
+    column-gap: 0.875rem;
+  }
+
+  .journey-row {
+    align-items: start;
+  }
+
+  /* The trail starts at Wanderer: paper over the pencilled line below the first disc. */
+  .journey > li:last-child .journey-row::after {
+    content: "";
+    position: absolute;
+    top: calc(var(--disc) / 2);
+    bottom: 0;
+    left: calc(var(--disc) / 2 - 2px);
+    width: 4px;
+    background: var(--card);
+  }
+
+  /* The name's line sits level with the middle of its disc. */
+  .journey-text {
+    min-width: 0;
+    padding-top: calc((var(--disc) - 1.5rem) / 2);
+  }
+
+  /* Stops are paper discs like the route stops: clover once reached, ink for yours, pencil ahead. */
+  .journey-disc {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    width: var(--disc);
+    height: var(--disc);
+    place-items: center;
+    border: 1px solid var(--border-strong);
+    border-radius: 9999px;
+    background: var(--card);
+    font-size: 15px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .journey-disc[data-state="reached"] {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  .journey-disc[data-state="current"] {
+    border-color: var(--foreground);
+    background: var(--foreground);
+    color: var(--background);
+  }
+
+  .journey-disc[data-state="future"] {
+    border: 1.5px dashed color-mix(in srgb, var(--muted-foreground) 55%, transparent);
+    color: var(--muted-foreground);
+  }
+
+  /* A piece of walked trail: clover, like the vial. It draws upward (scaleY from its foot). */
+  .journey-walk {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--disc) / 2 - 1.5px);
+    width: 3px;
+    background: var(--primary);
+    transform-origin: 50% 100%;
+  }
+
+  /* Wanderer's piece stops at its disc. */
+  .journey-walk[data-end] {
+    bottom: auto;
+    height: calc(var(--disc) / 2);
+  }
+
+  /* You on the trail: your avatar on a disc of paper that hides the line under it, the note beside. */
+  .journey-you {
+    align-items: center;
+    height: var(--disc);
+  }
+
+  .journey-you-mark {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    justify-self: center;
+    padding: 3px;
+    border-radius: 34%;
+    background: var(--card);
+  }
+
+  /* A 44px touch target around a small inline link, without changing its layout. */
+  .hit-44 {
+    position: relative;
+  }
+
+  .hit-44::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+
+  /* The hidden file input's focus shows on the button-looking label that holds it. */
+  .file-pick:has(:focus-visible) {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}

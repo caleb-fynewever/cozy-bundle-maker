@@ -1,0 +1,22 @@
+/* feed page styles. Colors only through the semantic tokens in ../styles.css. */
+@layer components {
+  /*
+   * A comment row. When a comment you just posted lands, feed.tsx fades this sage wash out behind
+   * it (Web Animations on the ::before), so the new line reads as "that's yours, it's in".
+   */
+  .comment-row {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .comment-row::before {
+    content: "";
+    position: absolute;
+    inset: -3px -8px;
+    z-index: -1;
+    border-radius: calc(var(--radius) - 3px);
+    background: var(--surface);
+    opacity: 0;
+    pointer-events: none;
+  }
+}

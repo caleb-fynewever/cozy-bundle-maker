@@ -1,0 +1,364 @@
+/* squad page styles. Colors only through the semantic tokens in ../styles.css. */
+@layer components {
+  /*
+   * Page layout. Phones and tablets: one column, the week first (the reason to go), then the folded
+   * roster, the leaderboard and new people. Laptops: the leaderboard and Find your people in the
+   * main column, the week and roster in an aside that stays in view, so an invite lands right
+   * beside the list you sent it from. The DOM holds the laptop order (main, then aside) so Tab
+   * follows the columns there; below 64rem `order` lifts the aside to the top.
+   */
+  .squad-layout {
+    display: grid;
+    gap: 3rem;
+  }
+
+  .squad-main,
+  .squad-aside {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  .squad-main {
+    gap: 3.5rem;
+  }
+
+  .squad-aside {
+    order: -1;
+    gap: 2.5rem;
+  }
+
+  @media (min-width: 64rem) {
+    .squad-layout {
+      grid-template-columns: minmax(0, 1fr) 20rem;
+      align-items: start;
+      column-gap: 3rem;
+    }
+
+    .squad-main {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    /* --aside-top is set from its height: under the header when it fits, bottom-anchored when not. */
+    .squad-aside {
+      order: 0;
+      grid-column: 2;
+      grid-row: 1;
+      position: sticky;
+      top: var(--aside-top, 6rem);
+    }
+  }
+
+  /* ---------- Local Legends ---------- */
+
+  /* The board tabs scroll sideways on phones: an edge with more tabs past it fades out. */
+  .legends-boards {
+    --fade-start: 0px;
+    --fade-end: 0px;
+  }
+
+  .legends-boards[data-fade-start] {
+    --fade-start: 2.5rem;
+  }
+
+  .legends-boards[data-fade-end] {
+    --fade-end: 2.5rem;
+  }
+
+  .legends-boards[data-fade-start],
+  .legends-boards[data-fade-end] {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      var(--foreground) var(--fade-start),
+      var(--foreground) calc(100% - var(--fade-end)),
+      transparent
+    );
+  }
+
+  /* Every row bleeds the same amount past the column, so text stays on the heading's left edge. */
+  .legends-list {
+    --row-pad: 0.5rem;
+    position: relative;
+    margin-inline: calc(var(--row-pad) * -1);
+  }
+
+  @media (min-width: 40rem) {
+    .legends-list {
+      --row-pad: 0.75rem;
+    }
+  }
+
+  .legend-item {
+    position: relative;
+  }
+
+  /* The row that is overtaking glides over the rows it passes. */
+  .legend-item[data-overtaking] {
+    z-index: 2;
+  }
+
+  .legend-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: 2rem 2.5rem minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 0.75rem;
+    min-height: 4rem;
+    padding: 0.625rem var(--row-pad);
+    border-radius: var(--radius);
+    transition:
+      transform var(--dur-base) var(--ease-spring),
+      background-color var(--dur-quick) var(--ease-out);
+  }
+
+  @media (min-width: 40rem) {
+    .legend-row {
+      column-gap: 1rem;
+    }
+  }
+
+  /* Hairlines between rows, inset to the text column; the hover wash bleeds past them. */
+  .legend-item + .legend-item > .legend-row::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    inset-inline: var(--row-pad);
+    border-top: 1px solid var(--border);
+    transition: opacity var(--dur-quick) var(--ease-out);
+  }
+
+  .legend-item:hover > .legend-row::before,
+  .legend-item:hover + .legend-item > .legend-row::before,
+  .legend-item[data-you] > .legend-row::before,
+  .legend-item[data-you] + .legend-item > .legend-row::before {
+    opacity: 0;
+  }
+
+  @media (hover: hover) {
+    .legend-row:hover {
+      background-color: var(--surface);
+    }
+  }
+
+  .legend-row:active {
+    transform: scale(0.99);
+    transition-duration: var(--dur-press);
+    transition-timing-function: var(--ease-out);
+  }
+
+  /* You: a slip of white paper on the page (same box as every row, so nothing juts out). */
+  .legend-item[data-you] > .legend-row {
+    background-color: var(--card);
+    box-shadow: inset 0 0 0 1px var(--border);
+  }
+
+  /* Lifted while it overtakes: a touch bigger, casting a paper shadow that fades (never animated). */
+  .legend-row::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: var(--shadow-paper);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur-quick) var(--ease-out);
+  }
+
+  .legend-row[data-lift] {
+    transform: scale(1.015);
+  }
+
+  .legend-row[data-lift]::after {
+    opacity: 1;
+  }
+
+  .legend-rank {
+    justify-self: center;
+    color: var(--muted-foreground);
+    font-size: 1rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Rank 1 is the board's one achievement mark: a clover squircle with an ink edge, like an avatar. */
+  /* #1 wears the medal from the doodle sheet. */
+  .legend-crown {
+    justify-self: center;
+    display: grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    place-items: center;
+    margin-block: -0.25rem;
+  }
+
+  /* Rows skipped in the short view: a dotted run down the rank gutter. */
+  .legend-gap {
+    position: relative;
+    height: 1.5rem;
+  }
+
+  .legend-gap::before {
+    content: "";
+    position: absolute;
+    top: 0.25rem;
+    bottom: 0.25rem;
+    left: calc(var(--row-pad) + 1rem - 1px);
+    border-left: 2px dotted var(--input);
+  }
+
+  /* "passed Alex": written in stamp ink, left to right, the way a pen would. */
+  .passed-note {
+    display: inline-block;
+    color: var(--ring);
+  }
+
+  .passed-note[data-fresh] {
+    animation: passed-write var(--dur-slow) cubic-bezier(0.3, 0.1, 0.3, 1) both;
+  }
+
+  .legend-stamp {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    margin-top: -1.8rem;
+    pointer-events: none;
+  }
+
+  /* ---------- This week together ---------- */
+
+  .week-meter {
+    position: relative;
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .week-seg {
+    position: relative;
+    flex: 1 1 0;
+    height: 0.625rem;
+    overflow: hidden;
+    border: 1.5px dashed color-mix(in srgb, var(--muted-foreground) 45%, transparent);
+    border-radius: 9999px;
+  }
+
+  .week-seg[data-filled] {
+    border: 0;
+  }
+
+  /* Clover pours in from the left like the XP vial; the extra length hides the spring's slosh. */
+  .week-fill {
+    position: absolute;
+    inset-block: 0;
+    left: -14%;
+    right: 0;
+    border-radius: 9999px;
+    background-color: var(--primary);
+    animation: week-pour 520ms var(--ease-spring) both;
+    animation-delay: calc(120ms + var(--i, 0) * 90ms);
+  }
+
+  /* Goal hit: once the segments are full, the gaps fill in and three become one bar. */
+  .week-join {
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background-color: var(--primary);
+    animation: week-join var(--dur-slow) var(--ease-out) both;
+    animation-delay: calc(120ms + var(--n, 3) * 90ms + 420ms);
+  }
+
+  .week-stamp {
+    position: absolute;
+    right: -0.5rem;
+    bottom: -1.9rem;
+    pointer-events: none;
+  }
+
+  /* ---------- Roster ---------- */
+
+  .roster-link {
+    transition:
+      transform var(--dur-base) var(--ease-spring),
+      background-color var(--dur-quick) var(--ease-out);
+  }
+
+  .roster-link:active {
+    transform: scale(0.985);
+    transition-duration: var(--dur-press);
+    transition-timing-function: var(--ease-out);
+  }
+
+  /*
+   * The unfolded roster (Manage): hairlines between rows (the list itself draws one under the faces
+   * line). On tablets the aside runs the full width, so the rows sit in two columns.
+   */
+  .roster-list > li + li {
+    border-top: 1px solid var(--border);
+  }
+
+  @media (min-width: 48rem) and (max-width: 63.999rem) {
+    .roster-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: 2rem;
+    }
+
+    .roster-list > li:nth-child(2) {
+      border-top: 0;
+    }
+  }
+
+  /*
+   * With a mouse, a pending row's quiet action shows on hover or focus; on touch it is always there.
+   * Remove stays visible in the unfolded roster: you opened Manage to use it.
+   */
+  @media (hover: hover) and (pointer: fine) {
+    .roster-row .roster-action {
+      opacity: 0;
+    }
+
+    .roster-row:hover .roster-action,
+    .roster-row:focus-within .roster-action,
+    .roster-list .roster-action {
+      opacity: 1;
+    }
+  }
+
+  .pending-dot {
+    width: 6px;
+    height: 6px;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    background-color: var(--primary);
+  }
+}
+
+@keyframes passed-write {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes week-pour {
+  from {
+    transform: translateX(-101%);
+  }
+}
+
+@keyframes week-join {
+  from {
+    clip-path: inset(0 100% 0 0 round 9999px);
+  }
+  to {
+    clip-path: inset(0 0 0 0 round 9999px);
+  }
+}
+
+@layer components {
+  .squad-manager { position: static; }
+}

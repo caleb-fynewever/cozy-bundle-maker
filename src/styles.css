@@ -1,6 +1,12 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import "./styles/quests.css";
+@import "./styles/feed.css";
+@import "./styles/squad.css";
+@import "./styles/profile.css";
+@import "./styles/quest.css";
+@import "./styles/shell.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -47,6 +53,7 @@
   --color-border-strong: var(--border-strong);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-primary-deep: var(--primary-deep);
   --color-map-water: var(--map-water);
   --color-map-land: var(--map-land);
   --color-map-road: var(--map-road);
@@ -54,7 +61,7 @@
 }
 
 :root {
-  --radius: 0.5rem;
+  --radius: 0.625rem;
 
   --background: #ECF2F7;
   --foreground: #1E1E1E;
@@ -85,8 +92,11 @@
 
   --border: #CAD7CD;
   --border-strong: #1E1E1E;
-  --input: #CAD7CD;
+  /* Field edges need 3:1 against white to be seen; dividers stay the lighter --border. */
+  --input: #8A9A90;
   --ring: #367850;
+  /* Deep clover: arcs, stamp ink and green text that must stay readable on paper. */
+  --primary-deep: color-mix(in srgb, var(--primary) 55%, var(--foreground));
 
   --map-water: #C8DDE2;
   --map-land: #F1F4EA;
@@ -96,6 +106,23 @@
   --gradient-night: linear-gradient(180deg, transparent 45%, color-mix(in srgb, var(--foreground) 55%, transparent) 100%);
   --shadow-lift: 3px 3px 0 var(--foreground);
   --shadow-sheet: 0 -8px 30px -12px color-mix(in srgb, var(--foreground) 15%, transparent);
+  /* Paper lifting off paper: only for the thing under your finger (a dragged card, an open sheet). */
+  --shadow-paper: 0 1px 0 var(--border), 0 18px 30px -22px color-mix(in srgb, var(--foreground) 45%, transparent);
+  --shadow-dialog: 0 1px 2px color-mix(in srgb, var(--foreground) 8%, transparent), 0 28px 56px -28px color-mix(in srgb, var(--foreground) 45%, transparent);
+
+  /*
+   * Motion language: one rhythm for the whole app. Things settle (ease-out), leave faster than they
+   * arrive (ease-in), and only completions get the soft overshoot (spring). Durations: a press is
+   * felt, a state change is seen, an entrance is noticed, a signature moment is remembered.
+   */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.55, 0, 1, 0.45);
+  --ease-spring: linear(0, 0.012, 0.047 2.3%, 0.19 5%, 0.78 13.5%, 0.96 17.4%, 1.034 21%, 1.052 24.6%, 1.04 28.8%, 1.008 37%, 0.997 45%, 1);
+  --dur-press: 110ms;
+  --dur-quick: 180ms;
+  --dur-base: 260ms;
+  --dur-slow: 420ms;
+  --stagger: 45ms;
 }
 
 @layer base {
@@ -124,52 +151,251 @@
     letter-spacing: 0;
   }
 
+  /* Deep clover, not the light fill: the ring has to clear 3:1 on paper and on white. */
   :focus-visible {
-    outline: 2px solid var(--color-primary);
+    outline: 2px solid var(--color-ring);
     outline-offset: 2px;
   }
+}
 
-  .rating-ring {
-    display: grid;
-    width: 3.25rem;
-    aspect-ratio: 1;
-    place-items: center;
-    padding: 3px;
-    border-radius: 50%;
-    background: conic-gradient(var(--primary) var(--rating-fill), var(--border) 0);
-    font-size: 0.875rem;
-    font-weight: 700;
+/*
+ * Liquid glass tab bar (src/components/GlassTabBar.tsx), phones only. The bar is frosted paper
+ * floating over the page; the lens is a thicker drop of glass that swells and thins when held.
+ */
+@layer components {
+  .glass-bar {
+    background: color-mix(in srgb, var(--card) 62%, transparent);
+    -webkit-backdrop-filter: blur(20px) saturate(1.9);
+    backdrop-filter: blur(20px) saturate(1.9);
+    border: 1px solid color-mix(in srgb, var(--card) 75%, transparent);
+    box-shadow:
+      0 14px 34px -14px color-mix(in srgb, var(--foreground) 38%, transparent),
+      0 2px 6px -2px color-mix(in srgb, var(--foreground) 10%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--card) 95%, transparent);
   }
 
-  .rating-ring span {
-    display: grid;
-    width: 100%;
-    height: 100%;
-    place-items: center;
-    border-radius: 50%;
-    background: var(--card);
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-bar {
+      background: color-mix(in srgb, var(--card) 94%, transparent);
+    }
   }
 
-  .rating-range {
-    accent-color: var(--primary);
+  .glass-lens {
+    background: color-mix(in srgb, var(--card) 78%, transparent);
+    border: 0.5px solid color-mix(in srgb, var(--foreground) 9%, transparent);
+    box-shadow:
+      inset 0 1px 1px color-mix(in srgb, var(--card) 100%, transparent),
+      inset 0 -2px 4px -2px color-mix(in srgb, var(--foreground) 14%, transparent),
+      0 6px 16px -8px color-mix(in srgb, var(--foreground) 35%, transparent);
+    transform-origin: 50% 50%;
+    will-change: transform;
+    transition: background-color var(--dur-quick) var(--ease-out), box-shadow var(--dur-quick) var(--ease-out);
   }
 
-  .settings-toggle {
-    accent-color: var(--primary);
+  /* Held: the drop turns clearer and catches more light, like pressing into water. */
+  .glass-lens[data-held] {
+    background: color-mix(in srgb, var(--card) 42%, transparent);
+    box-shadow:
+      inset 0 1px 2px color-mix(in srgb, var(--card) 100%, transparent),
+      inset 0 -3px 6px -3px color-mix(in srgb, var(--foreground) 18%, transparent),
+      inset 0 0 0 1px color-mix(in srgb, var(--card) 60%, transparent),
+      0 10px 24px -10px color-mix(in srgb, var(--foreground) 40%, transparent);
   }
 
-  .quest-map .leaflet-tile-pane {
-    filter: saturate(0.72) contrast(0.96) brightness(1.03);
+  /* A specular highlight across the top of the drop. */
+  .glass-lens::before {
+    content: "";
+    position: absolute;
+    inset: 1px 10% auto;
+    height: 45%;
+    border-radius: 9999px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--card) 85%, transparent), transparent);
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: 1;
+  }
+}
+
+/*
+ * The app frame (src/components/AppShell.tsx): header and tab bar stay mounted; each page brings its
+ * own <main>, and the frame takes its shape from it. The map page's main bleeds to the edges and
+ * the frame becomes one screen tall; pages that fit the phone screen clip sideways overflow.
+ */
+@layer components {
+  .app-frame {
+    min-height: 100vh;
+    padding-bottom: calc(92px + env(safe-area-inset-bottom));
   }
 
-  .quest-map .leaflet-control-attribution {
-    border-radius: 0.25rem 0 0 0;
-    background: color-mix(in srgb, var(--card) 88%, transparent);
-    font-size: 9px;
+  @media (width >= 48rem) {
+    .app-frame {
+      padding-bottom: 0;
+    }
   }
 
-  .quest-map .leaflet-container {
-    font-family: var(--font-body);
+  .app-frame:has(> main[data-compact]) {
+    overflow-x: clip;
+  }
+
+  .app-frame:has(> main[data-bleed]) {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    min-height: 0;
+    padding-bottom: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  /* Side gutters that also clear the notch and rounded corners in landscape on iPhone. */
+  .safe-x {
+    padding-left: max(1.25rem, env(safe-area-inset-left));
+    padding-right: max(1.25rem, env(safe-area-inset-right));
+  }
+
+  @media (width >= 48rem) {
+    .safe-x {
+      padding-left: max(2rem, env(safe-area-inset-left));
+      padding-right: max(2rem, env(safe-area-inset-right));
+    }
+  }
+}
+
+/* HelpDot (src/components/HelpDot.tsx): draws at 20px, answers to a 44px target. */
+@layer components {
+  .help-dot::before {
+    content: "";
+    position: absolute;
+    inset: -12px;
+  }
+}
+
+/* The one ambient loop in the app: a quest really is in progress, so its dot breathes. */
+@layer components {
+  .live-dot::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: var(--primary);
+    animation: live-dot 2.4s var(--ease-out) infinite;
+  }
+}
+
+@keyframes live-dot {
+  from {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  to {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+/* On phones the map runs under the floating tab bar; lift its credit line clear of the glass. */
+@media (max-width: 767px) {
+  .map-under-dock .maplibregl-ctrl-bottom-right {
+    margin-bottom: calc(82px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Hand-drawn doodles (src/components/Doodle.tsx). Locked or not-yet states show them as pencil ghosts. */
+@layer components {
+  .doodle-faint {
+    filter: grayscale(1);
+    opacity: 0.35;
+  }
+}
+
+/* Ink stamps (src/components/Stamp.tsx): deep clover ink, slightly translucent like real ink. */
+@layer components {
+  .stamp {
+    color: color-mix(in srgb, var(--ring) 88%, transparent);
+  }
+
+  .stamp-faint {
+    color: color-mix(in srgb, var(--muted-foreground) 35%, transparent);
+  }
+
+  /* A backed stamp sits on its own disc of paper, so it reads over a photo like a sticker. */
+  .stamp-paper {
+    fill: var(--card);
+    fill-opacity: 0.94;
+  }
+
+  .stamp[data-backed] {
+    filter: drop-shadow(0 1px 1.5px color-mix(in srgb, var(--foreground) 22%, transparent));
+  }
+
+  .stamp-ring {
+    border: 2px solid color-mix(in srgb, var(--ring) 45%, transparent);
+  }
+}
+
+/*
+ * The living XP bar (src/components/LevelProgress.tsx): clover liquid in a vial.
+ * --xp (0..1) is written by JS each frame; everything here derives from existing tokens.
+ */
+@layer components {
+  .xp-fill {
+    transform: translateX(calc((var(--xp, 0) - 1) * 100%));
+    will-change: transform;
+  }
+
+  /* Bubbles live only inside the poured part. */
+  .xp-fizz {
+    clip-path: inset(0 calc((1 - var(--xp, 0)) * 100%) 0 0 round 9999px);
+  }
+
+  /* The meniscus: a soft light where the liquid meets the empty track. */
+  .xp-meniscus {
+    background: radial-gradient(60% 80% at 82% 50%, color-mix(in srgb, var(--card) 70%, transparent), transparent 72%);
+    opacity: 0.55;
+    transform-origin: right center;
+  }
+
+  /* Light that follows the cursor across the liquid. */
+  .xp-sheen {
+    background: radial-gradient(28px 12px at var(--hx, -60px) 35%, color-mix(in srgb, var(--card) 50%, transparent), transparent 75%);
+    opacity: 0;
+    transition: opacity 220ms ease;
+  }
+
+  .xp-bar[data-hover] .xp-sheen {
+    opacity: 1;
+  }
+
+  .xp-wave {
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--card) 45%, transparent), transparent);
+  }
+
+  .xp-bubble {
+    border-radius: 9999px;
+    background: radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--card) 92%, transparent), color-mix(in srgb, var(--card) 30%, transparent) 62%, transparent 72%);
+  }
+
+  .xp-glint {
+    border-radius: 9999px;
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--card) 80%, transparent), transparent);
+  }
+
+  .xp-spark {
+    border-radius: 9999px;
+    background: var(--primary);
+  }
+
+  .xp-spark[data-tone="deep"] {
+    background: color-mix(in srgb, var(--primary) 68%, var(--foreground));
+  }
+
+  .xp-ring {
+    border-radius: 9999px;
+    border: 1.5px solid color-mix(in srgb, var(--primary) 80%, var(--foreground));
+  }
+
+  .xp-star {
+    color: color-mix(in srgb, var(--primary) 70%, var(--foreground));
   }
 }
 
@@ -193,10 +419,146 @@
   box-shadow: var(--shadow-sheet);
 }
 
+/* Tactile press: anything you can tap gives a little under your finger, then springs back. */
+@utility press {
+  transition:
+    transform var(--dur-quick) var(--ease-spring),
+    background-color var(--dur-quick) var(--ease-out),
+    border-color var(--dur-quick) var(--ease-out),
+    color var(--dur-quick) var(--ease-out),
+    box-shadow var(--dur-quick) var(--ease-out),
+    opacity var(--dur-quick) var(--ease-out);
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+    transition-duration: var(--dur-press);
+    transition-timing-function: var(--ease-out);
+  }
+}
+
+/*
+ * The main button sits on a 2px ink ledge and presses flat into it, like a stamp hitting paper.
+ * (ledge-soft is the same for dark ink buttons, whose ledge is a shade of the button itself.)
+ */
+@utility ledge {
+  box-shadow: 0 2px 0 var(--foreground);
+  transition:
+    transform var(--dur-quick) var(--ease-spring),
+    box-shadow var(--dur-quick) var(--ease-out),
+    background-color var(--dur-quick) var(--ease-out);
+  &:active:not(:disabled):not([aria-disabled="true"]) {
+    transform: translateY(2px);
+    box-shadow: 0 0 0 var(--foreground);
+    transition-duration: var(--dur-press);
+    transition-timing-function: var(--ease-out);
+  }
+}
+
+@utility ledge-soft {
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--foreground) 55%, transparent);
+  transition:
+    transform var(--dur-quick) var(--ease-spring),
+    box-shadow var(--dur-quick) var(--ease-out),
+    background-color var(--dur-quick) var(--ease-out);
+  &:active:not(:disabled):not([aria-disabled="true"]) {
+    transform: translateY(2px);
+    box-shadow: 0 0 0 transparent;
+    transition-duration: var(--dur-press);
+    transition-timing-function: var(--ease-out);
+  }
+}
+
+/* A rolling number (ui-kit Tally): the new value slides in from the direction it moved. */
+@keyframes tally-up {
+  from {
+    transform: translateY(70%);
+    opacity: 0;
+  }
+}
+
+@keyframes tally-down {
+  from {
+    transform: translateY(-70%);
+    opacity: 0;
+  }
+}
+
+.tally[data-dir="up"] {
+  animation: tally-up var(--dur-base) var(--ease-out);
+}
+
+.tally[data-dir="down"] {
+  animation: tally-down var(--dur-base) var(--ease-out);
+}
+
+/* A label swapping for its next state (Invite -> Sent): the new one springs up into place. */
+@keyframes morph-in {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+}
+
+.morph-in {
+  animation: morph-in var(--dur-base) var(--ease-spring);
+}
+
+/* A lucide check that draws itself (its single stroke is about 23 units long). */
+@keyframes draw-check {
+  from {
+    stroke-dashoffset: 24;
+  }
+}
+
+.draw-check path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 0;
+  animation: draw-check 280ms var(--ease-out) 80ms backwards;
+}
+
+/* A first-render entrance for lists and panels; set style={{ "--i": index }} to stagger. */
+@utility reveal {
+  animation: reveal var(--dur-slow) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * var(--stagger));
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
 @utility hide-scrollbar {
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* Toasts: a small postcard with an ink edge, like the lifted cards. (Sonner's own CSS is unlayered.) */
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] {
+  --normal-bg: var(--card);
+  --normal-border: var(--foreground);
+  --normal-text: var(--foreground);
+  border-radius: calc(var(--radius) + 2px);
+  box-shadow: var(--shadow-lift);
+  font-family: var(--font-sans);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-description] {
+  color: var(--muted-foreground);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="success"] [data-icon] {
+  color: var(--ring);
+}
+
+/* iPhone: Safari zooms the whole page when a field under 16px gets focus. Only iOS matches this. */
+@supports (-webkit-touch-callout: none) {
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
   }
 }
 
@@ -205,246 +567,26 @@
   *::before,
   *::after {
     animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
-}
 
-.mobile-nav-float {
-  bottom: calc(0.625rem + env(safe-area-inset-bottom, 0px));
-  isolation: isolate;
-  overflow: hidden;
-  border-color: color-mix(in srgb, var(--card) 78%, var(--foreground) 12%);
-  background:
-    linear-gradient(180deg,
-      color-mix(in srgb, var(--card) 72%, transparent) 0%,
-      color-mix(in srgb, var(--card) 56%, transparent) 100%);
-  box-shadow:
-    0 16px 38px -18px color-mix(in srgb, var(--foreground) 52%, transparent),
-    0 3px 10px -5px color-mix(in srgb, var(--foreground) 24%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--card) 94%, transparent),
-    inset 0 -1px 0 color-mix(in srgb, var(--foreground) 10%, transparent);
-  -webkit-backdrop-filter: blur(30px) saturate(1.85) brightness(1.08);
-  backdrop-filter: blur(30px) saturate(1.85) brightness(1.08);
-}
-
-.mobile-nav-float::before {
-  position: absolute;
-  z-index: 0;
-  inset: 0;
-  border-radius: inherit;
-  background:
-    radial-gradient(ellipse at 13% -35%, color-mix(in srgb, var(--card) 82%, transparent), transparent 58%),
-    linear-gradient(115deg, color-mix(in srgb, var(--card) 24%, transparent), transparent 42%, color-mix(in srgb, var(--card) 12%, transparent));
-  content: "";
-  pointer-events: none;
-}
-
-.mobile-nav-float::after {
-  position: absolute;
-  z-index: 0;
-  inset: 1px 1px auto;
-  height: 46%;
-  border: 1px solid color-mix(in srgb, var(--card) 40%, transparent);
-  border-bottom: 0;
-  border-radius: inherit;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--card) 18%, transparent), transparent);
-  content: "";
-  pointer-events: none;
-}
-
-.mobile-nav-indicator {
-  position: absolute;
-  z-index: 0;
-  top: 0;
-  bottom: 0;
-  left: var(--nav-active-left);
-  width: var(--nav-item-width);
-  border: 1px solid color-mix(in srgb, var(--primary) 88%, var(--foreground));
-  border-radius: 9999px;
-  background: var(--primary);
-  box-shadow: 0 1px 3px color-mix(in srgb, var(--foreground) 14%, transparent);
-  transition: left 560ms cubic-bezier(0.22, 1.35, 0.42, 1);
-  pointer-events: none;
-}
-
-.mobile-nav-link[aria-current="page"] {
-  color: var(--primary-foreground);
-  position: relative;
-  z-index: 1;
-}
-
-.mobile-nav-link[aria-current="page"] svg {
-  stroke-width: 2.2;
-  filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--foreground) 26%, transparent));
-}
-
-.mobile-nav-link {
-  position: relative;
-  z-index: 1;
-  transition: color 180ms ease, transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.mobile-nav-link:active {
-  transform: scale(0.88);
-}
-
-@supports not (backdrop-filter: blur(1px)) {
-  .mobile-nav-float {
-    background: color-mix(in srgb, var(--card) 96%, transparent);
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }
 
+/* Its own rule: a browser that doesn't know ::details-content would drop a whole list with it. */
 @media (prefers-reduced-motion: reduce) {
-  .mobile-nav-indicator,
-  .mobile-nav-link {
-    transition-duration: 0.001ms;
+  ::details-content {
+    transition: none !important;
   }
 }
 
-.swipe-card-tint {
-  position: absolute;
-  z-index: 20;
-  inset: 0;
-  pointer-events: none;
-  transition: opacity 60ms linear;
-}
-
-.swipe-card-tint-pass {
-  background: color-mix(in srgb, var(--destructive) 88%, var(--card));
-}
-
-.swipe-card-tint-save {
-  background: color-mix(in srgb, var(--primary) 88%, var(--card));
-}
-
-.quest-celebration-content {
-  position: fixed !important;
-  inset: 0 !important;
-  left: 0 !important;
-  top: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  z-index: 60;
-  display: flex !important;
-  flex-direction: column;
-  align-items: safe center;
-  justify-content: safe center;
-  width: 100vw !important;
-  max-width: none;
-  height: 100vh;
-  height: 100dvh !important;
-  margin: 0 !important;
-  box-sizing: border-box;
-  overflow-x: hidden;
-  overflow-y: auto;
-  transform: none !important;
-  translate: none !important;
-  border: 0;
-  border-radius: 0;
-  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
-  background: var(--primary);
-  color: var(--primary-foreground);
-}
-
-.quest-celebration-content > button {
-  top: max(1rem, env(safe-area-inset-top));
-  right: max(1rem, env(safe-area-inset-right));
-  z-index: 5;
-  color: var(--primary-foreground);
-}
-
-.quest-celebration-glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 50% 44%, color-mix(in srgb, var(--card) 82%, transparent), transparent 62%);
-  animation: quest-glow-breathe 1.8s ease-in-out both;
-}
-
-.quest-confetti {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.quest-confetti-piece {
-  position: absolute;
-  top: -12vh;
-  left: var(--confetti-x);
-  width: 0.65rem;
-  height: 1rem;
-  opacity: 0;
-  animation: quest-confetti-fall 2.8s cubic-bezier(0.2, 0.65, 0.35, 1) var(--confetti-delay) both;
-}
-
-.quest-confetti-piece-0 { background: var(--accent); border-radius: 50%; }
-.quest-confetti-piece-1 { width: 0.5rem; height: 1.15rem; background: var(--card); }
-.quest-confetti-piece-2 { width: 0.8rem; height: 0.8rem; background: var(--secondary); border-radius: 0.15rem; }
-.quest-confetti-piece-3 { width: 0.45rem; height: 1.3rem; background: var(--signal); border-radius: 999px; }
-
-.quest-celebration-card {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  width: min(36rem, 100%);
-  flex: 0 1 auto;
-  align-self: center;
-  margin: auto;
-  max-height: calc(100dvh - max(2rem, env(safe-area-inset-top) + env(safe-area-inset-bottom)));
-  overflow-y: auto;
-  flex-direction: column;
-  align-items: center;
-  border: 1px solid var(--border);
-  border-radius: 1.5rem;
-  padding: clamp(2rem, 7vw, 4rem) clamp(1.25rem, 6vw, 3.5rem);
-  background: var(--card);
-  color: var(--card-foreground);
-  text-align: center;
-  box-shadow: var(--shadow-sheet);
-  animation: quest-card-arrive 650ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.quest-celebration-icon {
-  display: grid;
-  width: 4.25rem;
-  height: 4.25rem;
-  place-items: center;
-  border-radius: 1.25rem;
-  background: var(--secondary);
-  color: var(--secondary-foreground);
-  animation: quest-icon-pop 800ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
-}
-
-.quest-celebration-icon svg { width: 2.25rem; height: 2.25rem; }
-
-.quest-xp-pop {
-  animation: quest-xp-pop 700ms cubic-bezier(0.16, 1, 0.3, 1) 400ms both;
-}
-
-@keyframes quest-confetti-fall {
-  0% { opacity: 0; transform: translate3d(0, -4vh, 0) rotate(0deg); }
-  12% { opacity: 1; }
-  100% { opacity: 0.88; transform: translate3d(28px, 115vh, 0) rotate(540deg); }
-}
-
-@keyframes quest-card-arrive {
-  0% { opacity: 0; transform: translateY(2rem) scale(0.92); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-@keyframes quest-icon-pop {
-  0% { transform: rotate(-14deg) scale(0.2); }
-  65% { transform: rotate(8deg) scale(1.16); }
-  100% { transform: rotate(0) scale(1); }
-}
-
-@keyframes quest-xp-pop {
-  0% { opacity: 0; transform: scale(0.4) rotate(-8deg); }
-  70% { opacity: 1; transform: scale(1.12) rotate(2deg); }
-  100% { opacity: 1; transform: scale(1) rotate(0); }
-}
-
-@keyframes quest-glow-breathe {
-  0% { opacity: 0; transform: scale(0.8); }
-  100% { opacity: 1; transform: scale(1.1); }
+/* Let's go: the quest's photo travels from the card into the plan instead of the page cutting. */
+::view-transition-group(quest-photo) {
+  animation-duration: var(--dur-slow);
+  animation-timing-function: var(--ease-out);
 }

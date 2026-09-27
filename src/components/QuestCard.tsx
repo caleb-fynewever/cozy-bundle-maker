@@ -1,8 +1,11 @@
-import { Link } from "@tanstack/react-router";
-import { Bookmark } from "lucide-react";
+import { Clock, MapPin, Wallet } from "lucide-react";
 import type { ScoredQuest } from "@/lib/engine";
-import { questImage } from "@/lib/imagery";
-import { actions, useUserState } from "@/lib/store";
+import { cn } from "@/lib/utils";
+
+/*
+ * Quest copy shared by the deck, the preview sheet, the quest page and the map: why it showed up,
+ * and its address line. (The old list-card component lived here; nothing uses it any more.)
+ */
 
 /** One human sentence for why a quest showed up. No numbers. */
 export function reasonLine(item: ScoredQuest): string {
@@ -18,70 +21,59 @@ export function metaLine(distance: number, durationMin: number, cost: number) {
   return `${distance.toFixed(1)} mi · ${durationMin} min · ${cost === 0 ? "Free" : `$${cost}`}`;
 }
 
-/** Kept for the quest page: a quiet list of plain-language reasons. */
-export function WhyPanel({ item }: { item: ScoredQuest }) {
-  return (
-    <ul className="space-y-1.5 text-sm text-muted-foreground">
-      {item.reasons.slice(0, 3).map((reason) => (
-        <li key={reason}>— {reason}</li>
-      ))}
-    </ul>
-  );
-}
-
-export function QuestCard({
-  item,
-  featured = false,
-  label,
-}: {
-  item: ScoredQuest;
-  featured?: boolean;
-  label?: string;
-}) {
-  const state = useUserState();
+/**
+ * A postcard's address line: where, how long, what it costs. Small line icons and tabular figures
+ * so 0.3 mi and 1.2 mi don't jitter from card to card. Style the colour and size from outside.
+ * `lines` writes it the way the back of a postcard does: one ruled line each for the place, the
+ * time and the cost (the landscape deck card, where the copy half has the room).
+ */
+export function QuestMeta({ item, lines = false, className }: { item: ScoredQuest; lines?: boolean; className?: string }) {
   const { quest } = item;
-  const saved = state.saved.includes(quest.id);
+  const icon = "size-3.5 shrink-0 opacity-80";
+  const cost = quest.costPerPerson === 0 ? "Free" : `$${quest.costPerPerson}`;
+
+  if (lines) {
+    const row = "flex min-w-0 items-center gap-2 border-b border-border py-2.5";
+    return (
+      <div className={cn("tabular-nums", className)}>
+        <p className={row}>
+          <MapPin aria-hidden className={icon} strokeWidth={1.75} />
+          <span className="min-w-0 truncate">
+            {quest.location.name} · {quest.location.area}
+          </span>
+          <span className="sr-only">, </span>
+          <span className="ml-auto shrink-0 pl-3">{item.distance.toFixed(1)} mi</span>
+        </p>
+        <p className={row}>
+          <Clock aria-hidden className={icon} strokeWidth={1.75} />
+          {quest.durationMin} min
+        </p>
+        <p className={row}>
+          <Wallet aria-hidden className={icon} strokeWidth={1.75} />
+          {cost}
+        </p>
+      </div>
+    );
+  }
 
   return (
-     <article className="group min-w-0">
-      <Link to="/quest/$questId" params={{ questId: quest.id }} className="block">
-          <div className="overflow-hidden rounded-md border border-border-strong bg-card p-1.5 transition-transform duration-300 group-hover:-translate-y-1 group-hover:lift">
-          <img
-            src={questImage(quest)}
-            alt={`${quest.location.name}, ${quest.location.area}`}
-            loading={featured ? undefined : "lazy"}
-            width={1200}
-            height={912}
-             className={`w-full object-cover transition-transform duration-500 group-hover:scale-[1.02] ${
-               featured ? "aspect-[16/10]" : "aspect-[4/3]"
-            }`}
-          />
-        </div>
-      </Link>
-       <div className="mt-5 flex items-start justify-between gap-4">
-        <div className="min-w-0">
-            {label ? <p className="mb-2 font-hand text-xl text-foreground">{label}</p> : null}
-          <Link to="/quest/$questId" params={{ questId: quest.id }}>
-              <h3 className={`font-medium leading-tight ${featured ? "text-2xl sm:text-3xl" : "text-xl"}`}>
-              {quest.title}
-            </h3>
-          </Link>
-          <p className="mt-1.5 text-[15px] leading-relaxed text-muted-foreground">{quest.hook}</p>
-          <p className="mt-3 text-sm font-medium">
-            {metaLine(item.distance, quest.durationMin, quest.costPerPerson)}
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">{reasonLine(item)}</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => actions.toggleSave(quest.id)}
-          aria-pressed={saved}
-          aria-label={saved ? `Remove ${quest.title} from saved` : `Save ${quest.title}`}
-          className="-mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-surface hover:text-foreground"
-        >
-          <Bookmark aria-hidden className="h-5 w-5" fill={saved ? "currentColor" : "none"} strokeWidth={1.75} />
-        </button>
-      </div>
-    </article>
+    <p className={cn("flex flex-wrap items-center gap-x-4 gap-y-1 tabular-nums", className)}>
+      <span className="inline-flex min-w-0 items-center gap-1.5">
+        <MapPin aria-hidden className={icon} strokeWidth={1.75} />
+        <span className="truncate">
+          {quest.location.area} · {item.distance.toFixed(1)} mi
+        </span>
+      </span>
+      <span className="sr-only">, </span>
+      <span className="inline-flex items-center gap-1.5">
+        <Clock aria-hidden className={icon} strokeWidth={1.75} />
+        {quest.durationMin} min
+      </span>
+      <span className="sr-only">, </span>
+      <span className="inline-flex items-center gap-1.5">
+        <Wallet aria-hidden className={icon} strokeWidth={1.75} />
+        {cost}
+      </span>
+    </p>
   );
 }

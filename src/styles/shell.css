@@ -1,0 +1,244 @@
+/* shell page styles. Colors only through the semantic tokens in ../styles.css. */
+@layer components {
+  /*
+   * Skip link: the first thing a keyboard reaches. It waits above the viewport until focused, then
+   * drops in as a small ink slip over the header.
+   */
+  .skip-link {
+    position: fixed;
+    left: 12px;
+    top: 12px;
+    z-index: 60;
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    padding: 0 16px;
+    border-radius: calc(var(--radius) - 3px);
+    background: var(--foreground);
+    color: var(--background);
+    font-size: 0.875rem;
+    font-weight: 600;
+    opacity: 0;
+    transform: translateY(calc(-100% - 16px));
+    transition:
+      transform var(--dur-base) var(--ease-out),
+      opacity var(--dur-quick) var(--ease-out);
+  }
+
+  .skip-link:focus,
+  .skip-link:focus-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /*
+   * The trail drawings on the 404 and error pages (src/routes/__root.tsx). A dashed ink trail
+   * leaves a clover "you" dot and appears step by step, ends in a hand-drawn mark (an X for a dead
+   * end, a scribbled knot for an error), and a margin note gets written beside it. It plays once.
+   * The resting styles are the finished drawing, so reduced motion simply shows that.
+   */
+  .trail-art {
+    color: var(--foreground);
+  }
+
+  .trail-art__dashes {
+    color: color-mix(in srgb, var(--foreground) 58%, transparent);
+    animation: trail-wipe 900ms var(--ease-out) 140ms backwards;
+  }
+
+  .trail-art__dashes[data-length="short"] {
+    animation-name: trail-wipe-short;
+    animation-duration: 720ms;
+  }
+
+  .trail-art__start {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: trail-pop 360ms var(--ease-spring) backwards;
+  }
+
+  .trail-art__mark {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: trail-land 460ms var(--ease-spring) var(--at, 900ms) backwards;
+  }
+
+  .trail-art__stroke {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+    animation: trail-draw var(--draw, 180ms) var(--ease-out) var(--at, 900ms) backwards;
+  }
+
+  .trail-art__note {
+    animation: trail-write 560ms var(--ease-out) var(--at, 1250ms) backwards;
+  }
+
+  /*
+   * Form primitives (src/components/ui/switch.tsx, checkbox.tsx). Ink means on or selected; the
+   * resting edge is --input (3:1 on white). Each control draws small but answers to a 44px target.
+   */
+  .ink-switch {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    width: 2.75rem;
+    height: 1.625rem;
+    padding: 2px;
+    border: 1px solid var(--input);
+    border-radius: 9999px;
+    background: var(--background);
+    cursor: pointer;
+    transition:
+      background-color var(--dur-quick) var(--ease-out),
+      border-color var(--dur-quick) var(--ease-out);
+  }
+
+  .ink-switch::before {
+    content: "";
+    position: absolute;
+    inset: -10px -2px;
+  }
+
+  .ink-switch[data-state="checked"] {
+    border-color: var(--foreground);
+    background: var(--foreground);
+  }
+
+  .ink-switch:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .ink-switch__thumb {
+    display: block;
+    width: 20px;
+    height: 20px;
+    border-radius: 9999px;
+    background: var(--card);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--foreground) 18%, transparent),
+      0 1px 2px color-mix(in srgb, var(--foreground) 22%, transparent);
+    transition:
+      translate var(--dur-base) var(--ease-spring),
+      scale var(--dur-quick) var(--ease-spring);
+  }
+
+  .ink-switch__thumb[data-state="checked"] {
+    translate: 18px 0;
+  }
+
+  /* Held: the thumb gives under the finger, then springs across on release. */
+  .ink-switch:active:not(:disabled) .ink-switch__thumb {
+    scale: 0.86;
+    transition-duration: var(--dur-base), var(--dur-press);
+  }
+
+  .ink-check {
+    position: relative;
+    display: inline-grid;
+    flex-shrink: 0;
+    place-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 1.5px solid var(--input);
+    border-radius: 5px;
+    background: var(--card);
+    color: var(--background);
+    cursor: pointer;
+    transition:
+      background-color var(--dur-quick) var(--ease-out),
+      border-color var(--dur-quick) var(--ease-out),
+      transform var(--dur-quick) var(--ease-spring);
+  }
+
+  .ink-check::before {
+    content: "";
+    position: absolute;
+    inset: -12px;
+  }
+
+  .ink-check[data-state="checked"],
+  .ink-check[data-state="indeterminate"] {
+    border-color: var(--foreground);
+    background: var(--foreground);
+  }
+
+  .ink-check:active:not(:disabled) {
+    transform: scale(0.88);
+    transition-duration: var(--dur-press);
+    transition-timing-function: var(--ease-out);
+  }
+
+  .ink-check:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  @media (hover: hover) {
+    .ink-switch:not(:disabled)[data-state="unchecked"]:hover,
+    .ink-check:not(:disabled)[data-state="unchecked"]:hover {
+      border-color: var(--foreground);
+    }
+  }
+}
+
+@keyframes trail-wipe {
+  from {
+    clip-path: inset(0 92% 0 0);
+  }
+  to {
+    clip-path: inset(0 15% 0 0);
+  }
+}
+
+@keyframes trail-wipe-short {
+  from {
+    clip-path: inset(0 92% 0 0);
+  }
+  to {
+    clip-path: inset(0 36% 0 0);
+  }
+}
+
+@keyframes trail-pop {
+  from {
+    transform: scale(0);
+  }
+}
+
+@keyframes trail-land {
+  from {
+    transform: scale(1.3) rotate(-6deg);
+  }
+}
+
+@keyframes trail-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+@keyframes trail-write {
+  from {
+    clip-path: inset(0 100% 0 0);
+    transform: translateY(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trail-art,
+  .trail-art * {
+    animation: none !important;
+  }
+
+  /*
+   * The live-quest dot in the header (AppShell) loops forever. Under the global reduced-motion rule
+   * its loop runs at 0.001ms and strobes, so hold it still instead. (Unlayered, so it outranks the
+   * layered rule in styles.css.)
+   */
+  .live-dot::after {
+    animation: none;
+    opacity: 0;
+  }
+}

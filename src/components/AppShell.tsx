@@ -1,191 +1,376 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Bell, Compass, Footprints, Newspaper, Trophy, Users, User } from "lucide-react";
-import { actions, useUserState } from "@/lib/store";
-import { Button } from "@/components/ui-kit";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { getQuest } from "@/data/quests";
 import { useSquadInvites } from "@/lib/squad-invites";
 import { toast } from "sonner";
+import { Link, useRouter, useRouterState } from "@tanstack/react-router";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  Bell,
+  Compass,
+  Footprints,
+  ListChecks,
+  Map as MapIcon,
+  Newspaper,
+  Users,
+} from "lucide-react";
+import { actions, hydrate, useUserState } from "@/lib/store";
+import { Avatar, Button } from "@/components/ui-kit";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { GlassTabBar, type GlassTab } from "@/components/GlassTabBar";
+import { getQuest } from "@/data/quests";
+import { EASE_OUT, reducedMotion } from "@/lib/motion";
 
 const NAV = [
   { to: "/feed", label: "Feed", icon: Newspaper },
   { to: "/", label: "Quests", icon: Compass },
   { to: "/squad", label: "Squad", icon: Users },
-  { to: "/leaderboard", label: "Ranks", icon: Trophy },
-  { to: "/profile", label: "Profile", icon: User },
+  { to: "/lists", label: "Lists", icon: ListChecks },
+  { to: "/map", label: "Map", icon: MapIcon },
 ] as const;
-export function AppShell({ children, wide = false, compact = false }: { children: ReactNode; wide?: boolean; compact?: boolean }) {
+
+function activeIndexFor(pathname: string, activeQuestId: string | null) {
+  if (pathname === "/") return 1;
+  const index = NAV.findIndex((item) => item.to !== "/" && pathname.startsWith(item.to));
+  if (index >= 0) return index;
+  return activeQuestId && pathname === `/go/${activeQuestId}` ? NAV.length : -1;
+}
+
+/** True inside AppFrame, so a page's AppShell renders only its <main>. */
+const Framed = createContext(false);
+
+/*
+ * The app's chrome (header, desktop nav, liquid-glass tab bar) lives in the root route, so it stays
+ * mounted from page to page: the nav squiggle and the glass lens glide to the new page instead of
+ * being rebuilt, and focus stays where it was. Pages describe their <main> with AppShell.
+ */
+export function AppFrame({ children }: { children: ReactNode }) {
   const state = useUserState();
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const remote = useSquadInvites();
   const inviteCount = state.squadInvites.length + remote.received.length;
-  const [headerVisible, setHeaderVisible] = useState(true);
-  const lastScrollY = useRef(0);
-  const scrollDelta = useRef(0);
-  const lastDirection = useRef(0);
-  const headerRef = useRef<HTMLElement>(null);
+  const router = useRouter();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const activeQuestId = state.inProgress.at(-1);
   const activeQuest = activeQuestId
-    ? state.createdQuests.find((quest) => quest.id === activeQuestId) ?? getQuest(activeQuestId)
+    ? (state.createdQuests.find((quest) => quest.id === activeQuestId) ?? getQuest(activeQuestId))
     : undefined;
-  const pathname = useRouterState({ select: (routerState) => routerState.location.pathname });
-  const mobileNavCount = NAV.length + (activeQuest ? 1 : 0);
-  const activeMobileNavIndex = pathname.startsWith("/go/") && activeQuest
-    ? NAV.length
-    : pathname === "/feed" ? 0
-      : pathname === "/squad" ? 2
-        : pathname === "/leaderboard" ? 3
-          : pathname === "/profile" ? 4
-            : 1;
+
   useEffect(() => {
-    const mobileViewport = window.matchMedia("(max-width: 767px)");
-    const resetScrollTracking = () => {
-      lastScrollY.current = window.scrollY;
-      scrollDelta.current = 0;
-      lastDirection.current = 0;
-      if (!mobileViewport.matches || notificationsOpen) setHeaderVisible(true);
-    };
-    resetScrollTracking();
+    hydrate();
+  }, []);
 
-    const handleScroll = () => {
-      const currentY = window.scrollY;
-      const delta = currentY - lastScrollY.current;
-      lastScrollY.current = currentY;
+  // After a navigation, if the thing you pressed went away with the old page, start the new page
+  // at its content instead of dropping keyboard and screen-reader users back at the top.
+  useEffect(
+    () =>
+      router.subscribe("onResolved", (event) => {
+        if (!event.pathChanged) return;
+        requestAnimationFrame(() => {
+          const lost = !document.activeElement || document.activeElement === document.body;
+          if (lost) document.getElementById("main")?.focus({ preventScroll: true });
+        });
+      }),
+    [router],
+  );
 
-      if (!mobileViewport.matches || notificationsOpen || headerRef.current?.contains(document.activeElement)) {
-        setHeaderVisible(true);
-        scrollDelta.current = 0;
-        lastDirection.current = 0;
-        return;
-      }
-      if (currentY < 24) {
-        setHeaderVisible(true);
-        scrollDelta.current = 0;
-        lastDirection.current = 0;
-        return;
-      }
-      if (!delta) return;
-
-      const direction = Math.sign(delta);
-      if (direction !== lastDirection.current) scrollDelta.current = 0;
-      lastDirection.current = direction;
-      scrollDelta.current += delta;
-
-      // Ignore tiny touch jitter. Reveal quickly when the user intentionally reverses direction.
-      if (direction > 0 && currentY > 120 && scrollDelta.current >= 18) {
-        setHeaderVisible(false);
-        scrollDelta.current = 0;
-      } else if (direction < 0 && scrollDelta.current <= -12) {
-        setHeaderVisible(true);
-        scrollDelta.current = 0;
-      }
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    mobileViewport.addEventListener("change", resetScrollTracking);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      mobileViewport.removeEventListener("change", resetScrollTracking);
-    };
-  }, [notificationsOpen]);
+  const tabs: GlassTab[] = [
+    ...NAV.map((item) => ({ to: item.to, label: item.label, icon: item.icon })),
+    ...(activeQuest
+      ? [
+          {
+            to: "/go/$questId",
+            params: { questId: activeQuest.id },
+            label: `Active quest: ${activeQuest.title}`,
+            icon: Footprints,
+            dot: true,
+          },
+        ]
+      : []),
+  ];
+  const active = activeIndexFor(pathname, activeQuest?.id ?? null);
 
   return (
-    <div className={`min-h-screen bg-background ${compact ? "overflow-x-clip pb-24" : "pb-24"} md:pb-0`}>
-       <header
-        ref={headerRef}
-        onFocusCapture={() => setHeaderVisible(true)}
-        className={`sticky top-0 z-50 border-b border-border bg-background/95 ease-out motion-safe:transition-transform motion-safe:duration-300 motion-reduce:transition-none md:translate-y-0 md:pointer-events-auto ${headerVisible ? "translate-y-0" : "-translate-y-full pointer-events-none"}`}
-       >
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 md:h-[72px] md:px-8">
-         <Link to="/" className="font-hand text-[28px] leading-none md:text-[34px]" aria-label="wego home">
-           wego
-        </Link>
-        <div className="flex items-center gap-6">
-        <nav aria-label="Main" className="hidden items-center gap-8 md:flex">
-          {NAV.map(({ to, label }) => (
+    <Framed.Provider value>
+      <div className="app-frame bg-background">
+        <header className="sticky top-0 z-50 shrink-0 border-b border-border bg-background">
+          <div className="safe-x mx-auto flex h-16 max-w-7xl items-center justify-between md:h-[72px]">
             <Link
-              key={to}
-              to={to}
-              activeOptions={{ exact: to === "/" }}
-              activeProps={{ className: "text-foreground underline decoration-2 decoration-primary underline-offset-8" }}
-              className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              to="/"
+              className="press font-hand text-[28px] leading-none md:text-[34px]"
+              aria-label="wego home"
             >
-              {label}
+              wego
             </Link>
-          ))}
-          {activeQuest ? (
-            <Link
-              to="/go/$questId"
-              params={{ questId: activeQuest.id }}
-              activeProps={{ className: "text-foreground underline decoration-2 decoration-primary underline-offset-8" }}
-              className="inline-flex items-center gap-1.5 py-2 text-sm font-semibold text-primary transition-colors hover:text-foreground"
-            >
-              <Footprints aria-hidden className="h-4 w-4" /> Active quest
-            </Link>
-          ) : null}
-        </nav>
-        <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
-          <button type="button" onClick={() => setNotificationsOpen(true)} aria-label={`Squad invites${inviteCount ? `, ${inviteCount} pending` : ""}`} className="relative grid h-10 w-10 place-items-center rounded-full border border-border hover:bg-surface">
-            <Bell aria-hidden className="h-5 w-5" />
-            {inviteCount ? <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{inviteCount}</span> : null}
-          </button>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Squad invites</DialogTitle><DialogDescription>Invites and updates for your squad.</DialogDescription></DialogHeader>
-            {remote.received.length ? <ul className="divide-y divide-border">{remote.received.map((invite) => <li key={invite.id} className="flex items-center gap-3 py-3"><div className="min-w-0 flex-1"><p className="font-medium">{invite.inviter_name} invited you</p><p className="text-sm text-muted-foreground">Join {invite.squad_name}?</p></div><Button onClick={() => remote.answer(invite, true).then(() => toast.success(`You joined ${invite.squad_name}.`), () => toast.error("That invite isn't available anymore."))}>Accept</Button><Button variant="ghost" onClick={() => void remote.answer(invite, false).catch(() => undefined)}>Decline</Button></li>)}</ul> : null}
-            {state.squadInvites.length ? <ul className="divide-y divide-border">{state.squadInvites.map((invite) => <li key={invite.id} className="flex items-center gap-3 py-3"><div className="min-w-0 flex-1"><p className="font-medium">{invite.direction === "received" ? `${invite.personName} invited you` : `Invite sent to ${invite.personName}`}</p><p className="text-sm text-muted-foreground">{invite.direction === "received" ? `Join ${invite.squadName ?? "their squad"}?` : `For ${invite.squadName ?? "your squad"} · waiting for a response`}</p></div>{invite.direction === "received" ? <><Button onClick={() => actions.acceptSquadInvite(invite.id)}>Accept</Button><Button variant="ghost" onClick={() => actions.dismissSquadInvite(invite.id)}>Decline</Button></> : <Button variant="ghost" onClick={() => actions.dismissSquadInvite(invite.id)}>Dismiss</Button>}</li>)}</ul> : remote.received.length ? null : <p className="py-4 text-sm text-muted-foreground">You’re all caught up. Squad invites will show up here.</p>}
-          </DialogContent>
-        </Dialog>
-        </div>
-        </div>
-      </header>
+            <div className="flex items-center gap-7">
+              <DesktopNav
+                pathname={pathname}
+                activeQuest={activeQuest ? { id: activeQuest.id } : null}
+              />
+              <div className="flex items-center gap-2">
+                <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+                  <DialogTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label={`Squad invites${inviteCount ? `, ${inviteCount} pending` : ""}`}
+                      className="press relative grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-border hover:border-border-strong hover:bg-card"
+                    >
+                      <Bell aria-hidden className="h-5 w-5" strokeWidth={2} />
+                      {inviteCount ? (
+                        <span className="absolute -right-1 -top-1 grid h-[22px] min-w-[22px] place-items-center rounded-full border-2 border-background bg-foreground px-1 text-xs font-bold tabular-nums text-background">
+                          {inviteCount}
+                        </span>
+                      ) : null}
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Squad invites</DialogTitle>
+                      <DialogDescription>Invites and updates for your squad.</DialogDescription>
+                    </DialogHeader>
+                    {remote.received.map((invite) => (
+                      <div
+                        key={invite.id}
+                        className="flex flex-wrap items-center gap-3 border-b border-border py-3"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium">{invite.inviter_name} invited you</p>
+                          <p className="text-sm text-muted-foreground">Join {invite.squad_name}?</p>
+                        </div>
+                        <Button
+                          onClick={() =>
+                            remote.answer(invite, true).then(
+                              () => toast.success(`You joined ${invite.squad_name}.`),
+                              () => toast.error("That invite isn't available anymore."),
+                            )
+                          }
+                        >
+                          Accept
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() =>
+                            void remote
+                              .answer(invite, false)
+                              .catch(() => toast.error("Could not decline the invite. Try again."))
+                          }
+                        >
+                          Decline
+                        </Button>
+                      </div>
+                    ))}
+                    {state.squadInvites.length ? (
+                      <ul className="divide-y divide-border">
+                        {state.squadInvites.map((invite) => (
+                          <li key={invite.id} className="flex flex-wrap items-center gap-3 py-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium">
+                                {invite.direction === "received"
+                                  ? `${invite.personName} invited you`
+                                  : `Invite sent to ${invite.personName}`}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {invite.direction === "received"
+                                  ? "Add them to your squad?"
+                                  : "Waiting for them to respond"}
+                              </p>
+                            </div>
+                            {invite.direction === "received" ? (
+                              <div className="flex gap-2">
+                                <Button onClick={() => actions.acceptSquadInvite(invite.id)}>
+                                  Accept
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  onClick={() => actions.dismissSquadInvite(invite.id)}
+                                >
+                                  Decline
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                onClick={() => actions.dismissSquadInvite(invite.id)}
+                              >
+                                Dismiss
+                              </Button>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : remote.received.length ? null : (
+                      <p className="py-4 text-sm text-muted-foreground">
+                        You’re all caught up. Squad invites will show up here.
+                      </p>
+                    )}
+                  </DialogContent>
+                </Dialog>
+                <Link
+                  to="/profile"
+                  activeOptions={{ exact: true }}
+                  aria-label="Your profile"
+                  data-nav="profile"
+                  className="press group grid h-11 w-11 place-items-center rounded-[30%]"
+                >
+                  <span className="rounded-[30%] group-aria-[current=page]:ring-2 group-aria-[current=page]:ring-ring group-aria-[current=page]:ring-offset-2 group-aria-[current=page]:ring-offset-background">
+                    <Avatar name={state.name} you size={40} imageUrl={state.avatarUrl} />
+                  </span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </header>
 
-      <main className={`mx-auto px-5 pt-5 md:px-8 md:pt-10 ${compact ? "pb-0 md:pb-16" : "pb-16"} ${wide ? "max-w-7xl" : "max-w-5xl"}`}>{children}</main>
+        {children}
 
-      <nav
-        aria-label="Main"
-        className="mobile-nav-float fixed bottom-3 left-1/2 z-40 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 rounded-full border border-border p-1 text-foreground backdrop-blur-xl md:hidden"
-      >
-        <ul
-          className="mobile-nav-list relative z-[1] mx-auto grid h-12 items-stretch"
-          style={{
-            "--nav-item-width": `${90 / mobileNavCount}%`,
-            "--nav-active-left": `${(activeMobileNavIndex * 100 + 5) / mobileNavCount}%`,
-            gridTemplateColumns: `repeat(${mobileNavCount}, minmax(0, 1fr))`,
-          } as CSSProperties}
+        <GlassTabBar tabs={tabs} active={active} />
+      </div>
+    </Framed.Provider>
+  );
+}
+
+/**
+ * A page's content area. `wide` for the widest layouts, `compact` for pages that fit the phone
+ * screen (no bottom padding, no sideways overflow), `bleed` gives the whole area under the header
+ * to the page, for the map. Outside AppFrame (a not-found thrown by a page), it brings the frame.
+ */
+export function AppShell({
+  children,
+  wide = false,
+  compact = false,
+  bleed = false,
+}: {
+  children: ReactNode;
+  wide?: boolean;
+  compact?: boolean;
+  bleed?: boolean;
+}) {
+  const framed = useContext(Framed);
+  const main = bleed ? (
+    <main id="main" tabIndex={-1} data-bleed="" className="relative min-h-0 flex-1 outline-none">
+      {children}
+    </main>
+  ) : (
+    <main
+      id="main"
+      tabIndex={-1}
+      {...(compact ? { "data-compact": "" } : {})}
+      className={`safe-x mx-auto pt-5 outline-none md:pt-10 ${compact ? "pb-0 md:pb-16" : "pb-16"} ${wide ? "max-w-7xl" : "max-w-5xl"}`}
+    >
+      {children}
+    </main>
+  );
+  return framed ? main : <AppFrame>{main}</AppFrame>;
+}
+
+/*
+ * Desktop nav: the active page gets a hand-drawn clover squiggle that slides between items and
+ * draws itself in, instead of a text underline that jumps. (Its width eases rather than scaling,
+ * so the hand-drawn stroke keeps its weight and the draw-in dash stays whole.)
+ */
+function DesktopNav({
+  pathname,
+  activeQuest,
+}: {
+  pathname: string;
+  activeQuest: { id: string } | null;
+}) {
+  const list = useRef<HTMLElement>(null);
+  const squiggle = useRef<SVGSVGElement>(null);
+  const [bar, setBar] = useState<{ x: number; w: number } | null>(null);
+  const active = activeIndexFor(pathname, activeQuest?.id ?? null);
+  const drawn = useRef(active);
+  const [glide, setGlide] = useState(false);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = list.current?.querySelector<HTMLElement>(`[data-nav-index="${active}"]`);
+      setBar(el ? { x: el.offsetLeft, w: el.offsetWidth } : null);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    if (list.current) observer.observe(list.current);
+    return () => observer.disconnect();
+  }, [active, activeQuest?.id]);
+
+  // The first placement lands without sliding in from the left edge; after that it glides.
+  useEffect(() => {
+    if (!bar || glide) return;
+    const frame = requestAnimationFrame(() => setGlide(true));
+    return () => cancelAnimationFrame(frame);
+  }, [bar, glide]);
+
+  // Draw the squiggle in when the page changes (not on resize or when the nav shifts).
+  useEffect(() => {
+    if (drawn.current === active) return;
+    drawn.current = active;
+    const path = squiggle.current?.querySelector("path");
+    if (!path || reducedMotion()) return;
+    path.animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], {
+      duration: 380,
+      easing: EASE_OUT,
+    });
+  }, [active]);
+
+  return (
+    <nav ref={list} aria-label="Main" className="relative hidden items-center gap-7 md:flex">
+      {NAV.map(({ to, label }, index) => (
+        <Link
+          key={to}
+          to={to}
+          data-nav={label.toLowerCase()}
+          data-nav-index={index}
+          activeOptions={{ exact: to === "/" }}
+          activeProps={{ className: "text-foreground" }}
+          className="relative py-2 text-[15px] font-medium text-muted-foreground transition-colors duration-(--dur-quick) hover:text-foreground aria-[current=page]:font-semibold"
         >
-          <span className="mobile-nav-indicator" aria-hidden="true" />
-          {NAV.map(({ to, label, icon: Icon }) => (
-            <li key={to} className="min-w-0 flex-1">
-              <Link
-                to={to}
-                activeOptions={{ exact: to === "/" }}
-                activeProps={{ className: "text-primary" }}
-                aria-label={label}
-                title={label}
-                className="mobile-nav-link flex min-h-12 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              >
-                <Icon aria-hidden className="h-[22px] w-[22px]" strokeWidth={1.9} />
-                <span className="sr-only">{label}</span>
-              </Link>
-            </li>
-          ))}
-          {activeQuest ? (
-            <li className="min-w-0 flex-1">
-              <Link
-                to="/go/$questId"
-                params={{ questId: activeQuest.id }}
-                activeProps={{ className: "text-primary" }}
-                aria-label={`Active quest: ${activeQuest.title}`}
-                title="Active quest"
-                className="mobile-nav-link flex min-h-12 items-center justify-center rounded-full text-primary transition-colors hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              >
-                <Footprints aria-hidden className="h-[22px] w-[22px]" strokeWidth={1.9} />
-                <span className="sr-only">Active quest</span>
-              </Link>
-            </li>
-          ) : null}
-        </ul>
-      </nav>
-    </div>
+          {label}
+        </Link>
+      ))}
+      {activeQuest ? (
+        <Link
+          to="/go/$questId"
+          params={{ questId: activeQuest.id }}
+          data-nav-index={NAV.length}
+          className="relative inline-flex items-center gap-2 py-2 text-[15px] font-semibold text-foreground"
+        >
+          <span aria-hidden className="live-dot relative h-2 w-2 rounded-full bg-primary" />
+          Active quest
+        </Link>
+      ) : null}
+      <svg
+        ref={squiggle}
+        aria-hidden
+        viewBox="0 0 44 8"
+        preserveAspectRatio="none"
+        className={`pointer-events-none absolute -bottom-1 left-0 h-2 text-ring ${glide ? "transition-[transform,width,opacity] duration-(--dur-base) ease-(--ease-out)" : ""}`}
+        style={
+          bar ? { width: bar.w, transform: `translateX(${bar.x}px)` } : { width: 0, opacity: 0 }
+        }
+      >
+        <path
+          d="M1 5 C 8 1, 14 9, 22 5 S 36 1, 43 5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+          pathLength={1}
+          strokeDasharray={1}
+        />
+      </svg>
+    </nav>
   );
 }
