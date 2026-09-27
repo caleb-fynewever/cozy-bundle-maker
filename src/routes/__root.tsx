@@ -2,8 +2,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
+  Navigate,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -11,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
+import { useAuth } from "../lib/auth";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
@@ -123,11 +126,23 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const { session, loading } = useAuth();
+  const pathname = useRouterState({ select: (routerState) => routerState.location.pathname });
+  const onAuthPage = pathname === "/auth";
+
+  let body: ReactNode;
+  if (loading) {
+    body = <div className="min-h-screen bg-background" />;
+  } else if (!session && !onAuthPage) {
+    body = <Navigate to="/auth" replace />;
+  } else {
+    body = <Outlet />;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      {body}
       <Toaster position="top-center" theme="dark" />
     </QueryClientProvider>
   );
