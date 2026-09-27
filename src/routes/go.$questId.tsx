@@ -551,7 +551,7 @@ function GoPage() {
           }
         : undefined,
     );
-    if (keeps && printRef.current) flyToNav(printRef.current, "lists", questImage(quest!));
+    if (keeps && printRef.current) flyToNav(printRef.current, "quests", questImage(quest!));
   }
 
   function saveCalendarFile() {
@@ -562,7 +562,7 @@ function GoPage() {
 
   function saveForLater() {
     if (!state.saved.includes(quest!.id)) actions.toggleSave(quest!.id);
-    if (printRef.current) flyToNav(printRef.current, "lists", questImage(quest!));
+    if (printRef.current) flyToNav(printRef.current, "quests", questImage(quest!));
     toast("Saved for later");
     void navigate({ to: "/" });
   }
@@ -617,7 +617,7 @@ function GoPage() {
             <BackArrow /> Back to quest
           </Link>
         ) : from === "lists" ? (
-          <Link to="/lists" className={backClass}>
+          <Link to="/" search={{ tab: "mine" }} className={backClass}>
             <BackArrow /> Back to Lists
           </Link>
         ) : (
@@ -923,7 +923,7 @@ function GoPage() {
               {listed ? (
                 // Scheduled: the plan lives in Lists now, and that's where this page leads.
                 <Link
-                  to="/lists"
+                  to="/" search={{ tab: "mine" }}
                   hash={`q-${quest.id}`}
                   className={cn(buttonClass(), "max-sm:flex-1")}
                 >

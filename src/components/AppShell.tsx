@@ -14,7 +14,7 @@ import {
   Bell,
   Compass,
   Footprints,
-  ListChecks,
+  Trophy,
   Map as MapIcon,
   Newspaper,
   Users,
@@ -37,7 +37,7 @@ const NAV = [
   { to: "/feed", label: "Feed", icon: Newspaper },
   { to: "/", label: "Quests", icon: Compass },
   { to: "/squad", label: "Squad", icon: Users },
-  { to: "/lists", label: "Lists", icon: ListChecks },
+  { to: "/leaderboard", label: "Ranks", icon: Trophy },
   { to: "/map", label: "Map", icon: MapIcon },
 ] as const;
 

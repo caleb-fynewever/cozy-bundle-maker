@@ -131,7 +131,7 @@ function MapPage() {
         { duration: 320, easing: EASE_OUT },
       );
     }
-    flyToNav(thumb.current ?? button, "lists", questImage(quest));
+    flyToNav(thumb.current ?? button, "quests", questImage(quest));
   }
 
   /** The card's photo glides into the quest page's hero (the Let's go morph). */

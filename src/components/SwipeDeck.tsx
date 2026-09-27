@@ -679,7 +679,7 @@ function EmptyDeck({ deal, focusRef }: { deal: Deal; focusRef: RefObject<HTMLDiv
         <p className="font-hand text-2xl leading-tight sm:text-3xl">all caught up for now</p>
         <p className="mx-auto mt-2 max-w-sm text-pretty text-muted-foreground">
           Check back soon, or find saved quests in{" "}
-          <Link to="/lists" className="font-medium text-foreground underline decoration-foreground/30 decoration-[1.5px] underline-offset-4 transition-colors hover:decoration-foreground">
+          <Link to="/" search={{ tab: "mine" }} className="font-medium text-foreground underline decoration-foreground/30 decoration-[1.5px] underline-offset-4 transition-colors hover:decoration-foreground">
             Lists
           </Link>
           .
@@ -786,7 +786,7 @@ function LeavingCard({ ghost, onDone }: { ghost: Ghost; onDone: (key: number) =>
           { duration: 380, delay, fill: "forwards" },
         ),
       );
-      later(delay + 110, () => flyToNav(el, "lists", questImage(ghost.item.quest)));
+      later(delay + 110, () => flyToNav(el, "quests", questImage(ghost.item.quest)));
     } else {
       // Postmark: the stamp slams on (Stamp does the slam), the card gives under it, sparks and the
       // XP rise off the stamp itself, it's held long enough to read, then the card lifts away.

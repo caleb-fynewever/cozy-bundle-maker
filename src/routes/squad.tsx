@@ -1,4 +1,3 @@
-import { LocalLegends } from "@/components/LocalLegends";
 import { Stamp } from "@/components/Stamp";
 import { cn } from "@/lib/utils";
 import { Tally, buttonClass } from "@/components/ui-kit";
@@ -273,8 +272,7 @@ function SquadPage() {
 
       <div className="squad-layout">
         <div className="squad-main">
-          <LocalLegends />
-          <section id="find-squad" className="mt-16 border-t border-border pt-10">
+          <section id="find-squad">
             <SectionHeading title="Find your people" />
 
             {!state.verified ? (
@@ -473,16 +471,6 @@ function SquadPage() {
             )}
           </section>
 
-          <p className="mt-12 text-muted-foreground">
-            See how your squad stacks up on{" "}
-            <Link
-              to="/leaderboard"
-              className="font-semibold text-foreground underline underline-offset-4"
-            >
-              Local Legends
-            </Link>
-            .
-          </p>
         </div>
         <aside className="squad-aside squad-manager" aria-label="Your squads and this week">
           {state.squads.length ? <WeekTogether /> : null}

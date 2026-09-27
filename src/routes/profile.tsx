@@ -198,7 +198,7 @@ function OwnProfile() {
             levelsOpen={journeyOpen}
             aside={
               entries.length > 1 ? (
-                <Link to="/squad" hash="ranks" className={rankLinkClass}>
+                <Link to="/leaderboard" className={rankLinkClass}>
                   #{myRank} in your squad
                 </Link>
               ) : (

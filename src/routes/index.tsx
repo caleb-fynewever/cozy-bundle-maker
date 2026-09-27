@@ -7,19 +7,20 @@ import { CAMPUS_ORIGIN, currentTimeSlot, recommend } from "@/lib/engine";
 import { QUESTS } from "@/data/quests";
 import { actions, useUserState } from "@/lib/store";
 import type { SessionContext, TimeSlot } from "@/lib/types";
+import { MyQuests } from "@/components/MyQuests";
 import { CreateQuestForm } from "@/components/CreateQuestForm";
 import { PageHeader, buttonClass, textButtonClass } from "@/components/ui-kit";
 import { Tabs } from "@/components/Tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-type View = "discover" | "create";
+type View = "discover" | "mine" | "create";
 
 export const Route = createFileRoute("/")({
   staticData: { sitemap: false },
   // The Create tab lives in the URL (/?tab=create), so a refresh, Back or a "Make one" link lands on it.
   validateSearch: (search: Record<string, unknown>) => ({
-    ...(search["tab"] === "create" ? { tab: "create" as const } : {}),
+    ...(search["tab"] === "create" || search["tab"] === "mine" ? { tab: search["tab"] as "create" | "mine" } : {}),
   }),
   head: () => ({
     meta: [
@@ -44,6 +45,7 @@ export const Route = createFileRoute("/")({
 
 const VIEWS: { id: View; label: string; controls: string }[] = [
   { id: "discover", label: "Discover", controls: "find-quests-panel" },
+  { id: "mine", label: "My quests", controls: "my-quests-panel" },
   { id: "create", label: "Create quest", controls: "create-quest-panel" },
 ];
 
@@ -77,7 +79,7 @@ function Discover() {
   const state = useUserState();
   const search = Route.useSearch();
   const navigate = useNavigate();
-  const tab: View = search.tab === "create" ? "create" : "discover";
+  const tab: View = search.tab ?? "discover";
   // Panels only animate in once you've switched; the first view is the deck's deal.
   const [switched, setSwitched] = useState(false);
   const [locationBusy, setLocationBusy] = useState(false);
@@ -88,7 +90,7 @@ function Discover() {
   function switchTab(next: View) {
     if (next === tab) return;
     setSwitched(true);
-    void navigate({ to: "/", search: next === "create" ? { tab: "create" } : {}, replace: true, resetScroll: false });
+    void navigate({ to: "/", search: next === "discover" ? {} : { tab: next }, replace: true, resetScroll: false });
   }
 
   function requestLocation() {
@@ -121,7 +123,7 @@ function Discover() {
     [state, allQuests, origin, timeSlot],
   );
   const deck = useMemo(() => {
-    // Quests you made stay in Lists › Created by you; the deck never deals your own back to you.
+    // Quests you made stay in My quests › Created by you; the deck never deals your own back to you.
     const mine = new Set(state.createdQuests.map((quest) => quest.id));
     const open = results.filter(({ quest }) => !mine.has(quest.id) && !state.saved.includes(quest.id) && !state.completed.includes(quest.id));
     const fresh = open.filter(({ quest }) => !state.passed.includes(quest.id));
@@ -173,6 +175,15 @@ function Discover() {
           className={switched ? "quests-panel-in" : undefined}
         >
           <SwipeDeck items={deck} />
+        </div>
+        <div
+          id="my-quests-panel"
+          role="tabpanel"
+          aria-labelledby="quests-mine-tab"
+          hidden={tab !== "mine"}
+          className={cn(switched && "quests-panel-in")}
+        >
+          {tab === "mine" ? <MyQuests /> : null}
         </div>
         <div
           id="create-quest-panel"

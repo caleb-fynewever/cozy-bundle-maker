@@ -197,7 +197,7 @@ function QuestDetail() {
     const print = photoRef.current;
     const rect = print?.getBoundingClientRect();
     const visible = rect && rect.bottom > 80 && rect.top < window.innerHeight - 80;
-    flyToNav(visible && print ? print : button, "lists", questImage(quest!));
+    flyToNav(visible && print ? print : button, "quests", questImage(quest!));
   }
 
   async function sendToSquad() {
@@ -288,7 +288,7 @@ function QuestDetail() {
           <BackArrow /> Back to Map
         </Link>
       ) : from === "lists" ? (
-        <Link to="/lists" className={backClass}>
+        <Link to="/" search={{ tab: "mine" }} className={backClass}>
           <BackArrow /> Back to Lists
         </Link>
       ) : (
