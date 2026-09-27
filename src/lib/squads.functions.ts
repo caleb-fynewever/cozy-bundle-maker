@@ -1,8 +1,10 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { AppDatabase } from "@/lib/database.types";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-export type RemoteSquadMember = { id: string; name: string; handle: string; avatarUrl: string | null };
+export type RemoteSquadMember = { id: string; name: string; handle: string; avatarUrl: string | null; demo?: boolean };
 export type RemoteSquad = { id: string; name: string; leaderId: string; members: RemoteSquadMember[] };
 
 /** Every shared squad you belong to, with its members' public profile info. */
@@ -14,11 +16,15 @@ export const listMySquads = createServerFn({ method: "GET" })
     if (error) throw new Error("Couldn't load your squads.");
     if (!squads?.length) return { me: context.userId, squads: [] };
     const ids = squads.map((s) => s.id);
-    const { data: members } = await sb.from("squad_members").select("squad_id, user_id").in("squad_id", ids);
+    const { data: members, error: membersError } = await sb.from("squad_members").select("squad_id, user_id").in("squad_id", ids);
+    if (membersError) throw new Error("Could not load squad members.");
     const userIds = [...new Set((members ?? []).map((m) => m.user_id))];
-    const { data: profiles } = userIds.length
+    const { data: profiles, error: profilesError } = userIds.length
       ? await sb.from("profiles").select("id, name, handle, avatar_url").in("id", userIds)
-      : { data: [] };
+      : { data: [], error: null };
+    if (profilesError) throw new Error("Could not load squad profiles.");
+    const { data: demoMembers, error: demoError } = await (sb as unknown as SupabaseClient<AppDatabase>).from("squad_demo_members").select("squad_id, person_id").in("squad_id", ids);
+    if (demoError) throw new Error("Could not load demo squadmates.");
     const byId = new Map((profiles ?? []).map((p) => [p.id, p]));
     return {
       me: context.userId,
@@ -26,7 +32,7 @@ export const listMySquads = createServerFn({ method: "GET" })
         id: s.id,
         name: s.name,
         leaderId: s.leader_id,
-        members: (members ?? [])
+        members: [...(members ?? [])
           .filter((m) => m.squad_id === s.id)
           .map((m) => {
             const p = byId.get(m.user_id);
@@ -36,7 +42,7 @@ export const listMySquads = createServerFn({ method: "GET" })
               handle: p?.handle ?? "",
               avatarUrl: p?.avatar_url ?? null,
             };
-          }),
+          }), ...(demoMembers ?? []).filter(m => m.squad_id === s.id).map(m => ({id: m.person_id, name: "Demo squadmate", handle: "", avatarUrl: null, demo: true}))],
       })),
     };
   });
@@ -58,13 +64,8 @@ export const renameRemoteSquad = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid(), name: z.string().trim().min(1).max(60) }).parse(d))
   .handler(async ({ data, context }) => {
-    await context.supabase.from("squads").update({ name: data.name }).eq("id", data.id);
-    await context.supabase
-      .from("squad_invites")
-      .update({ squad_name: data.name })
-      .eq("squad_key", data.id)
-      .eq("inviter_id", context.userId)
-      .eq("status", "pending");
+    const { error, data: changed } = await context.supabase.from("squads").update({ name: data.name }).eq("id", data.id).select("id").single();
+    if (error || !changed) throw new Error("Could not rename this squad.");
     return { ok: true };
   });
 
@@ -72,13 +73,8 @@ export const deleteRemoteSquad = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    await context.supabase.from("squads").delete().eq("id", data.id).eq("leader_id", context.userId);
-    await context.supabase
-      .from("squad_invites")
-      .delete()
-      .eq("squad_key", data.id)
-      .eq("inviter_id", context.userId)
-      .eq("status", "pending");
+    const { error, data: changed } = await context.supabase.from("squads").delete().eq("id", data.id).eq("leader_id", context.userId).select("id").single();
+    if (error || !changed) throw new Error("Could not delete this squad.");
     return { ok: true };
   });
 
@@ -87,10 +83,11 @@ export const removeRemoteMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ squadId: z.string().uuid(), userId: z.string().uuid().optional() }).parse(d))
   .handler(async ({ data, context }) => {
-    await context.supabase
+    const { error } = await context.supabase
       .from("squad_members")
       .delete()
       .eq("squad_id", data.squadId)
       .eq("user_id", data.userId ?? context.userId);
+    if (error) throw new Error("Could not remove this member.");
     return { ok: true };
   });

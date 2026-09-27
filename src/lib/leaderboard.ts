@@ -58,7 +58,7 @@ export function rankBoard(state: UserState, key: BoardKey, scope: Scope): Entry[
     streak: weeklyStreak(state),
   }[key];
   // Around campus is the curated campus board only; your squad board is whoever is in your squad.
-  const others = NEARBY_STUDENTS.filter((u) => (scope === "everyone" ? CAMPUS_BOARD_IDS.includes(u.id) : state.squadIds.includes(u.id))).map((u) => ({
+  const others = (state.catalogLoaded ? state.remotePeople : NEARBY_STUDENTS).filter((u) => (scope === "everyone" ? CAMPUS_BOARD_IDS.includes(u.id) : state.squadIds.includes(u.id))).map((u) => ({
     id: u.id,
     name: u.name,
     handle: u.handle,
@@ -69,7 +69,12 @@ export function rankBoard(state: UserState, key: BoardKey, scope: Scope): Entry[
     photo: u.photo ?? null,
   }));
   const you = { id: "you", name: state.name, handle: state.handle, you: true, value: mine, inSquad: false, level: levelFor(state.xp).name, photo: state.avatarUrl };
-  return [you, ...others].sort((a, b) => b.value - a.value || Number(b.you) - Number(a.you));
+  const real = state.directory.filter(p => p.handle !== state.handle && (scope === "everyone" || state.squadIds.includes(`f_${p.id}`))).map(p => ({
+    id: `f_${p.id}`, name: p.name, handle: p.handle, you: false,
+    value: key === "week" ? p.week_xp : key === "xp" ? p.xp : key === "completed" ? p.completed : key === "created" ? p.created : p.weekly_streak,
+    inSquad: state.squadIds.includes(`f_${p.id}`), level: levelFor(p.xp).name, photo: p.avatar_url,
+  }));
+  return [you, ...others, ...real].sort((a, b) => b.value - a.value || Number(b.you) - Number(a.you));
 }
 
 /** The key a board is remembered under (store.ranksSeen). */

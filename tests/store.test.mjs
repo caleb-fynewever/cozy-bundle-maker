@@ -19,7 +19,7 @@ function snapshot() {
 }
 function hydrateAccount(saved) {
   const id = `test-${++account}`;
-  if (saved) storage.set(`wego.state.v1.u.${id}`, JSON.stringify(saved));
+  if (saved) storage.set(`wego.state.v1.u.${id}`, JSON.stringify({foundersJoined: true, ...saved}));
   bindUser(id);
   return snapshot();
 }

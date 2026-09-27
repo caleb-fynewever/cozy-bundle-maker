@@ -36,7 +36,7 @@ export const sendSquadInviteByHandle = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: profile, error: lookupError } = await context.supabase
       .from("profiles")
-      .select("id, handle, name, email")
+      .select("id, handle, name")
       .ilike("handle", data.handle)
       .maybeSingle();
     if (lookupError) throw new Error("Couldn't look that up. Try again.");
@@ -58,7 +58,7 @@ export const sendSquadInviteByHandle = createServerFn({ method: "POST" })
       squad_name: data.squadName,
       inviter_id: context.userId,
       inviter_name: data.inviterName,
-      invitee_email: String(profile.email ?? "").toLowerCase() || `@${data.handle}`,
+      invitee_email: `@${data.handle}`,
       invitee_id: profile.id,
       invitee_name: profile.name,
     });

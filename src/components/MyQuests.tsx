@@ -1,10 +1,10 @@
+import { questCatalog } from "@/lib/catalog";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Doodle } from "@/components/Doodle";
 import { useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { Bookmark, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { CAMPUS_ORIGIN, distanceMi } from "@/lib/engine";
-import { ALL_QUESTS } from "@/data/quests";
 import { actions, useUserState } from "@/lib/store";
 import type { Quest, SessionContext } from "@/lib/types";
 import { questImage } from "@/lib/imagery";
@@ -60,7 +60,7 @@ export function MyQuests() {
   const savedNow = useRef(state.saved);
   savedNow.current = state.saved;
   const origin = state.approximateLocation ?? CAMPUS_ORIGIN;
-  const allQuests = useMemo(() => [...state.createdQuests, ...ALL_QUESTS], [state.createdQuests]);
+  const allQuests = useMemo(() => questCatalog(state, true), [state.createdQuests, state.remoteQuests, state.remoteArchivedQuests]);
   const questById = useMemo(() => new Map(allQuests.map((quest) => [quest.id, quest])), [allQuests]);
   // Newest save first, so the quest you just saved from the deck is the first one here.
   const saved = [...state.saved]

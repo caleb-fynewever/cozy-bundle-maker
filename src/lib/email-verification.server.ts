@@ -1,3 +1,6 @@
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { AppDatabase } from "@/lib/database.types";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
@@ -34,7 +37,7 @@ async function encryptionKey(secret: string) {
   return crypto.subtle.importKey("raw", digest, "AES-GCM", false, ["encrypt", "decrypt"]);
 }
 
-async function seal(payload: { email: string; code: string; expiresAt: number }) {
+async function seal(payload: { userId: string; email: string; code: string; expiresAt: number }) {
   const secret = serverEnv()["EMAIL_VERIFICATION_SECRET"];
   if (!secret || secret.length < 32) {
     throw new Error(
@@ -62,6 +65,7 @@ async function unseal(token: string) {
   );
   return z
     .object({
+      userId: z.string().uuid(),
       email: z.string().email(),
       code: codeSchema,
       expiresAt: z.number(),
@@ -72,8 +76,9 @@ async function unseal(token: string) {
 const requestSchema = z.object({ email: emailSchema });
 
 export const requestEmailVerification = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator(requestSchema)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const env = serverEnv();
     const missing = ["RESEND_API_KEY", "EMAIL_FROM", "EMAIL_VERIFICATION_SECRET"].filter(
       (key) => !env[key],
@@ -84,12 +89,16 @@ export const requestEmailVerification = createServerFn({ method: "POST" })
       );
     }
 
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient<AppDatabase>;
+    const limit = await admin.rpc("take_verification_attempt", {person: context.userId, checking: false});
+    if (limit.error || !limit.data) throw new Error("Too many verification requests. Try again in an hour.");
     const email = data.email.toLowerCase();
     const code = String(crypto.getRandomValues(new Uint32Array(1))[0]! % 1_000_000).padStart(
       6,
       "0",
     );
-    const token = await seal({ email, code, expiresAt: Date.now() + 10 * 60 * 1000 });
+    const token = await seal({ userId: context.userId, email, code, expiresAt: Date.now() + 10 * 60 * 1000 });
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -121,17 +130,21 @@ const verifySchema = z.object({
 });
 
 export const verifyEmailCode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator(verifySchema)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as unknown as SupabaseClient<AppDatabase>;
+    const limit = await admin.rpc("take_verification_attempt", {person: context.userId, checking: true});
+    if (limit.error || !limit.data) throw new Error("Too many verification attempts. Try again in an hour.");
+    let valid = false;
     try {
       const payload = await unseal(data.token);
-      return {
-        valid:
-          payload.email === data.email.trim().toLowerCase() &&
-          payload.code === data.code &&
-          payload.expiresAt >= Date.now(),
-      };
-    } catch {
-      return { valid: false };
-    }
+      valid = payload.userId === context.userId && payload.email === data.email.trim().toLowerCase()
+        && payload.code === data.code && payload.expiresAt >= Date.now();
+    } catch { return {valid: false}; }
+    if (!valid) return {valid: false};
+    const {error} = await admin.from("student_verifications").upsert({user_id: context.userId, email: data.email.trim().toLowerCase()});
+    if (error) throw new Error("Could not save verification. This email may already belong to another account.");
+    return {valid: true};
   });

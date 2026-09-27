@@ -1,3 +1,5 @@
+import { useRemoteQuest } from "@/lib/use-remote-quest";
+import { questCatalog } from "@/lib/catalog";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { ArrowLeft, Bookmark, Check, MapPin, Send, Share2 } from "lucide-react";
@@ -7,7 +9,7 @@ import { reasonLine } from "@/components/QuestCard";
 import { PageHeader, PhotoPrint, SectionHeading, StatLedger, buttonClass, textButtonClass } from "@/components/ui-kit";
 import { Stamp } from "@/components/Stamp";
 import { QuestDirections, RouteStops } from "@/components/QuestDirections";
-import { QUESTS, getQuest } from "@/data/quests";
+import { getQuest } from "@/data/quests";
 import { NEARBY_STUDENTS } from "@/data/people";
 import { questImage, questPhoto } from "@/lib/imagery";
 import { actions, hydrate, useUserState, type UserState } from "@/lib/store";
@@ -26,7 +28,7 @@ export const Route = createFileRoute("/quest/$questId")({
   }),
   loader: ({ params }) => {
     const quest = getQuest(params.questId);
-    // A quest you made lives in this browser's storage, so the server can't know its title yet.
+    // Authenticated database records load on the client; seed titles are available during SSR.
     return { title: quest?.title ?? null, hook: quest?.hook ?? null, local: params.questId.startsWith("q_user_") };
   },
   head: ({ loaderData }) => {
@@ -124,10 +126,8 @@ function QuestDetail() {
 
   useEffect(() => () => window.clearTimeout(copiedTimer.current), []);
 
-  const quest = useMemo(
-    () => state.createdQuests.find((q) => q.id === questId) ?? getQuest(questId),
-    [questId, state.createdQuests],
-  );
+  const questLookup = useRemoteQuest(questId);
+  const {quest} = questLookup;
 
   // The reason line depends on the hour, so it's only worked out in the browser (a server in
   // another time zone would pick a different one and the page would change under you).
@@ -146,7 +146,7 @@ function QuestDetail() {
         squadIds: state.squadIds,
       },
       { ...state, passed: [] },
-      [...state.createdQuests, ...QUESTS],
+      questCatalog(state),
       40,
     );
     return results.find((r) => r.quest.id === questId);
@@ -158,7 +158,8 @@ function QuestDetail() {
   }, [quest, knownTitle]);
 
   if (!quest) {
-    if (!ready) {
+    if (questLookup.status === "error") return <AppShell><p role="alert">Could not load this quest.</p><button type="button" className="underline" onClick={questLookup.retry}>Try again</button></AppShell>;
+    if (!ready || questLookup.status === "loading") {
       return (
         <AppShell>
           <FindingQuest />

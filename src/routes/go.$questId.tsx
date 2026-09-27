@@ -1,3 +1,4 @@
+import { useRemoteQuest } from "@/lib/use-remote-quest";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { Doodle } from "@/components/Doodle";
 import {
@@ -75,7 +76,7 @@ export const Route = createFileRoute("/go/$questId")({
   }),
   loader: ({ params }) => {
     const quest = getQuest(params.questId);
-    // A quest you made lives in this browser's storage, so the server can't know its title yet.
+    // Authenticated database records load on the client; seed titles are available during SSR.
     return { title: quest?.title ?? null, local: params.questId.startsWith("q_user_") };
   },
   head: ({ loaderData }) => ({
@@ -234,10 +235,8 @@ function GoPage() {
   const state = useUserState();
   const ready = useHydrated();
   const navigate = useNavigate();
-  const quest = useMemo(
-    () => state.createdQuests.find((q) => q.id === questId) ?? getQuest(questId),
-    [questId, state.createdQuests],
-  );
+  const questLookup = useRemoteQuest(questId);
+  const {quest} = questLookup;
   const [selectedSquadIds, setSelectedSquadIds] = useState<string[]>(() =>
     state.activeSquadId ? [state.activeSquadId] : [],
   );
@@ -364,7 +363,8 @@ function GoPage() {
   }, [quest, knownTitle]);
 
   if (!quest) {
-    if (!ready) {
+    if (questLookup.status === "error") return <AppShell><p role="alert">Could not load this quest.</p><button type="button" className="underline" onClick={questLookup.retry}>Try again</button></AppShell>;
+    if (!ready || questLookup.status === "loading") {
       return (
         <AppShell>
           <div aria-busy="true" className="mx-auto max-w-2xl pt-12">

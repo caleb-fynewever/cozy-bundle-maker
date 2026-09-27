@@ -1,4 +1,4 @@
-import { ALL_QUESTS, QUESTS } from "@/data/quests";
+import { questCatalog } from "@/lib/catalog";
 import { NEARBY_STUDENTS } from "@/data/people";
 import { VIBES, type DemoUser, type Quest, type SessionContext, type TasteVector, type TimeSlot, type Vibe } from "@/lib/types";
 import type { UserState } from "@/lib/store";
@@ -40,7 +40,7 @@ export function distanceMi(a: { lat: number; lng: number }, b: { lat: number; ln
 }
 
 /** Weighted taste vector: completions count most, saves add interest, passes subtract. */
-export function buildTasteVector(state: UserState, quests: Quest[] = ALL_QUESTS): TasteVector {
+export function buildTasteVector(state: UserState, quests: Quest[] = questCatalog(state, true)): TasteVector {
   const byId = new Map(quests.map((q) => [q.id, q]));
   const taste = emptyTaste();
   const events: { quest: Quest; weight: number }[] = [];
@@ -209,14 +209,14 @@ function scoreQuest(
   const contextScore =
     0.3 * durationFit + 0.25 * costFit + 0.25 * groupFit + 0.2 * timeSlotFit(quest, context.timeSlot);
 
-  const squad = NEARBY_STUDENTS.filter((u) => context.squadIds.includes(u.id));
+  const squad = (state.catalogLoaded ? state.remotePeople : NEARBY_STUDENTS).filter((u) => context.squadIds.includes(u.id));
   const social = quest.vibes.reduce((sum, v) => sum + (groupVibes[v] ?? 0), 0) / quest.vibes.length;
 
   const proximity = Math.max(0, 1 - distance / Math.max(context.radiusMi, 1));
 
   const seenVibes = new Set(
     [...state.completed, ...state.saved].flatMap(
-      (id) => ALL_QUESTS.find((q) => q.id === id)?.vibes ?? [],
+      (id) => questCatalog(state, true).find((q) => q.id === id)?.vibes ?? [],
     ),
   );
   const unseenVibes = quest.vibes.filter((v) => !seenVibes.has(v)).length;
@@ -270,11 +270,11 @@ function scoreQuest(
 export function recommend(
   context: SessionContext,
   state: UserState,
-  quests: Quest[] = QUESTS,
+  quests: Quest[] = questCatalog(state),
   limit = 6,
 ): { results: ScoredQuest[]; trace: Trace; taste: TasteVector; groupVibes: Record<Vibe, number> } {
   const taste = buildTasteVector(state, quests);
-  const squad = NEARBY_STUDENTS.filter((u) => context.squadIds.includes(u.id));
+  const squad = (state.catalogLoaded ? state.remotePeople : NEARBY_STUDENTS).filter((u) => context.squadIds.includes(u.id));
   const groupVibes = groupTasteVector(taste, squad);
 
   const candidates = quests.filter((q) => !state.passed.includes(q.id));

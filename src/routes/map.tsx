@@ -1,3 +1,4 @@
+import { questCatalog } from "@/lib/catalog";
 import { PageHelp } from "@/components/PageHelp";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
@@ -8,7 +9,6 @@ import { Stamp } from "@/components/Stamp";
 import { buttonClass } from "@/components/ui-kit";
 import { mapsLinks } from "@/lib/maps";
 import { metaLine } from "@/components/QuestCard";
-import { QUESTS } from "@/data/quests";
 import { CAMPUS_ORIGIN, distanceMi } from "@/lib/engine";
 import { questImage } from "@/lib/imagery";
 import { actions, useUserState } from "@/lib/store";
@@ -35,7 +35,7 @@ export const Route = createFileRoute("/map")({
 function MapPage() {
   const state = useUserState();
   const origin = state.approximateLocation ?? CAMPUS_ORIGIN;
-  const quests = useMemo(() => [...state.createdQuests, ...QUESTS], [state.createdQuests]);
+  const quests = useMemo(() => questCatalog(state), [state.createdQuests, state.remoteQuests, state.remoteArchivedQuests]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapUnavailable, setMapUnavailable] = useState(false);
   const [mapReady, setMapReady] = useState(false);
@@ -248,7 +248,7 @@ function MapPage() {
 /** No WebGL: the map page still works, as every quest in a list, nearest first. */
 function NoMapList({ origin, completed, saved }: { origin: { lat: number; lng: number; label: string }; completed: string[]; saved: string[] }) {
   const state = useUserState();
-  const all = useMemo(() => [...state.createdQuests, ...QUESTS], [state.createdQuests]);
+  const all = useMemo(() => questCatalog(state), [state.createdQuests, state.remoteQuests, state.remoteArchivedQuests]);
   const nearest = useMemo(
     () => all.map((quest) => ({ quest, miles: distanceMi(origin, quest.location) })).sort((a, b) => a.miles - b.miles),
     [all, origin],
