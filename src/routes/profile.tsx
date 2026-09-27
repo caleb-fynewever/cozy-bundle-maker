@@ -1305,6 +1305,7 @@ function RemoteProfile({ handle }: { handle: string }) {
           eyebrow="wego profile"
           title={profile.name}
           leading={<Avatar name={profile.name} size={68} imageUrl={profile.avatar_url} />}
+          action={<RemoteInviteButton handle={profile.handle} name={profile.name} />}
         />
         <div className="-mt-3 mb-6">
           <p className="text-sm text-muted-foreground">@{profile.handle}</p>
