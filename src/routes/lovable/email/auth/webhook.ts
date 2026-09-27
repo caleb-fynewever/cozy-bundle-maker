@@ -9,7 +9,7 @@ import { EmailChangeEmail } from '@/lib/email-templates/email-change'
 import { ReauthenticationEmail } from '@/lib/email-templates/reauthentication'
 
 // Configuration
-const SITE_NAME = "Project Spark Notes"
+const SITE_NAME = "wego"
 const SENDER_DOMAIN = "notify.wegoquests.com"
 const ROOT_DOMAIN = "wegoquests.com"
 const FROM_DOMAIN = "wegoquests.com"
