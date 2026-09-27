@@ -72,6 +72,24 @@ export const punchUpQuest = createServerFn({ method: "POST" })
 
     if (!outputText) throw new Error("AI returned an empty quest. Please try again.");
 
+    // Models can still wrap the object in code fences or stray newlines; strip
+    // what's around the outermost object before parsing.
+    const cleaned = outputText
+      .replace(/^```(?:json)?/gm, "")
+      .replace(/```/g, "")
+      .trim();
+    const firstBrace = cleaned.indexOf("{");
+    const lastBrace = cleaned.lastIndexOf("}");
+    const jsonSource =
+      firstBrace >= 0 && lastBrace > firstBrace ? cleaned.slice(firstBrace, lastBrace + 1) : cleaned;
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(jsonSource);
+    } catch {
+      throw new Error("AI wrote something unclear. Please try again.");
+    }
+
     const generated = z
       .object({
         title: z.string().trim().min(1).max(120),
