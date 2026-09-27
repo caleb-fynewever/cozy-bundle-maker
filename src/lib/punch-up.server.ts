@@ -90,13 +90,11 @@ export const punchUpQuest = createServerFn({ method: "POST" })
       throw new Error("AI wrote something unclear. Please try again.");
     }
 
-    const generated = z
+    return z
       .object({
         title: z.string().trim().min(1).max(120),
         description: z.string().trim().min(1).max(600),
         steps: z.array(z.string().trim().min(1).max(200)).min(3).max(5),
       })
-      .parse(JSON.parse(outputText));
-
-    return generated;
+      .parse(parsed);
   });
