@@ -11,6 +11,9 @@ import {
   topVibes,
 } from "@/lib/engine";
 import { actions, useUserState, XP } from "@/lib/store";
+import { useServerFn } from "@tanstack/react-start";
+import { sendSquadInvite } from "@/lib/squad-invites.functions";
+import { refreshSquadInvites, useSquadInvites } from "@/lib/squad-invites";
 import { levelName, squadWeek } from "@/lib/progress";
 import { VIBE_EMOJI, VIBE_LABEL } from "@/lib/types";
 import {
@@ -137,17 +140,25 @@ function SquadPage() {
     toast(`Invite sent to ${name} for ${targetSquad.name}.`);
   };
 
-  const inviteByEmail = (event: FormEvent<HTMLFormElement>, squadId: string) => {
+  const sendInvite = useServerFn(sendSquadInvite);
+  const { sent: sentInvites } = useSquadInvites();
+  const inviteByEmail = async (event: FormEvent<HTMLFormElement>, squadId: string) => {
     event.preventDefault();
     const targetSquad = state.squads.find((item) => item.id === squadId);
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
     const targetEmail = String(form.get("inviteEmail") ?? "").trim();
     if (!targetSquad || !targetEmail) return;
-    toast.success("Invite sent", {
-      description: `An invite to ${targetSquad.name} was sent to ${targetEmail}.`,
-    });
-    formElement.reset();
+    try {
+      const res = await sendInvite({ data: { squadKey: targetSquad.id, squadName: targetSquad.name, inviterName: state.name === "You" ? "A friend" : state.name, email: targetEmail } });
+      toast.success(res.already ? "Already invited" : "Invite sent", {
+        description: res.already ? `${targetEmail} already has a pending invite.` : `We emailed ${targetEmail}. It'll also wait under their bell when they sign in.`,
+      });
+      formElement.reset();
+      refreshSquadInvites();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't send that invite.");
+    }
   };
 
   const createSquad = (event: FormEvent<HTMLFormElement>) => {
@@ -200,13 +211,15 @@ function SquadPage() {
             {state.squads.map((item) => {
               const isOwner = item.leaderId === "me";
               const members = NEARBY_STUDENTS.filter((person) => item.memberIds.includes(person.id));
+              const friends = state.friends.filter((f) => item.memberIds.includes(f.id));
+              const pendingHere = sentInvites.filter((inv) => inv.squad_key === item.id && inv.status === "pending");
               return (
                 <li key={item.id} className="overflow-hidden rounded-xl border border-border bg-card">
                   <details className="group">
                     <summary className="flex min-h-20 cursor-pointer list-none items-center justify-between gap-4 bg-surface px-4 py-3 transition hover:bg-muted sm:px-5 [&::-webkit-details-marker]:hidden">
                       <span className="min-w-0">
                         <span className="block truncate text-lg font-bold">{item.name}</span>
-                        <span className="mt-1 block text-sm text-muted-foreground">You + {members.length} {members.length === 1 ? "person" : "people"}</span>
+                        <span className="mt-1 block text-sm text-muted-foreground">You + {members.length + friends.length} {members.length + friends.length === 1 ? "person" : "people"}</span>
                       </span>
                       <ChevronDown aria-hidden className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
                     </summary>
@@ -243,11 +256,24 @@ function SquadPage() {
                         <button type="button" onClick={() => actions.toggleSquadMember(member.id, member.name, item.id)} aria-label={`Remove ${member.name} from ${item.name}`} className="min-h-11 px-2 text-sm text-muted-foreground underline underline-offset-4">Remove</button>
                       </li>
                     ))}
-                    {!members.length ? <li className="py-3 text-sm text-muted-foreground">No members yet. Invite someone below.</li> : null}
+                    {friends.map((friend) => (
+                      <li key={friend.id} className="flex items-center gap-3 py-3">
+                        <Avatar name={friend.name} size={40} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-medium">{friend.name}</span>
+                          <span className="block text-sm text-muted-foreground">{item.leaderId === friend.id ? "Squad leader" : "Friend"}</span>
+                        </span>
+                        {isOwner ? <button type="button" onClick={() => actions.toggleSquadMember(friend.id, friend.name, item.id)} aria-label={`Remove ${friend.name} from ${item.name}`} className="min-h-11 px-2 text-sm text-muted-foreground underline underline-offset-4">Remove</button> : null}
+                      </li>
+                    ))}
+                    {pendingHere.map((inv) => (
+                      <li key={inv.id} className="py-3 text-sm text-muted-foreground">{inv.invitee_email} <span className="font-hand text-base">· invite pending</span></li>
+                    ))}
+                    {!members.length && !friends.length && !pendingHere.length ? <li className="py-3 text-sm text-muted-foreground">No members yet. Invite someone below.</li> : null}
                   </ul>
-                  <form onSubmit={(event) => inviteByEmail(event, item.id)} className="mt-4">
+                  {isOwner ? <form onSubmit={(event) => void inviteByEmail(event, item.id)} className="mt-4">
                     <label htmlFor={`invite-email-${item.id}`} className="font-semibold">Invite someone by email</label>
-                    <p className="mt-1 text-sm text-muted-foreground">Demo only: this shows a confirmation without sending an email.</p>
+                    <p className="mt-1 text-sm text-muted-foreground">They'll get an email, and the invite waits under their bell once they sign in.</p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <input id={`invite-email-${item.id}`} name="inviteEmail" type="email" autoComplete="email" required maxLength={254} placeholder="friend@example.com" className="min-h-11 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm" />
                       <Button type="submit" variant="ink">Send invite</Button>
