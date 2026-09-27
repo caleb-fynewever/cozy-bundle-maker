@@ -12,7 +12,7 @@ import {
 } from "@/lib/engine";
 import { actions, useUserState, XP } from "@/lib/store";
 import { useServerFn } from "@tanstack/react-start";
-import { sendSquadInvite } from "@/lib/squad-invites.functions";
+import { revokeSquadInvite, sendSquadInvite } from "@/lib/squad-invites.functions";
 import { refreshSquadInvites, useSquadInvites } from "@/lib/squad-invites";
 import { levelName, squadWeek } from "@/lib/progress";
 import { VIBE_EMOJI, VIBE_LABEL } from "@/lib/types";
@@ -141,7 +141,17 @@ function SquadPage() {
   };
 
   const sendInvite = useServerFn(sendSquadInvite);
+  const revokeInvite = useServerFn(revokeSquadInvite);
   const { sent: sentInvites } = useSquadInvites();
+  const revokeById = async (id: string, inviteeEmail: string) => {
+    try {
+      await revokeInvite({ data: { id } });
+      toast.success("Invite revoked", { description: `${inviteeEmail} won't see it anymore.` });
+      refreshSquadInvites();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't revoke that invite.");
+    }
+  };
   const inviteByEmail = async (event: FormEvent<HTMLFormElement>, squadId: string) => {
     event.preventDefault();
     const targetSquad = state.squads.find((item) => item.id === squadId);
@@ -267,7 +277,10 @@ function SquadPage() {
                       </li>
                     ))}
                     {pendingHere.map((inv) => (
-                      <li key={inv.id} className="py-3 text-sm text-muted-foreground">{inv.invitee_email} <span className="font-hand text-base">· invite pending</span></li>
+                      <li key={inv.id} className="flex items-center justify-between gap-3 py-3 text-sm text-muted-foreground">
+                        <span className="min-w-0 truncate">{inv.invitee_email} <span className="font-hand text-base">· invite pending</span></span>
+                        <button type="button" onClick={() => void revokeById(inv.id, inv.invitee_email)} aria-label={`Revoke invite to ${inv.invitee_email}`} className="min-h-11 shrink-0 px-2 text-sm text-muted-foreground underline underline-offset-4">Revoke</button>
+                      </li>
                     ))}
                     {!members.length && !friends.length && !pendingHere.length ? <li className="py-3 text-sm text-muted-foreground">No members yet. Invite someone below.</li> : null}
                   </ul>
