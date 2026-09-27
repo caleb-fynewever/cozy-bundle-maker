@@ -2,7 +2,7 @@
 
 ## Deployment status
 
-All five migrations have been applied to the new user-owned Supabase project and basic live database workflows verified. The original Lovable database has **not** been migrated, and existing accounts have not been transferred. Publishing the frontend alone does not change deployment credentials. See [production readiness](production-readiness.md) for verified checks and release blockers.
+All five migrations have been applied to the new user-owned Supabase project and basic live database workflows verified. The original Lovable database has **not** been migrated, and existing accounts and linked rows have been copied from the September 27 export. Publishing the frontend alone does not change deployment credentials. See [production readiness](production-readiness.md) for verified checks and release blockers.
 
 The existing Supabase project and auth accounts are retained. Existing migrations `0000`–`0002` must already be applied. New migrations are `0003_app_database.sql` and `0004_seed_catalog.sql`; their order is registered in the Drizzle migration journal.
 

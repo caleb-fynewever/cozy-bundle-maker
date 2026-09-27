@@ -21,7 +21,7 @@ Repository-wide lint fails: 2,005 errors and 17 warnings, with 1,998 errors mark
 ## Release blockers
 
 1. Configure the deployment to use the new Supabase public URL/key and matching server service key. Local .env is ignored by Git and does not configure Lovable. Existing public fallback values still refer to the old project.
-2. Preserve or explicitly retire the old database's real accounts, profiles, squads, and invites before switching. No old accounts have been transferred; the new project has zero real users.
+2. Account migration completed from the September 27 export: 10 accounts, 10 identities, 7 profiles, 4 squads, 5 memberships, and 6 invitations. Reconcile changes made in the old database after this snapshot before switching.
 3. Configure and verify new-project authentication email delivery and code templates. Lovable's displayed signup template currently shows a confirmation link. The app requires a code. Verify signup, returning-user sign-in, expiry, and sign-out on the deployed backend.
 4. Configure RESEND_API_KEY, EMAIL_FROM, and EMAIL_VERIFICATION_SECRET (at least 32 characters) for student verification. They are absent locally and absent from Lovable's displayed project secret list. Set the service key only on the server.
 5. Verify squad invite email delivery in the final runtime. Lovable has its managed LOVABLE_API_KEY and branded email UI, but no email was sent during this audit.
@@ -33,4 +33,12 @@ Sign-in accepts numeric codes of 6–10 digits, matching Supabase's supported co
 
 ## Limits
 
-No merge, publish, account transfer, email send, or production configuration change was performed. The build emits a bundle-size warning. Full end-to-end production behavior remains unverified until the release blockers above are resolved.
+No merge, publish, test email send, or production configuration change was performed. Account transfer was completed in a subsequent migration, described below. The build emits a bundle-size warning. Full end-to-end production behavior remains unverified until the release blockers above are resolved.
+
+## Account transfer verification
+
+The official Lovable export was downloaded and selected account/application rows were imported into the existing new schema. Original UUIDs, password hashes, metadata, confirmation states (including two unconfirmed accounts), profiles, squads, memberships, and invitations were preserved. Auth metadata was decoded to JSON objects and all exported fields were compared against PostgreSQL-normalized source values after import.
+
+Supabase Auth admin API returns HTTP 200 and recognizes all 10 original IDs. No orphaned profiles or memberships were found. All 76 quests and 17 demo profiles remain; the squad creation trigger is enabled. Existing sessions and refresh tokens were not transferred; users must sign in again after cutover. Email delivery/sign-in remains a separate release check.
+
+The source Cloud instance stays active and unchanged apart from the private export backup. The sensitive backup remains outside Git. Data saved only in users' browsers was not in the database export; the app's existing local-state sync handles it when those users sign in. Any account or squad changes after the export need reconciliation before cutover.
