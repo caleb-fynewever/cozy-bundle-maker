@@ -83,6 +83,22 @@ export const listSquadInvites = createServerFn({ method: "GET" })
     };
   });
 
+export const revokeSquadInvite = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase
+      .from("squad_invites")
+      .delete()
+      .eq("id", data.id)
+      .eq("inviter_id", context.userId)
+      .eq("status", "pending")
+      .select("id")
+      .maybeSingle();
+    if (error || !row) throw new Error("That invite isn't available anymore.");
+    return { ok: true };
+  });
+
 export const respondSquadInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ id: z.string().uuid(), accept: z.boolean(), name: z.string().trim().min(1).max(60) }).parse(data))
