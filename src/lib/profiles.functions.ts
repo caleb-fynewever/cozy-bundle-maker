@@ -43,6 +43,19 @@ export const syncProfile = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Returns the signed-in user's own profile, or null if they never set one up. */
+export const getMyProfile = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: row, error } = await context.supabase
+      .from("profiles")
+      .select("id, handle, name, bio, avatar_url")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (error) throw new Error("Couldn't load your profile. Try again.");
+    return (row ?? null) as PublicProfile | null;
+  });
+
 /** Looks up one profile by handle. Returns null when nobody has it. */
 export const findProfileByHandle = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
