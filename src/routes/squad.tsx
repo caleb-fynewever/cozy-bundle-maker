@@ -270,8 +270,9 @@ function SquadPage() {
         </form>
       ) : null}
 
-      <div className="squad-layout">
-        <div className="squad-main">
+      <AllSquads />
+
+      <div className="mt-12">
           <section id="find-squad">
             <SectionHeading title="Find your people" />
 
