@@ -1289,7 +1289,7 @@ function WhenPicker({
                   key={slot}
                   type="button"
                   aria-pressed={on}
-                  onClick={() => onPick(joinWhen(day, slot))}
+                  onClick={() => onPick(joinWhen(day, slot), false)}
                   className={pickClass(on)}
                 >
                   {slotLabel(slot)}
@@ -1320,7 +1320,7 @@ function WhenPicker({
           variant="ink"
           size="sm"
           disabled={!custom || customGone}
-          onClick={() => custom && onPick(joinWhen(day, custom))}
+          onClick={() => custom && onPick(joinWhen(day, custom), false)}
         >
           Set time
         </Button>
@@ -1330,6 +1330,17 @@ function WhenPicker({
           That time has already passed today.
         </p>
       ) : null}
+      <div className="mt-4 flex justify-end border-t border-border pt-4">
+        <Button
+          variant="ink"
+          size="sm"
+          disabled={!value}
+          onClick={() => value && onPick(value, true)}
+        >
+          <Check aria-hidden className="size-4" />
+          Done
+        </Button>
+      </div>
     </div>
   );
 }
