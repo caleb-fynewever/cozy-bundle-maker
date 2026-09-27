@@ -28,7 +28,7 @@ const SquadInviteEmail = ({ inviterName, squadName, link }: Props) => (
 
 export const template = {
   component: SquadInviteEmail,
-  subject: (data: Record<string, any>) => `${data.inviterName ?? 'A friend'} invited you to ${data.squadName ?? 'their squad'} on wego`,
+  subject: (data: Record<string, any>) => `${data['inviterName'] ?? 'A friend'} invited you to ${data['squadName'] ?? 'their squad'} on wego`,
   displayName: 'Squad invite',
   previewData: { inviterName: 'Maya', squadName: "Maya's crew", link: 'https://wegoquests.com/squad' },
 } satisfies TemplateEntry
