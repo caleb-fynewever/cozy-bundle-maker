@@ -111,7 +111,7 @@ export function AppFrame({ children }: { children: ReactNode }) {
           <div className="safe-x mx-auto flex h-16 max-w-7xl items-center justify-between md:h-[72px]">
             <Link
               to="/"
-              className="press font-hand text-[28px] leading-none md:text-[34px]"
+              className="app-wordmark press font-hand text-[28px] leading-none md:text-[34px]"
               aria-label="wego home"
             >
               wego

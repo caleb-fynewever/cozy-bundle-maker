@@ -590,3 +590,14 @@
   animation-duration: var(--dur-slow);
   animation-timing-function: var(--ease-out);
 }
+
+@layer components {
+  .app-wordmark {
+    color: var(--primary);
+  }
+
+  /* Let the supplied moon's white paper blend into the surrounding surface. */
+  .doodle-moon {
+    mix-blend-mode: multiply;
+  }
+}

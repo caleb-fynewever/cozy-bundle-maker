@@ -86,7 +86,7 @@ export function Stamp({
           {backed ? <circle className="stamp-paper" cx="50" cy="50" r="48.5" /> : null}
           <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="3.2" />
           <circle cx="50" cy="50" r="39.5" fill="none" stroke="currentColor" strokeWidth="1.2" strokeDasharray="1.5 3.2" />
-          {art ? <image href={doodleSrc(art)} x="34" y={showSub ? 14 : 16} width="32" height="32" preserveAspectRatio="xMidYMid meet" style={faint ? { filter: "grayscale(1)", opacity: 0.4 } : undefined} /> : null}
+          {art ? <image className={art === "chill" ? "doodle-moon" : undefined} href={doodleSrc(art)} x="34" y={showSub ? 14 : 16} width="32" height="32" preserveAspectRatio="xMidYMid meet" style={faint ? { filter: "grayscale(1)", opacity: 0.4 } : undefined} /> : null}
           <text
             x="50"
             y={labelY}
