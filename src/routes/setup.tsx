@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { setState, useUserState } from "@/lib/store";
+import { syncProfile } from "@/lib/profiles.functions";
 
 export const Route = createFileRoute("/setup")({
   staticData: { sitemap: false },
@@ -20,8 +22,10 @@ function SetupPage() {
   const [name, setName] = useState(state.name === "You" ? "" : state.name);
   const [handle, setHandle] = useState(state.handle === "sidequester" ? "" : state.handle);
   const [bio, setBio] = useState("");
+  const [busy, setBusy] = useState(false);
+  const syncProfileFn = useServerFn(syncProfile);
 
-  function onSave(event: FormEvent) {
+  async function onSave(event: FormEvent) {
     event.preventDefault();
     const trimmedName = name.trim();
     const trimmedHandle = handle.trim().replace(/^@+/, "").toLowerCase();
@@ -31,6 +35,14 @@ function SetupPage() {
     }
     if (!trimmedHandle) {
       toast.error("Pick a handle so people can find your profile.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await syncProfileFn({ data: { handle: trimmedHandle, name: trimmedName, bio: bio.trim() || "New around here. Looking for something to do.", avatarUrl: null } });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't save your profile. Try again.");
+      setBusy(false);
       return;
     }
     setState((current) => ({

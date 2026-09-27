@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, Plus, Settings2, Sparkles, Upload } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { QuestDna } from "@/components/QuestDna";
@@ -14,6 +14,9 @@ import { rankBoard } from "@/lib/leaderboard";
 import { badges, weeklyStreak, levelName, weekXp, XP_RULES } from "@/lib/progress";
 import { signOut } from "@/lib/auth";
 import { actions, useUserState } from "@/lib/store";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import { findProfileByHandle, syncProfile, type PublicProfile as RemotePublicProfile } from "@/lib/profiles.functions";
 import { VIBES, VIBE_EMOJI, VIBE_LABEL, type DemoUser, type Quest } from "@/lib/types";
 
 async function makeAvatarDataUrl(file: File): Promise<string> {
@@ -52,6 +55,7 @@ export const Route = createFileRoute("/profile")({
 function ProfilePage() {
   const state = useUserState();
   const navigate = useNavigate();
+  const syncMyProfile = useServerFn(syncProfile);
   const { handle } = Route.useSearch();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsDraft, setSettingsDraft] = useState({ name: state.name, handle: state.handle, bio: state.bio, avatarUrl: state.avatarUrl, favoriteVibes: state.favoriteVibes, optInNearby: state.optInNearby, shareLocation: state.shareLocation, publicProfile: state.publicProfile });
@@ -97,8 +101,8 @@ function ProfilePage() {
     : undefined;
 
   if (handle && handle !== state.handle) {
-    if (!publicPerson) throw notFound();
-    return <PublicProfile person={publicPerson} />;
+    if (publicPerson) return <PublicProfile person={publicPerson} />;
+    return <RemoteProfile handle={handle} />;
   }
 
   return (
@@ -202,7 +206,7 @@ function ProfilePage() {
                     </Button>
                   </div>
                   <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">Demo tools</summary><div className="mt-2 flex flex-wrap gap-2"><Button variant="ghost" onClick={actions.loadDemo}>Load demo</Button><Button variant="ghost" onClick={actions.reset}>Reset app</Button></div></details>
-                  <div className="flex gap-2"><DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose><Button onClick={() => { actions.saveSettings(settingsDraft); setSettingsOpen(false); }}>Save</Button></div>
+                  <div className="flex gap-2"><DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose><Button onClick={() => { actions.saveSettings(settingsDraft); setSettingsOpen(false); void syncMyProfile({ data: { handle: settingsDraft.handle, name: settingsDraft.name, bio: settingsDraft.bio, avatarUrl: settingsDraft.avatarUrl } }).catch((error) => toast.error(error instanceof Error ? error.message : "Couldn't share your profile.")); }}>Save</Button></div>
                 </div>
               </DialogContent>
             </Dialog>
@@ -306,6 +310,43 @@ function ProfilePage() {
           </section>
         </div>
 
+      </div>
+    </AppShell>
+  );
+}
+
+/** A real wego account, looked up by handle. */
+function RemoteProfile({ handle }: { handle: string }) {
+  const findByHandle = useServerFn(findProfileByHandle);
+  const [profile, setProfile] = useState<RemotePublicProfile | null | "loading">("loading");
+
+  useEffect(() => {
+    let active = true;
+    findByHandle({ data: { handle } })
+      .then((row) => { if (active) setProfile(row); })
+      .catch(() => { if (active) setProfile(null); });
+    return () => { active = false; };
+  }, [handle, findByHandle]);
+
+  if (profile === "loading") {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-3xl py-16 text-center text-sm text-muted-foreground">Looking up @{handle}…</div>
+      </AppShell>
+    );
+  }
+  if (!profile) throw notFound();
+
+  return (
+    <AppShell>
+      <div className="mx-auto max-w-3xl">
+        <BackButton fallback="/leaderboard" label="Back" className="mb-4 underline underline-offset-4" />
+        <PageHeader eyebrow="wego profile" title={profile.name} leading={<Avatar name={profile.name} size={68} imageUrl={profile.avatar_url} />} />
+        <div className="-mt-3 mb-6">
+          <p className="text-sm text-muted-foreground">@{profile.handle}</p>
+          {profile.bio ? <p className="mt-2 max-w-xl text-muted-foreground">{profile.bio}</p> : null}
+        </div>
+        <p className="font-hand text-lg text-muted-foreground">fresh face on wego.</p>
       </div>
     </AppShell>
   );
