@@ -1,15 +1,13 @@
-import { Stamp } from "@/components/Stamp";
 import { cn } from "@/lib/utils";
-import { Tally, buttonClass } from "@/components/ui-kit";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { ChevronDown } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { Avatar, Button, Chip, PageHeader, Panel, SectionHeading } from "@/components/ui-kit";
+import { Avatar, Button, Chip, PageHeader, SectionHeading } from "@/components/ui-kit";
 import { NEARBY_STUDENTS } from "@/data/people";
 import { buildTasteVector, compatibility, topVibes } from "@/lib/engine";
-import { actions, useUserState, XP } from "@/lib/store";
+import { actions, useUserState } from "@/lib/store";
 import { useServerFn } from "@tanstack/react-start";
 import {
   revokeSquadInvite,
@@ -17,7 +15,7 @@ import {
   sendSquadInviteByHandle,
 } from "@/lib/squad-invites.functions";
 import { refreshSquadInvites, useSquadInvites } from "@/lib/squad-invites";
-import { levelName, squadWeek } from "@/lib/progress";
+import { levelName } from "@/lib/progress";
 import { VIBE_EMOJI, VIBE_LABEL } from "@/lib/types";
 import {
   AlertDialog,
@@ -234,7 +232,6 @@ function SquadPage() {
     setPendingSquadAction(null);
   };
 
-  const week = squadWeek(state);
   const people = scope === "matches" ? nearby.slice(0, 3) : nearby;
 
   return (
@@ -721,82 +718,3 @@ function SquadPage() {
   );
 }
 
-function mondayKey(now = new Date()) {
-  const day = new Date(now);
-  day.setHours(0, 0, 0, 0);
-  day.setDate(day.getDate() - ((day.getDay() + 6) % 7));
-  return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
-}
-
-/**
- * The squad's week on one sheet of paper: the total rolls when it changes, filled segments pour in
- * like the XP vial, and hitting the goal joins them into one bar, prints the sheet, and stamps it
- * (once a week).
- */
-function WeekTogether() {
-  const state = useUserState();
-  const week = squadWeek(state);
-  const goalStamp = `squad-goal:${mondayKey()}`;
-  const firstSight = week.done && !state.stampsSeen.includes(goalStamp);
-  const [slam, setSlam] = useState(false);
-
-  useEffect(() => {
-    if (!firstSight) return;
-    setSlam(true);
-    actions.seeStamps([goalStamp]);
-  }, [firstSight, goalStamp]);
-
-  return (
-    <Panel
-      aria-labelledby="squad-week"
-      className={cn("week-panel relative rounded-lg", week.done && "lift border-border-strong")}
-    >
-      <SectionHeading
-        id="squad-week"
-        eyebrow="little things add up"
-        title="This week together"
-        detail={
-          <>
-            <Tally value={week.totalXp} className="font-semibold text-foreground" /> squad XP
-          </>
-        }
-      />
-      <p className="mt-4 text-[15px] text-muted-foreground">
-        {week.done
-          ? `${week.together} quests done. Goal hit!`
-          : `${week.together} of ${week.goal} quests done · ${week.goal - week.together} to go.`}
-      </p>
-      <div
-        role="meter"
-        aria-label="Squad quests this week"
-        aria-valuemin={0}
-        aria-valuemax={week.goal}
-        aria-valuenow={Math.min(week.together, week.goal)}
-        aria-valuetext={`${week.together} of ${week.goal} squad quests this week`}
-        className="week-meter mt-4"
-        style={{ "--n": week.goal } as CSSProperties}
-      >
-        {Array.from({ length: week.goal }, (_, i) => {
-          const filled = i < week.together;
-          return (
-            <span key={i} className="week-seg" data-filled={filled || undefined}>
-              {filled ? <span className="week-fill" style={{ "--i": i } as CSSProperties} /> : null}
-            </span>
-          );
-        })}
-        {week.done ? <span aria-hidden className="week-join" /> : null}
-      </div>
-      <p className="mt-4 text-sm text-pretty text-muted-foreground">
-        Do a quest with someone in your squad for +{XP.squadBonus} bonus XP.
-      </p>
-      <Link to="/" className={cn(buttonClass({ variant: "outline", size: "sm" }), "mt-4")}>
-        Pick a quest
-      </Link>
-      {week.done ? (
-        <span aria-hidden className="week-stamp">
-          <Stamp label="goal hit" size={76} tilt={-8} slam={slam} />
-        </span>
-      ) : null}
-    </Panel>
-  );
-}
