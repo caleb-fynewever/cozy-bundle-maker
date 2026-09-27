@@ -567,7 +567,7 @@ function GoPage() {
     void navigate({ to: "/" });
   }
 
-  /** A new day and time; `done` closes the picker (picking a day alone keeps it open). */
+  /** A new day and time; `done` closes the picker (a pick alone keeps it open until Done). */
   function pickTime(value: string, done = true) {
     setWhenTouched(true);
     setWhen(value);
