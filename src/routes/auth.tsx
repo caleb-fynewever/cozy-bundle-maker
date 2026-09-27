@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { sendEmailCode, useAuth, verifyEmailCode } from "@/lib/auth";
 
 export const Route = createFileRoute("/auth")({
+  staticData: { sitemap: true },
   head: () => ({
     meta: [
       { title: "Sign in — wego" },

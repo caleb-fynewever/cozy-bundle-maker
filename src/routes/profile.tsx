@@ -32,6 +32,7 @@ async function makeAvatarDataUrl(file: File): Promise<string> {
 }
 
 export const Route = createFileRoute("/profile")({
+  staticData: { sitemap: false },
   validateSearch: (search: Record<string, unknown>) => ({
     ...(typeof search["handle"] === "string" ? { handle: search["handle"] } : {}),
   }),

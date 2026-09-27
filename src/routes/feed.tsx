@@ -11,6 +11,7 @@ import { questImage } from "@/lib/imagery";
 import { actions, useUserState } from "@/lib/store";
 
 export const Route = createFileRoute("/feed")({
+  staticData: { sitemap: false },
   head: () => ({
     meta: [
       { title: "Feed — wego" },
