@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth";
 import { actions, useUserState } from "@/lib/store";
 import { listSquadInvites, respondSquadInvite, type RemoteInvite } from "@/lib/squad-invites.functions";
+import { getProfileById } from "@/lib/profiles.functions";
 
 const listeners = new Set<() => void>();
 /** Ask every mounted invite hook to refetch (e.g. right after sending one). */
