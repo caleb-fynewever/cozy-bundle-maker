@@ -56,6 +56,20 @@ export const getMyProfile = createServerFn({ method: "GET" })
     return (row ?? null) as PublicProfile | null;
   });
 
+/** Looks up one profile by user id. Returns null when nobody has it. */
+export const getProfileById = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase
+      .from("profiles")
+      .select("id, handle, name, bio, avatar_url")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error("Couldn't look that up. Try again.");
+    return (row ?? null) as PublicProfile | null;
+  });
+
 /** Looks up one profile by handle. Returns null when nobody has it. */
 export const findProfileByHandle = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

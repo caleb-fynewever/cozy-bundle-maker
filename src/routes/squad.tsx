@@ -157,7 +157,8 @@ function SquadPage() {
     const form = new FormData(formElement);
     const target = String(form.get("inviteEmail") ?? "").trim();
     if (!targetSquad || !target) return;
-    const inviterName = state.name === "You" ? "A friend" : state.name;
+    const inviterName =
+      state.name !== "You" ? state.name : state.handle ? `@${state.handle}` : "A friend";
     try {
       if (target.includes("@") && !target.startsWith("@")) {
         const res = await sendInvite({

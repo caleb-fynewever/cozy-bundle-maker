@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth";
 import { actions, useUserState } from "@/lib/store";
 import { listSquadInvites, respondSquadInvite, type RemoteInvite } from "@/lib/squad-invites.functions";
+import { getProfileById } from "@/lib/profiles.functions";
 
 const listeners = new Set<() => void>();
 /** Ask every mounted invite hook to refetch (e.g. right after sending one). */
@@ -16,6 +17,7 @@ export function useSquadInvites() {
   const state = useUserState();
   const list = useServerFn(listSquadInvites);
   const respond = useServerFn(respondSquadInvite);
+  const getProfile = useServerFn(getProfileById);
   const [received, setReceived] = useState<RemoteInvite[]>([]);
   const [sent, setSent] = useState<RemoteInvite[]>([]);
 
@@ -52,9 +54,18 @@ export function useSquadInvites() {
   const answer = async (invite: RemoteInvite, accept: boolean) => {
     const row = await respond({ data: { id: invite.id, accept, name: state.name === "You" ? (session?.user.email?.split("@")[0] ?? "Friend") : state.name } });
     if (accept) {
+      let leaderName = row.inviter_name;
+      if (!leaderName || leaderName === "A friend") {
+        try {
+          const profile = await getProfile({ data: { id: row.inviter_id } });
+          if (profile) leaderName = profile.name || `@${profile.handle}`;
+        } catch {
+          /* keep the name from the invite */
+        }
+      }
       actions.joinFriendSquad(`remote_${row.inviter_id}_${row.squad_key}`, row.squad_name, {
         id: `f_${row.inviter_id}`,
-        name: row.inviter_name,
+        name: leaderName || "Squad leader",
         email: "",
       });
     }

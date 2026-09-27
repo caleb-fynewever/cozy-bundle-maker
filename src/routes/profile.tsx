@@ -1335,7 +1335,8 @@ function RemoteInviteButton({ handle, name }: { handle: string; name: string }) 
         data: {
           squadKey: squad.id,
           squadName: squad.name,
-          inviterName: state.name,
+          inviterName:
+            state.name !== "You" ? state.name : state.handle ? `@${state.handle}` : "A friend",
           handle,
         },
       });
