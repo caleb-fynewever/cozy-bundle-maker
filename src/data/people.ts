@@ -91,6 +91,25 @@ export const TEAM: DemoUser[] = [
     taste: t({ "late-night": 0.8, chill: 0.7, food: 0.6, weird: 0.5 }),
     photo: "/team/zuan.jpg",
   },
+  {
+    id: "u_evan",
+    name: "Evan",
+    handle: "evan",
+    university: "University of Minnesota",
+    verified: true,
+    bio: "Building wego.",
+    color: "signal",
+    level: 3,
+    completed: 14,
+    recentQuestIds: ["q_stone_arch_freeze", "q_eat_street_roulette", "q_northeast_mural_bingo"],
+    created: 4,
+    weeklyStreak: 3,
+    distanceMi: 0.5,
+    optInNearby: true,
+    preferredGroup: [2, 5],
+    taste: t({ food: 0.7, outdoors: 0.6, social: 0.7, creative: 0.5 }),
+    photo: "/team/evan.jpg",
+  },
 ];
 
 /** The 0-1 hackathon directors. Not in your squad: they're on the Around campus board. */
@@ -216,6 +235,8 @@ export const CAMPUS: DemoUser[] = [
 ];
 
 export const TEAM_IDS = TEAM.map((person) => person.id);
+/** Everyone starts in a squad with the founders so the feed and ranks aren't empty. */
+export const FOUNDERS_SQUAD = { id: "squad_founders", name: "wego founders", leaderId: "u_caleb", memberIds: TEAM_IDS };
 export const DIRECTOR_IDS = DIRECTORS.map((person) => person.id);
 /** Who's on the Around campus leaderboard (plus anyone in your squad). */
 export const CAMPUS_BOARD_IDS = [...TEAM_IDS, ...DIRECTOR_IDS, ...CAMPUS.map((person) => person.id)];
