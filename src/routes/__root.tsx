@@ -138,6 +138,32 @@ function RootComponent() {
     if (!loading) bindUser(session?.user.id ?? null);
   }, [loading, session?.user.id]);
   const userState = useUserState();
+  const userId = session?.user.id ?? null;
+
+  // If this device has no local setup but the account already has a profile,
+  // restore it instead of forcing setup again.
+  useEffect(() => {
+    if (loading || !userId || userState.configured) return;
+    let cancelled = false;
+    getMyProfile()
+      .then((profile) => {
+        if (cancelled || !profile) return;
+        setState((current) => ({
+          ...current,
+          configured: true,
+          name: profile.name,
+          handle: profile.handle,
+          bio: profile.bio || current.bio,
+          avatarUrl: profile.avatar_url ?? current.avatarUrl,
+        }));
+      })
+      .catch(() => {
+        /* offline or hiccup — leave the gate as-is */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, userId, userState.configured]);
 
   let body: ReactNode;
   if (loading) {
