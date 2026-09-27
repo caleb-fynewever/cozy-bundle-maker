@@ -286,7 +286,7 @@ function SquadPage() {
                   Verification adds a student badge to your profile. You can find people and build
                   squads without it.
                 </p>
-                <div className="mt-3">
+                <div className="mt-3 text-center">
                   <p className="text-muted-foreground">
                     {verificationToken
                       ? `Enter the six-digit code we sent to ${email}. Your email stays private.`
