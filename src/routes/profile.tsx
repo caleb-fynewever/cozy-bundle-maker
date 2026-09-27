@@ -14,6 +14,9 @@ import { rankBoard } from "@/lib/leaderboard";
 import { badges, weeklyStreak, levelName, weekXp, XP_RULES } from "@/lib/progress";
 import { signOut } from "@/lib/auth";
 import { actions, useUserState } from "@/lib/store";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import { syncProfile } from "@/lib/profiles.functions";
 import { VIBES, VIBE_EMOJI, VIBE_LABEL, type DemoUser, type Quest } from "@/lib/types";
 
 async function makeAvatarDataUrl(file: File): Promise<string> {

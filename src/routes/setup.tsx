@@ -39,7 +39,7 @@ function SetupPage() {
     }
     setBusy(true);
     try {
-      await syncProfile({ data: { handle: trimmedHandle, name: trimmedName, bio: bio.trim() || "New around here. Looking for something to do.", avatarUrl: null } });
+      await syncProfileFn({ data: { handle: trimmedHandle, name: trimmedName, bio: bio.trim() || "New around here. Looking for something to do.", avatarUrl: null } });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Couldn't save your profile. Try again.");
       setBusy(false);
