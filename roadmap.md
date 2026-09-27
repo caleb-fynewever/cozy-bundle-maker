@@ -13,3 +13,7 @@
 - [x] Squad, ranks and XP: XP history, squad bonus, daily streaks, weekly board, squad weekly goal, stamps
 - [x] Feed tab (friend activity, ratings, hearts, photos, comments); Discover swipe right = go page, Later = save, left = not now (recirculates)
 - [x] Feed: number ratings instead of stars, collapsible comments, smaller images with a subtle squircle rounding
+
+## Open
+- [ ] Live site: publish build missing backend connection settings (VITE_SUPABASE_* absent from bundle)
+- [ ] Sign-in email must send a 6-digit code (not just a link) for non-Lovable users
