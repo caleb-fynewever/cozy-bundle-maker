@@ -5,6 +5,20 @@
 //     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { env as processEnv } from "node:process";
+import { loadEnv } from "vite";
+
+// Load local secrets for server handlers without exposing them through Vite's client env.
+const mode = processEnv["NODE_ENV"] === "production" ? "production" : "development";
+const localEnv = loadEnv(mode, process.cwd(), "");
+for (const key of [
+  "ANTHROPIC_API_KEY",
+  "RESEND_API_KEY",
+  "EMAIL_FROM",
+  "EMAIL_VERIFICATION_SECRET",
+]) {
+  if (localEnv[key] && !processEnv[key]) processEnv[key] = localEnv[key];
+}
 
 export default defineConfig({
   tanstackStart: {

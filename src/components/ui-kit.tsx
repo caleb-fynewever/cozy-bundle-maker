@@ -1,6 +1,64 @@
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { BadgeCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+export function PageHeader({
+  eyebrow,
+  title,
+  leading,
+  action,
+  className,
+}: {
+  eyebrow?: ReactNode;
+  title: ReactNode;
+  leading?: ReactNode;
+  action?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <header className={cn("mb-6 border-b border-border pb-6", className)}>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-4">
+          {leading}
+          <div className="min-w-0">
+            <h1 className="mt-1 text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">{title}</h1>
+            {eyebrow ? <p className="mt-1 font-hand text-lg leading-tight text-muted-foreground">{eyebrow}</p> : null}
+          </div>
+        </div>
+        {action ? <div className="shrink-0">{action}</div> : null}
+      </div>
+    </header>
+  );
+}
+
+export function SectionHeading({
+  id,
+  title,
+  eyebrow,
+  detail,
+  action,
+}: {
+  id?: string;
+  title: ReactNode;
+  eyebrow?: ReactNode;
+  detail?: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex items-end justify-between gap-4">
+      <div>
+        {eyebrow ? <p className="font-hand text-base leading-tight text-muted-foreground">{eyebrow}</p> : null}
+        <h2 id={id} className="text-xl font-semibold leading-tight sm:text-2xl">{title}</h2>
+        {detail ? <p className="mt-1 text-sm text-muted-foreground">{detail}</p> : null}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+export function Panel({ className, ...props }: ComponentProps<"section">) {
+  return <section className={cn("rounded-xl border border-border bg-card p-5 sm:p-6", className)} {...props} />;
+}
 
 /** Small selectable option. Quiet by default, ink when active. */
 export function Chip({
@@ -116,17 +174,17 @@ export function SectionTitle({ kicker, title, action }: { kicker?: string; title
   );
 }
 
-export function Avatar({ name, size = 44, you = false }: { name: string; size?: number; you?: boolean }) {
+export function Avatar({ name, size = 44, you = false, imageUrl }: { name: string; size?: number; you?: boolean; imageUrl?: string | null }) {
   return (
     <span
       aria-hidden
       className={cn(
-         "grid shrink-0 place-items-center border border-foreground font-display font-bold",
+         "grid shrink-0 place-items-center overflow-hidden rounded-[30%] border border-foreground font-display font-bold",
         you ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground",
       )}
       style={{ width: size, height: size, fontSize: size * 0.4 }}
     >
-      {name.slice(0, 1).toUpperCase()}
+      {imageUrl ? <img src={imageUrl} alt="" className="h-full w-full object-cover" /> : name.slice(0, 1).toUpperCase()}
     </span>
   );
 }

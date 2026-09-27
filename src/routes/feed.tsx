@@ -2,7 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { ChevronDown, Heart, MessageCircle } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { RatingRing } from "@/components/RatingRing";
 import { Avatar } from "@/components/ui-kit";
+import { PageHeader } from "@/components/ui-kit";
 import { FRIEND_POSTS, type FeedPost } from "@/data/feed";
 import { getQuest } from "@/data/quests";
 import { questImage } from "@/lib/imagery";
@@ -36,9 +38,8 @@ function FeedPage() {
   return (
     <AppShell>
       <div className="mx-auto max-w-xl">
-        <p className="font-hand text-lg">what your people got up to</p>
-        <h1 className="text-2xl font-semibold sm:text-3xl">Feed</h1>
-        <ul className="mt-6 divide-y divide-border">
+        <PageHeader eyebrow="from your people" title="Feed" />
+        <ul className="mt-3 divide-y divide-border">
           {posts.map((post) => <li key={post.id} className="py-6"><Post post={post} /></li>)}
         </ul>
         <p className="py-8 text-center font-hand text-lg text-muted-foreground">that's everyone for now · <Link to="/" className="underline decoration-primary underline-offset-4">go make a post</Link></p>
@@ -66,17 +67,25 @@ function Post({ post }: { post: FeedPost }) {
   return (
     <article>
       <header className="flex items-center gap-3">
-        <Avatar name={post.author} size={40} you={mine} />
+        <Avatar name={post.author} size={40} you={mine} imageUrl={mine ? state.avatarUrl : null} />
         <div className="min-w-0 flex-1">
           <p className="text-sm">
             <span className="font-semibold">{mine ? "You" : post.author}</span> did{" "}
-            {quest ? <Link to="/quest/$questId" params={{ questId: quest.id }} className="font-semibold underline decoration-primary underline-offset-4">{quest.title}</Link> : "a quest"}
+            {quest ? <Link to="/quest/$questId" params={{ questId: quest.id }} search={{ from: "feed" }} className="font-semibold underline decoration-primary underline-offset-4">{quest.title}</Link> : "a quest"}
           </p>
           <p className="text-xs text-muted-foreground">
             {post.withNames.length ? `with ${post.withNames.join(", ")} · ` : ""}{quest?.location.area ?? ""} · {ago(post.at)}
           </p>
         </div>
-        <span aria-label={`Rated ${post.rating} of 5`} className="shrink-0 text-sm font-medium">{post.rating}/5</span>
+        <div className="shrink-0 text-center">
+          <RatingRing
+            rating={post.rating}
+            label={post.ratingCount > 1 ? `Squad average from ${post.ratingCount} ratings` : `${post.author}'s rating`}
+          />
+          <span className="mt-1 block text-[10px] text-muted-foreground">
+            {post.ratingCount > 1 ? "squad avg" : "their take"}
+          </span>
+        </div>
       </header>
       {quest || post.photo ? (
         <img src={post.photo ?? questImage(quest!)} alt={quest ? `${quest.location.name}` : "Quest photo"} loading="lazy" className="mx-auto mt-3 block aspect-[4/3] w-[86%] max-w-[420px] rounded-2xl border border-border bg-muted object-cover" />

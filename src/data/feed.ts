@@ -5,8 +5,10 @@ export type FeedPost = {
   author: string;
   authorId: string;
   questId: string;
-  /** 1–5 */
+  /** Average of the listed ratings, on a 0–10 scale. */
   rating: number;
+  /** Number of people whose ratings are included in the average. */
+  ratingCount: number;
   caption: string;
   /** Uploaded photo (data URL) or null to use the quest photo. */
   photo: string | null;
@@ -26,7 +28,8 @@ export const FRIEND_POSTS: FeedPost[] = [
     author: "Alex",
     authorId: "u_alex",
     questId: "q_midnight_photo_hunt",
-    rating: 5,
+    rating: 8.5,
+    ratingCount: 2,
     caption: "Found a neon sign I've walked past 400 times and never noticed. Jordan got the best shot, I'll never admit it.",
     photo: null,
     withNames: ["Jordan"],
@@ -42,7 +45,8 @@ export const FRIEND_POSTS: FeedPost[] = [
     author: "Maya",
     authorId: "u_maya",
     questId: "q_snack_crawl",
-    rating: 4,
+    rating: 8,
+    ratingCount: 3,
     caption: "Three stops, one clear winner. Go hungry, leave humbled.",
     photo: null,
     withNames: ["Sam", "Priya"],
@@ -55,7 +59,8 @@ export const FRIEND_POSTS: FeedPost[] = [
     author: "Jordan",
     authorId: "u_jordan",
     questId: "q_stone_arch_freeze",
-    rating: 4,
+    rating: 8,
+    ratingCount: 1,
     caption: "Cold. Worth it. The skyline at dusk did most of the work.",
     photo: null,
     withNames: [],
@@ -68,7 +73,8 @@ export const FRIEND_POSTS: FeedPost[] = [
     author: "Sam",
     authorId: "u_sam",
     questId: "q_northeast_mural_bingo",
-    rating: 3,
+    rating: 8,
+    ratingCount: 2,
     caption: "Got 7 of 9 squares. The last two are a myth.",
     photo: null,
     withNames: ["Deven"],

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { Avatar, Chip } from "@/components/ui-kit";
+import { Avatar, Chip, PageHeader } from "@/components/ui-kit";
 import { BOARDS, nextUp, rankBoard, type BoardKey } from "@/lib/leaderboard";
 import { useUserState } from "@/lib/store";
 
@@ -9,7 +9,7 @@ export const Route = createFileRoute("/leaderboard")({
   head: () => ({
     meta: [
       { title: "Local Legends — wego" },
-      { name: "description", content: "See who's done the most side quests, made the most, and kept the longest streak." },
+      { name: "description", content: "See who's done the most side quests, made the most, and kept the longest weekly streak." },
       { property: "og:title", content: "Local Legends — wego" },
       { property: "og:description", content: "Friendly competition: quests done, quests made, streaks." },
       { property: "og:type", content: "website" },
@@ -30,9 +30,7 @@ function LeaderboardPage() {
 
   return (
     <AppShell>
-       <p className="mt-6 font-hand text-xl">a little friendly competition</p>
-       <h1 className="mt-2 text-5xl font-medium leading-tight sm:text-6xl">Local Legends</h1>
-      {gap ? <p className="mt-3 text-lg text-muted-foreground">{gap}</p> : null}
+      <PageHeader eyebrow="a little friendly competition" title="Local Legends" />
 
       <div className="mt-8 flex flex-wrap gap-2" role="group" aria-label="Leaderboard">
         {BOARDS.map((b) => (
@@ -59,19 +57,18 @@ function LeaderboardPage() {
 
       <ol className="mt-6 divide-y divide-border border-y border-border">
         {entries.map((entry, i) => (
-          <li
-            key={entry.id}
-              className={`flex items-center gap-4 py-4 ${entry.you ? "-mx-3 border-l-4 border-primary bg-card px-3" : ""}`}
-          >
+          <li key={entry.id} className={entry.you ? "-mx-3 border-l-4 border-primary bg-card px-3" : ""}>
+            <Link to="/profile" search={{ handle: entry.handle }} className="flex min-h-20 items-center gap-4 py-4 transition-colors hover:bg-surface">
              <span className={`w-6 text-right font-hand text-2xl ${i === 0 ? "text-foreground" : "text-muted-foreground"}`}>
-              {i + 1}
-            </span>
-            <Avatar name={entry.name} you={entry.you} size={i < 3 ? 48 : 40} />
+               {i + 1}
+             </span>
+            <Avatar name={entry.name} you={entry.you} size={i < 3 ? 48 : 40} imageUrl={entry.you ? state.avatarUrl : null} />
             <span className="min-w-0 flex-1">
               <span className="block font-semibold">{entry.you ? `${entry.name} (you)` : entry.name}</span>
               <span className="block text-sm text-muted-foreground">{entry.level}</span>
             </span>
             <span className="text-sm text-muted-foreground">{board.unit(entry.value)}</span>
+            </Link>
           </li>
         ))}
       </ol>
@@ -80,13 +77,13 @@ function LeaderboardPage() {
         <p className="mt-6 text-muted-foreground">
           It's just you so far.{" "}
           <Link to="/squad" className="font-semibold text-foreground underline underline-offset-4">
-            Add friends to your squad
+            Find people for your squad
           </Link>{" "}
           to see how you stack up.
         </p>
       ) : (
         <p className="mt-6 text-sm text-muted-foreground">
-          Finish a quest to move up. Making one others finish counts too.
+          XP boards count the points you earn across wego. Other boards track quests finished, quests made, and your weekly streak.
         </p>
       )}
     </AppShell>
