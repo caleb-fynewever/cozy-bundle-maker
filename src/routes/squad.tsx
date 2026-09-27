@@ -712,7 +712,6 @@ function SquadPage() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        </aside>
       </div>
     </AppShell>
   );
