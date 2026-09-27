@@ -30,7 +30,7 @@ export function useAuth(): AuthState {
   return state;
 }
 
-/** Sends a 6-digit sign-in code to the email. Creates the account on first use. */
+/** Sends an 8-digit sign-in code to the email. Creates the account on first use. */
 export async function sendEmailCode(email: string) {
   const { error } = await supabase.auth.signInWithOtp({
     email,
