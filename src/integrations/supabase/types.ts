@@ -14,7 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      squad_invites: {
+        Row: {
+          created_at: string
+          id: string
+          invitee_email: string
+          invitee_id: string | null
+          invitee_name: string | null
+          inviter_id: string
+          inviter_name: string
+          responded_at: string | null
+          squad_key: string
+          squad_name: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invitee_email: string
+          invitee_id?: string | null
+          invitee_name?: string | null
+          inviter_id: string
+          inviter_name: string
+          responded_at?: string | null
+          squad_key: string
+          squad_name: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invitee_email?: string
+          invitee_id?: string | null
+          invitee_name?: string | null
+          inviter_id?: string
+          inviter_name?: string
+          responded_at?: string | null
+          squad_key?: string
+          squad_name?: string
+          status?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
