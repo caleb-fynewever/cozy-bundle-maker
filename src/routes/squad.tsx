@@ -4,6 +4,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { ChevronDown } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { InviteButton } from "@/components/InviteButton";
 import { Avatar, Button, Chip, PageHeader, SectionHeading } from "@/components/ui-kit";
 import { NEARBY_STUDENTS } from "@/data/people";
 import { buildTasteVector, compatibility, topVibes } from "@/lib/engine";
@@ -135,15 +136,6 @@ function SquadPage() {
     }
   };
 
-  const inviteToSquad = (id: string, name: string, squadId = state.activeSquadId) => {
-    const targetSquad = state.squads.find((item) => item.id === squadId);
-    if (!targetSquad || targetSquad.leaderId !== "me") {
-      toast.error("Create or choose a squad first.");
-      return;
-    }
-    actions.inviteSquadMember(id, name, targetSquad.id);
-    toast(`Invite sent to ${name} for ${targetSquad.name}.`);
-  };
 
   const sendInvite = useServerFn(sendSquadInvite);
   const revokeInvite = useServerFn(revokeSquadInvite);
@@ -640,30 +632,7 @@ function SquadPage() {
                           </p>
                           <p className="mt-1 text-sm text-muted-foreground">{user.bio}</p>
                         </div>
-                        <Button
-                          variant="ink"
-                          disabled={
-                            !activeSquad ||
-                            activeSquad.leaderId !== "me" ||
-                            state.squadInvites.some(
-                              (invite) =>
-                                invite.personId === user.id &&
-                                invite.squadId === activeSquad.id &&
-                                invite.direction === "sent",
-                            )
-                          }
-                          onClick={() => inviteToSquad(user.id, user.name)}
-                        >
-                          {activeSquad &&
-                          state.squadInvites.some(
-                            (invite) =>
-                              invite.personId === user.id &&
-                              invite.squadId === activeSquad.id &&
-                              invite.direction === "sent",
-                          )
-                            ? "Invite sent"
-                            : "Invite"}
-                        </Button>
+                        <InviteButton personId={user.id} name={user.name} />
                       </li>
                     );
                   })}
