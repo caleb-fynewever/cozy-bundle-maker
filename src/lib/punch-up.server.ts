@@ -33,6 +33,7 @@ export const punchUpQuest = createServerFn({ method: "POST" })
       body: JSON.stringify({
         model: "google/gemini-3.8-flash",
         max_tokens: 900,
+        response_format: { type: "json_object" },
         messages: [
           {
             role: "system",
