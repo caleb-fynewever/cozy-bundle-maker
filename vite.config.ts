@@ -11,6 +11,14 @@ import { loadEnv } from "vite";
 // Load local secrets for server handlers without exposing them through Vite's client env.
 const mode = processEnv["NODE_ENV"] === "production" ? "production" : "development";
 const localEnv = loadEnv(mode, process.cwd(), "");
+
+// Keep the browser auth client usable when the deployment builder omits the
+// managed VITE_* aliases. These values are public connection identifiers, not
+// privileged credentials.
+processEnv["VITE_SUPABASE_URL"] ??= "https://lhsjyrqhujftuawwshav.supabase.co";
+processEnv["VITE_SUPABASE_PUBLISHABLE_KEY"] ??=
+  "sb_publishable_CnQHNZirCr8CkFC44irEzg_iMPYLO1F";
+
 for (const key of [
   "ANTHROPIC_API_KEY",
   "RESEND_API_KEY",
