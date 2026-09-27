@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Check, Plus, Settings2, Sparkles, Upload } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
@@ -12,6 +12,7 @@ import { QUESTS } from "@/data/quests";
 import { buildTasteVector } from "@/lib/engine";
 import { rankBoard } from "@/lib/leaderboard";
 import { badges, weeklyStreak, levelName, weekXp, XP_RULES } from "@/lib/progress";
+import { signOut } from "@/lib/auth";
 import { actions, useUserState } from "@/lib/store";
 import { VIBES, VIBE_EMOJI, VIBE_LABEL, type DemoUser, type Quest } from "@/lib/types";
 
