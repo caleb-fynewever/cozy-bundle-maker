@@ -1,8 +1,10 @@
 import * as React from 'react'
 import { createAuthEmailHandler } from '@lovable.dev/email-js'
 import { createFileRoute } from '@tanstack/react-router'
+import { SignupEmail } from '@/lib/email-templates/signup'
 import { InviteEmail } from '@/lib/email-templates/invite'
 import { MagicLinkEmail } from '@/lib/email-templates/magic-link'
+import { RecoveryEmail } from '@/lib/email-templates/recovery'
 import { EmailChangeEmail } from '@/lib/email-templates/email-change'
 import { ReauthenticationEmail } from '@/lib/email-templates/reauthentication'
 
@@ -27,11 +29,13 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
           sendUrl: process.env['LOVABLE_SEND_URL'],
           emails: {
             signup: {
-              subject: 'Your wego sign-in code',
+              subject: 'Confirm your email',
               render: (data) =>
-                React.createElement(MagicLinkEmail, {
+                React.createElement(SignupEmail, {
                   siteName: SITE_NAME,
-                  token: data.token ?? '',
+                  siteUrl: SITE_URL,
+                  recipient: data.email,
+                  confirmationUrl: data.url,
                 }),
             },
             invite: {
@@ -44,19 +48,19 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
                 }),
             },
             magiclink: {
-              subject: 'Your wego sign-in code',
+              subject: 'Your login link',
               render: (data) =>
                 React.createElement(MagicLinkEmail, {
                   siteName: SITE_NAME,
-                  token: data.token ?? '',
+                  confirmationUrl: data.url,
                 }),
             },
             recovery: {
-              subject: 'Your wego sign-in code',
+              subject: 'Reset your password',
               render: (data) =>
-                React.createElement(MagicLinkEmail, {
+                React.createElement(RecoveryEmail, {
                   siteName: SITE_NAME,
-                  token: data.token ?? '',
+                  confirmationUrl: data.url,
                 }),
             },
             email_change: {
