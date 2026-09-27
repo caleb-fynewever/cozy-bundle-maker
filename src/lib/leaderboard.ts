@@ -1,35 +1,38 @@
 import { NEARBY_STUDENTS, levelFor } from "@/data/people";
-import { DEMO_WEEK_XP, levelName, weekXp } from "@/lib/progress";
+import { weeklyStreak, DEMO_TOTAL_XP, DEMO_WEEK_XP, levelName, weekXp } from "@/lib/progress";
 import type { UserState } from "@/lib/store";
 
-export type BoardKey = "week" | "completed" | "created" | "streak";
+export type BoardKey = "week" | "xp" | "completed" | "created" | "streak";
 
 export const BOARDS: { key: BoardKey; title: string; unit: (n: number) => string }[] = [
   { key: "week", title: "This week", unit: (n) => `${n} XP` },
+  { key: "xp", title: "All-time XP", unit: (n) => `${n} XP` },
   { key: "completed", title: "Most quests", unit: (n) => `${n} ${n === 1 ? "quest" : "quests"}` },
   { key: "created", title: "Top creators", unit: (n) => `${n} made` },
-  { key: "streak", title: "Streaks", unit: (n) => `${n}-day streak` },
+  { key: "streak", title: "Weekly streaks", unit: (n) => `${n}-week streak` },
 ];
 
-export type Entry = { id: string; name: string; you: boolean; value: number; inSquad: boolean; level: string };
+export type Entry = { id: string; name: string; handle: string; you: boolean; value: number; inSquad: boolean; level: string };
 
 /** Ranks you against your squad or everyone nearby. Ties keep you above. */
 export function rankBoard(state: UserState, key: BoardKey, scope: "friends" | "everyone"): Entry[] {
   const mine = {
     week: weekXp(state),
+    xp: state.xp,
     completed: state.completed.length,
     created: state.createdQuests.length,
-    streak: state.streak,
+    streak: weeklyStreak(state),
   }[key];
   const others = NEARBY_STUDENTS.filter((u) => scope === "everyone" || state.squadIds.includes(u.id)).map((u) => ({
     id: u.id,
     name: u.name,
+    handle: u.handle,
     you: false,
-    value: key === "week" ? (DEMO_WEEK_XP[u.id] ?? 0) : u[key],
+    value: key === "week" ? (DEMO_WEEK_XP[u.id] ?? 0) : key === "xp" ? (DEMO_TOTAL_XP[u.id] ?? 0) : key === "streak" ? u.weeklyStreak : key === "completed" ? u.completed : u.created,
     inSquad: state.squadIds.includes(u.id),
     level: levelName(u.level),
   }));
-  const you = { id: "you", name: state.name, you: true, value: mine, inSquad: false, level: levelFor(state.xp).name };
+  const you = { id: "you", name: state.name, handle: state.handle, you: true, value: mine, inSquad: false, level: levelFor(state.xp).name };
   return [you, ...others].sort((a, b) => b.value - a.value || Number(b.you) - Number(a.you));
 }
 

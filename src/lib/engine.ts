@@ -39,7 +39,7 @@ export function distanceMi(a: { lat: number; lng: number }, b: { lat: number; ln
   return 3958.8 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 }
 
-/** Weighted taste vector: completions and ranking wins count most, passes subtract. */
+/** Weighted taste vector: completions count most, saves add interest, passes subtract. */
 export function buildTasteVector(state: UserState, quests: Quest[] = QUESTS): TasteVector {
   const byId = new Map(quests.map((q) => [q.id, q]));
   const taste = emptyTaste();
@@ -52,12 +52,6 @@ export function buildTasteVector(state: UserState, quests: Quest[] = QUESTS): Ta
   state.saved.forEach((id) => {
     const quest = byId.get(id);
     if (quest) events.push({ quest, weight: 0.6 });
-  });
-  state.rankings.forEach(({ winner, loser }) => {
-    const w = byId.get(winner);
-    const l = byId.get(loser);
-    if (w) events.push({ quest: w, weight: 0.8 });
-    if (l) events.push({ quest: l, weight: -0.35 });
   });
   state.passed.forEach((id) => {
     const quest = byId.get(id);
@@ -250,9 +244,6 @@ function scoreQuest(
   if (groupFit === 1) reasons.push(`Built for groups of ${quest.groupMin}-${quest.groupMax}`);
   if (squad.length && social > 0.45) {
     reasons.push(`Overlaps your squad's taste with ${squad.map((s) => s.name).join(" & ")}`);
-  }
-  if (state.rankings.length >= 2 && tasteMatch > 0.5) {
-    reasons.push(`Similar to ${state.rankings.length} quests you ranked highly`);
   }
   if (novelty > 0.6) reasons.push("Introduces something you've never tried");
 

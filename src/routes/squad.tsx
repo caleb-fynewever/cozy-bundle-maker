@@ -1,37 +1,47 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import { ChevronDown } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { QuestCard } from "@/components/QuestCard";
-import { Avatar, Button, Chip } from "@/components/ui-kit";
+import { Avatar, Button, Chip, PageHeader, Panel, SectionHeading } from "@/components/ui-kit";
 import { NEARBY_STUDENTS } from "@/data/people";
-import { QUESTS } from "@/data/quests";
 import {
-  CAMPUS_ORIGIN,
   buildTasteVector,
   compatibility,
-  currentTimeSlot,
-  groupTasteVector,
-  recommend,
   topVibes,
 } from "@/lib/engine";
 import { actions, useUserState, XP } from "@/lib/store";
 import { levelName, squadWeek } from "@/lib/progress";
 import { VIBE_EMOJI, VIBE_LABEL } from "@/lib/types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  requestEmailVerification,
+  verifyEmailCode,
+} from "@/lib/email-verification.server";
 
 export const Route = createFileRoute("/squad")({
   head: () => ({
     meta: [
-      { title: "Build a squad — wego" },
+      { title: "Your squad — wego" },
       {
         name: "description",
         content:
-          "Start a temporary squad with friends or verified students nearby. Compatibility is scored on taste, shared interests, distance and group size.",
+          "Build squads with students nearby. Email verification is optional; compatibility is scored on taste, shared interests, distance and group size.",
       },
-      { property: "og:title", content: "Build a squad — wego" },
+      { property: "og:title", content: "Your squad — wego" },
       {
         property: "og:description",
-        content: "Match with verified students nearby by vibe compatibility — approximate distance only.",
+        content:
+          "Find students nearby by vibe compatibility — approximate distance only. Student email verification is optional.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -43,155 +53,318 @@ export const Route = createFileRoute("/squad")({
 function SquadPage() {
   const state = useUserState();
   const [radiusMi, setRadius] = useState(3);
-  const [scope, setScope] = useState<"friends" | "nearby">("nearby");
+  const [scope, setScope] = useState<"matches" | "nearby">("matches");
+  const [createSquadOpen, setCreateSquadOpen] = useState(false);
+  const [newSquadName, setNewSquadName] = useState("");
   const [email, setEmail] = useState("");
-  const [requested, setRequested] = useState<string[]>([]);
+  const [code, setCode] = useState("");
+  const [verificationToken, setVerificationToken] = useState("");
+  const [verificationBusy, setVerificationBusy] = useState(false);
+  const [verificationError, setVerificationError] = useState("");
+  const [pendingSquadAction, setPendingSquadAction] = useState<{ id: string; kind: "delete" | "leave" } | null>(null);
 
   const taste = useMemo(() => buildTasteVector(state), [state]);
-  const squad = NEARBY_STUDENTS.filter((u) => state.squadIds.includes(u.id));
-  const groupVibes = useMemo(() => groupTasteVector(taste, squad), [taste, squad]);
-  const groupSize = squad.length + 1;
+  const activeSquad = state.squads.find((item) => item.id === state.activeSquadId);
+  const groupSize = (activeSquad?.memberIds.length ?? 0) + 1;
 
   const nearby = useMemo(
     () =>
       NEARBY_STUDENTS.filter(
-        (user) => user.optInNearby && user.distanceMi <= radiusMi && !state.squadIds.includes(user.id),
+        (user) =>
+          user.optInNearby && user.distanceMi <= radiusMi && !activeSquad?.memberIds.includes(user.id),
       )
         .map((user) => ({ user, ...compatibility(taste, user, { groupSize, radiusMi }) }))
         .sort((a, b) => b.score - a.score),
-    [radiusMi, state.squadIds, taste, groupSize],
+    [radiusMi, activeSquad, taste, groupSize],
   );
 
-  const groupQuest = useMemo(() => {
-    const { results } = recommend(
-      {
-        groupSize,
-        timeBudgetMin: 120,
-        maxCost: 25,
-        vibes: topVibes(groupVibes, 2).map((v) => v.vibe),
-        chaos: 3,
-        timeSlot: currentTimeSlot(),
-        origin: CAMPUS_ORIGIN,
-        radiusMi: 5,
-        squadIds: state.squadIds,
-      },
-      state,
-      [...state.createdQuests, ...QUESTS],
-      1,
-    );
-    return results[0];
-  }, [groupSize, groupVibes, state]);
-
-  const verifyEmail = () => {
+  const sendVerificationCode = async () => {
     if (!/^[^@\s]+@[^@\s]+\.edu$/i.test(email)) {
       toast.error("That needs to be a .edu email.");
       return;
     }
-    actions.verify(email);
-    toast("You're verified.");
+    setVerificationBusy(true);
+    setVerificationError("");
+    try {
+      const result = await requestEmailVerification({ data: { email } });
+      setVerificationToken(result.token);
+      setCode("");
+      toast("Code sent. Check your inbox.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not send your code. Try again.";
+      setVerificationError(message);
+      toast.error(message);
+    } finally {
+      setVerificationBusy(false);
+    }
   };
 
-  const invite = (id: string, name: string) => {
-    setRequested((r) => [...r, id]);
-    setTimeout(() => {
-      actions.toggleSquadMember(id, name);
-      toast(`${name} is in.`);
-    }, 1200);
+  const confirmVerificationCode = async () => {
+    if (!/^\d{6}$/.test(code)) {
+      toast.error("Enter the six-digit code from your email.");
+      return;
+    }
+    setVerificationBusy(true);
+    setVerificationError("");
+    try {
+      const result = await verifyEmailCode({ data: { email, code, token: verificationToken } });
+      if (!result.valid) {
+        const message = "That code didn’t match or has expired. Check it and try again.";
+        setVerificationError(message);
+        toast.error(message);
+        return;
+      }
+      actions.verify(email);
+      setVerificationToken("");
+      toast("You're verified.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not verify that code. Try again.";
+      setVerificationError(message);
+      toast.error(message);
+    } finally {
+      setVerificationBusy(false);
+    }
+  };
+
+  const inviteToSquad = (id: string, name: string, squadId = state.activeSquadId) => {
+    const targetSquad = state.squads.find((item) => item.id === squadId);
+    if (!targetSquad) {
+      toast.error("Create or choose a squad first.");
+      return;
+    }
+    actions.inviteSquadMember(id, name, targetSquad.id);
+    toast(`Invite sent to ${name} for ${targetSquad.name}.`);
+  };
+
+  const inviteByEmail = (event: FormEvent<HTMLFormElement>, squadId: string) => {
+    event.preventDefault();
+    const targetSquad = state.squads.find((item) => item.id === squadId);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const targetEmail = String(form.get("inviteEmail") ?? "").trim();
+    if (!targetSquad || !targetEmail) return;
+    toast.success("Invite sent", {
+      description: `An invite to ${targetSquad.name} was sent to ${targetEmail}.`,
+    });
+    formElement.reset();
+  };
+
+  const createSquad = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!newSquadName.trim()) return;
+    actions.createSquad(newSquadName);
+    setNewSquadName("");
+    setCreateSquadOpen(false);
+    toast.success("Squad created.");
+  };
+
+  const renameSquad = (event: FormEvent<HTMLFormElement>, squadId: string) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const name = String(form.get("squadName") ?? "").trim();
+    if (!name) return;
+    actions.renameSquad(squadId, name);
+    toast.success("Squad renamed.");
+  };
+
+  const confirmSquadAction = () => {
+    if (!pendingSquadAction) return;
+    const squad = state.squads.find((item) => item.id === pendingSquadAction.id);
+    if (pendingSquadAction.kind === "delete") {
+      actions.deleteSquad(pendingSquadAction.id);
+      toast.success(`${squad?.name ?? "Squad"} deleted.`);
+    } else {
+      actions.leaveSquad(pendingSquadAction.id);
+      toast.success(`You left ${squad?.name ?? "the squad"}.`);
+    }
+    setPendingSquadAction(null);
   };
 
   const week = squadWeek(state);
-  const people = scope === "friends" ? nearby.filter((p) => p.user.level >= 3) : nearby;
+  const people = scope === "matches" ? nearby.slice(0, 3) : nearby;
 
   return (
     <AppShell>
-       <p className="mt-6 font-hand text-xl">better together</p>
-       <h1 className="mt-2 text-5xl font-medium leading-tight sm:text-6xl">Your squad</h1>
+      <PageHeader eyebrow="set up your circle of friends" title="Your squads" action={<Button variant="outline" onClick={() => setCreateSquadOpen((open) => !open)}>New squad</Button>} />
+      {createSquadOpen ? <form onSubmit={createSquad} className="mb-6 flex flex-wrap gap-2 rounded-xl border border-border bg-card p-4">
+        <label className="sr-only" htmlFor="new-squad-name">New squad name</label>
+        <input id="new-squad-name" value={newSquadName} onChange={(event) => setNewSquadName(event.target.value)} maxLength={32} placeholder="Give this squad a name" className="min-h-12 min-w-0 flex-1 rounded-md border border-input bg-background px-3" />
+        <Button type="submit" disabled={!newSquadName.trim()}>Create squad</Button>
+      </form> : null}
 
-      {squad.length ? (
-        <ul className="mt-8 flex flex-wrap gap-5">
-          <li className="flex flex-col items-center gap-2">
-            <Avatar name={state.name} you size={56} />
-            <span className="text-sm font-medium">You</span>
-          </li>
-          {squad.map((m) => (
-            <li key={m.id} className="flex flex-col items-center gap-2">
-              <button
-                type="button"
-                onClick={() => actions.toggleSquadMember(m.id, m.name)}
-                aria-label={`Remove ${m.name} from squad`}
-                className="rounded-full"
-              >
-                <Avatar name={m.name} size={56} />
-              </button>
-              <span className="text-sm font-medium">{m.name}</span>
-              <span className="-mt-2 text-xs text-muted-foreground">{levelName(m.level)}</span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-3 text-lg text-muted-foreground">Just you right now.</p>
-      )}
+      <section className="mt-8" aria-labelledby="your-squads-heading">
+        <SectionHeading id="your-squads-heading" eyebrow="Your circles" title="All squads" detail="Your squads and their rosters, all in one place." />
+        {state.squads.length ? (
+          <ul className="mt-4 space-y-4">
+            {state.squads.map((item) => {
+              const isOwner = item.leaderId === "me";
+              const members = NEARBY_STUDENTS.filter((person) => item.memberIds.includes(person.id));
+              return (
+                <li key={item.id} className="overflow-hidden rounded-xl border border-border bg-card">
+                  <details className="group">
+                    <summary className="flex min-h-20 cursor-pointer list-none items-center justify-between gap-4 bg-surface px-4 py-3 transition hover:bg-muted sm:px-5 [&::-webkit-details-marker]:hidden">
+                      <span className="min-w-0">
+                        <span className="block truncate text-lg font-bold">{item.name}</span>
+                        <span className="mt-1 block text-sm text-muted-foreground">You + {members.length} {members.length === 1 ? "person" : "people"}</span>
+                      </span>
+                      <ChevronDown aria-hidden className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+                    </summary>
+                    <div className="p-4 sm:p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-sm text-muted-foreground">{isOwner ? "You’re the creator" : "You’re a member"}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                      {isOwner ? (
+                        <Button variant="ghost" onClick={() => setPendingSquadAction({ id: item.id, kind: "delete" })}>Delete</Button>
+                      ) : (
+                        <Button variant="ghost" onClick={() => setPendingSquadAction({ id: item.id, kind: "leave" })}>Leave</Button>
+                      )}
+                      </div>
+                    </div>
+                  {isOwner ? <form onSubmit={(event) => renameSquad(event, item.id)} className="mt-4 flex max-w-md gap-2">
+                    <label className="sr-only" htmlFor={`rename-squad-${item.id}`}>Squad name</label>
+                    <input id={`rename-squad-${item.id}`} name="squadName" defaultValue={item.name} maxLength={32} className="min-h-11 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm" />
+                    <Button variant="outline" type="submit">Save name</Button>
+                  </form> : null}
+                  <ul className="mt-4 divide-y divide-border border-y border-border">
+                    <li className="flex items-center gap-3 py-3">
+                      <Avatar name={state.name} you size={40} imageUrl={state.avatarUrl} />
+                      <span className="font-medium">{state.name} <span className="text-sm text-muted-foreground">(you)</span></span>
+                    </li>
+                    {members.map((member) => (
+                      <li key={member.id} className="flex items-center gap-3 py-3">
+                        <Link to="/profile" search={{ handle: member.handle }} aria-label={`View ${member.name}'s profile`} className="flex min-w-0 flex-1 items-center gap-3 rounded-md hover:bg-surface">
+                          <Avatar name={member.name} size={40} />
+                          <span className="min-w-0">
+                            <span className="block font-medium">{member.name}</span>
+                            <span className="block text-sm text-muted-foreground">{levelName(member.level)} · @{member.handle}</span>
+                          </span>
+                        </Link>
+                        <button type="button" onClick={() => actions.toggleSquadMember(member.id, member.name, item.id)} aria-label={`Remove ${member.name} from ${item.name}`} className="min-h-11 px-2 text-sm text-muted-foreground underline underline-offset-4">Remove</button>
+                      </li>
+                    ))}
+                    {!members.length ? <li className="py-3 text-sm text-muted-foreground">No members yet. Invite someone below.</li> : null}
+                  </ul>
+                  <form onSubmit={(event) => inviteByEmail(event, item.id)} className="mt-4">
+                    <label htmlFor={`invite-email-${item.id}`} className="font-semibold">Invite someone by email</label>
+                    <p className="mt-1 text-sm text-muted-foreground">Demo only: this shows a confirmation without sending an email.</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <input id={`invite-email-${item.id}`} name="inviteEmail" type="email" autoComplete="email" required maxLength={254} placeholder="friend@example.com" className="min-h-11 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm" />
+                      <Button type="submit" variant="ink">Send invite</Button>
+                    </div>
+                  </form>
+                    </div>
+                  </details>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="mt-4 rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">You’re not in any squads yet. Create one or accept an invite to get started.</p>
+        )}
+      </section>
 
-      {squad.length ? (
-        <section className="mt-10 border-y border-border py-6" aria-labelledby="squad-week">
-          <div className="flex items-baseline justify-between gap-4">
-            <h2 id="squad-week" className="text-xl font-semibold">This week together</h2>
-            <p className="font-hand text-lg">{week.totalXp} XP as a squad</p>
+      <AlertDialog open={Boolean(pendingSquadAction)} onOpenChange={(open) => { if (!open) setPendingSquadAction(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{pendingSquadAction?.kind === "delete" ? "Delete this squad?" : "Leave this squad?"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingSquadAction?.kind === "delete"
+                ? `This will delete ${state.squads.find((item) => item.id === pendingSquadAction.id)?.name ?? "this squad"} and remove its roster and invites from your account.`
+                : `You’ll leave ${state.squads.find((item) => item.id === pendingSquadAction?.id)?.name ?? "this squad"}. You can rejoin if you receive another invite.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSquadAction}>
+              {pendingSquadAction?.kind === "delete" ? "Delete squad" : "Leave squad"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {state.squads.length ? (
+        <Panel className="mt-6" aria-labelledby="squad-week">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <SectionHeading id="squad-week" eyebrow="little things add up" title="Your weekly squad activity" />
+            <p className="font-hand text-lg">{week.totalXp} XP</p>
           </div>
-          <p className="mt-1 text-muted-foreground">
-            {week.done
-              ? "Goal hit. Anything else is bragging rights."
-              : `${week.goal - week.together} more ${week.goal - week.together === 1 ? "quest" : "quests"} together to hit this week's goal.`}
-          </p>
-          <ol className="mt-4 flex gap-2" aria-label={`${week.together} of ${week.goal} quests together`}>
-            {Array.from({ length: week.goal }, (_, i) => (
-              <li
-                key={i}
-                className={`h-2 flex-1 rounded-full ${i < week.together ? "bg-primary" : "bg-muted"}`}
-              />
-            ))}
+          <p className="mt-2 text-muted-foreground">{week.done ? `${week.together} quests done. Goal hit!` : `${week.together} of ${week.goal} quests done · ${week.goal - week.together} to go.`}</p>
+          <ol className="mt-4 flex gap-2" aria-label={`${week.together} of ${week.goal} weekly squad quests`}>
+            {Array.from({ length: week.goal }, (_, i) => <li key={i} className={`h-2 flex-1 rounded-full ${i < week.together ? "bg-primary" : "bg-muted"}`} />)}
           </ol>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Every quest you do with someone here is +{XP.squadBonus} XP on top.
-          </p>
-        </section>
+          <p className="mt-3 text-sm text-muted-foreground">Do a quest with someone in a squad for +{XP.squadBonus} bonus XP.</p>
+        </Panel>
       ) : null}
 
-      {groupQuest && squad.length ? (
-        <section className="mt-12">
-           <h2 className="text-2xl font-medium">Something you'd all like</h2>
-          <div className="mt-6">
-            <QuestCard item={groupQuest} />
-          </div>
-        </section>
-      ) : null}
-
-      <section className="mt-16 border-t border-border pt-10">
-         <h2 className="text-3xl font-medium">Looking for people to join?</h2>
+      <section id="find-squad" className="mt-16 border-t border-border pt-10">
+        <SectionHeading title="Find your people" />
 
         {!state.verified ? (
-          <div className="mt-4">
+          <details className="mt-4 rounded-xl border border-border bg-card p-4">
+            <summary className="min-h-10 cursor-pointer font-semibold">Verify your .edu email <span className="font-normal text-muted-foreground">(optional)</span></summary>
+            <p className="mt-2 text-sm text-muted-foreground">Verification adds a student badge to your profile. You can find people and build squads without it.</p>
+            <div className="mt-3">
             <p className="text-muted-foreground">
-              Only verified students show up nearby. Your email stays private.
+              {verificationToken
+                ? `Enter the six-digit code we sent to ${email}. Your email stays private.`
+                : "Enter your .edu email to get a six-digit verification code. Your email stays private."}
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <label className="sr-only" htmlFor="edu">
-                Student email
+                {verificationToken ? "Verification code" : "Student email"}
               </label>
               <input
                 id="edu"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="you@umn.edu"
-                 className="min-h-12 flex-1 rounded-md border border-border-strong bg-card px-5 text-[15px]"
+                type={verificationToken ? "text" : "email"}
+                inputMode={verificationToken ? "numeric" : "email"}
+                autoComplete={verificationToken ? "one-time-code" : "email"}
+                maxLength={verificationToken ? 6 : undefined}
+                value={verificationToken ? code : email}
+                onChange={(event) => {
+                  setVerificationError("");
+                  if (verificationToken) setCode(event.target.value.replace(/\D/g, "").slice(0, 6));
+                  else setEmail(event.target.value);
+                }}
+                placeholder={verificationToken ? "123456" : "you@umn.edu"}
+                className="min-h-12 flex-1 rounded-md border border-border-strong bg-card px-5 text-[15px]"
               />
-              <Button variant="ink" onClick={verifyEmail}>
-                Verify
+              <Button
+                variant="ink"
+                disabled={verificationBusy}
+                onClick={verificationToken ? confirmVerificationCode : sendVerificationCode}
+              >
+                {verificationBusy ? "One sec…" : verificationToken ? "Verify code" : "Send code"}
               </Button>
             </div>
-          </div>
-        ) : !state.optInNearby ? (
+            {verificationError ? <p role="alert" className="mt-3 text-sm text-destructive">{verificationError}</p> : null}
+            {verificationToken ? (
+              <div className="mt-2 flex flex-wrap gap-4">
+                <button
+                  type="button"
+                  disabled={verificationBusy}
+                  onClick={sendVerificationCode}
+                  className="min-h-11 text-sm text-muted-foreground underline underline-offset-4"
+                >
+                  Send a new code
+                </button>
+                <button
+                  type="button"
+                  disabled={verificationBusy}
+                  onClick={() => {
+                    setVerificationToken("");
+                    setCode("");
+                  }}
+                  className="min-h-11 text-sm text-muted-foreground underline underline-offset-4"
+                >
+                  Use a different email
+                </button>
+              </div>
+            ) : null}
+            </div>
+          </details>
+        ) : <p className="mt-4 text-sm text-muted-foreground">Your student email is verified.</p>}
+
+        {!state.optInNearby ? (
           <div className="mt-4">
             <p className="text-muted-foreground">
               Turn on nearby so other students can find you. We only ever show rough distance.
@@ -205,11 +378,11 @@ function SquadPage() {
         ) : (
           <>
             <div className="mt-5 flex flex-wrap items-center gap-2">
-              <Chip active={scope === "nearby"} onClick={() => setScope("nearby")}>
-                Nearby
+              <Chip active={scope === "matches"} onClick={() => setScope("matches")}>
+                Best matches
               </Chip>
-              <Chip active={scope === "friends"} onClick={() => setScope("friends")}>
-                Friends
+              <Chip active={scope === "nearby"} onClick={() => setScope("nearby")}>
+                Everyone nearby
               </Chip>
               <label className="sr-only" htmlFor="radius">
                 Distance
@@ -218,7 +391,7 @@ function SquadPage() {
                 id="radius"
                 value={radiusMi}
                 onChange={(e) => setRadius(Number(e.target.value))}
-                 className="min-h-11 rounded-md border border-border bg-card px-4 text-sm"
+                className="min-h-11 rounded-md border border-border bg-card px-4 text-sm"
               >
                 {[1, 3, 5].map((r) => (
                   <option key={r} value={r}>
@@ -230,12 +403,11 @@ function SquadPage() {
 
             <ul className="mt-6 divide-y divide-border">
               {people.map(({ user, score }) => {
-                const pending = requested.includes(user.id);
                 return (
                   <li key={user.id} className="flex items-start gap-4 py-6">
-                    <Avatar name={user.name} size={52} />
+                    <Link to="/profile" search={{ handle: user.handle }} aria-label={`View ${user.name}'s profile`} className="shrink-0 rounded-[30%] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"><Avatar name={user.name} size={52} /></Link>
                     <div className="min-w-0 flex-1">
-                      <p className="text-lg font-bold leading-tight">{user.name}</p>
+                      <Link to="/profile" search={{ handle: user.handle }} className="text-lg font-bold leading-tight hover:underline">{user.name} <span className="text-sm font-normal text-muted-foreground">@{user.handle}</span></Link>
                       <p className="text-sm text-muted-foreground">
                         {user.distanceMi} mi away · {score}% vibe match
                       </p>
@@ -246,14 +418,16 @@ function SquadPage() {
                       </p>
                       <p className="mt-1 text-sm text-muted-foreground">{user.bio}</p>
                     </div>
-                    <Button variant={pending ? "outline" : "ink"} disabled={pending} onClick={() => invite(user.id, user.name)}>
-                      {pending ? "Sent" : "Invite"}
+                    <Button variant="ink" disabled={!activeSquad || state.squadInvites.some((invite) => invite.personId === user.id && invite.squadId === activeSquad.id && invite.direction === "sent")} onClick={() => inviteToSquad(user.id, user.name)}>
+                      {activeSquad && state.squadInvites.some((invite) => invite.personId === user.id && invite.squadId === activeSquad.id && invite.direction === "sent") ? "Invite sent" : "Invite"}
                     </Button>
                   </li>
                 );
               })}
               {people.length === 0 ? (
-                <li className="py-6 text-muted-foreground">No one around right now. Try a wider distance.</li>
+                <li className="py-6 text-muted-foreground">
+                  No one around right now. Try a wider distance.
+                </li>
               ) : null}
             </ul>
             <button
@@ -269,7 +443,10 @@ function SquadPage() {
 
       <p className="mt-12 text-muted-foreground">
         See how your squad stacks up on{" "}
-        <Link to="/leaderboard" className="font-semibold text-foreground underline underline-offset-4">
+        <Link
+          to="/leaderboard"
+          className="font-semibold text-foreground underline underline-offset-4"
+        >
           Local Legends
         </Link>
         .

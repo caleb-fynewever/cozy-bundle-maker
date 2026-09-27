@@ -94,8 +94,9 @@ export type DemoUser = {
   color: string;
   level: number;
   completed: number;
+  recentQuestIds?: string[];
   created: number;
-  streak: number;
+  weeklyStreak: number;
   distanceMi: number;
   optInNearby: boolean;
   preferredGroup: [number, number];

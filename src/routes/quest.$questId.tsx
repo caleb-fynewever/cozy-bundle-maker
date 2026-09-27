@@ -1,24 +1,31 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { ArrowLeft, Bookmark, Send, Share2 } from "lucide-react";
+import { useMemo } from "react";
+import { Bookmark, Send, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { reasonLine } from "@/components/QuestCard";
-import { Button } from "@/components/ui-kit";
+import { Button, PageHeader } from "@/components/ui-kit";
 import { QUESTS, getQuest } from "@/data/quests";
 import { NEARBY_STUDENTS } from "@/data/people";
 import { questImage, questPhoto } from "@/lib/imagery";
 import { actions, useUserState } from "@/lib/store";
 import { CAMPUS_ORIGIN, currentTimeSlot, distanceMi, recommend } from "@/lib/engine";
+import { QuestRouteMap } from "@/components/QuestRouteMap";
+import { BackButton } from "@/components/BackButton";
 
 export const Route = createFileRoute("/quest/$questId")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    ...(search["from"] === "feed" ? { from: "feed" as const } : {}),
+  }),
   loader: ({ params }) => {
     const quest = getQuest(params.questId);
     return { title: quest?.title ?? null, hook: quest?.hook ?? null };
   },
   head: ({ loaderData }) => {
     if (!loaderData?.title) {
-      return { meta: [{ title: "Quest unavailable — wego" }, { name: "robots", content: "noindex" }] };
+      return {
+        meta: [{ title: "Quest unavailable — wego" }, { name: "robots", content: "noindex" }],
+      };
     }
     return {
       meta: [
@@ -36,8 +43,8 @@ export const Route = createFileRoute("/quest/$questId")({
 
 function QuestDetail() {
   const { questId } = Route.useParams();
+  const { from } = Route.useSearch();
   const state = useUserState();
-  const [started, setStarted] = useState(false);
 
   const quest = useMemo(
     () => state.createdQuests.find((q) => q.id === questId) ?? getQuest(questId),
@@ -53,7 +60,7 @@ function QuestDetail() {
         vibes: [],
         chaos: 3,
         timeSlot: currentTimeSlot(),
-        origin: CAMPUS_ORIGIN,
+        origin: state.approximateLocation ?? CAMPUS_ORIGIN,
         radiusMi: 10,
         squadIds: state.squadIds,
       },
@@ -69,32 +76,29 @@ function QuestDetail() {
   const squad = NEARBY_STUDENTS.filter((u) => state.squadIds.includes(u.id));
   const saved = state.saved.includes(quest.id);
   const completed = state.completed.includes(quest.id);
-  const distance = distanceMi(CAMPUS_ORIGIN, quest.location);
-  const rivalId = state.completed.find((id) => id !== quest.id);
-  const rival = rivalId ? getQuest(rivalId) : undefined;
+  const distance = distanceMi(state.approximateLocation ?? CAMPUS_ORIGIN, quest.location);
 
   const quiet =
     "inline-flex min-h-11 items-center gap-2 px-1 text-sm font-medium text-muted-foreground hover:text-foreground";
 
   return (
     <AppShell>
-      <Link to="/" className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
-        <ArrowLeft aria-hidden className="h-4 w-4" /> Back
-      </Link>
+      <BackButton fallback={from === "feed" ? "/feed" : "/"} label={from === "feed" ? "Back to Feed" : "Back"} />
 
-      <article className="mt-2">
+      <article className="mx-auto mt-2 max-w-4xl">
+        <PageHeader eyebrow="a side quest" title={quest.title} />
         <img
           src={questImage(quest)}
           alt={`${quest.location.name}, ${quest.location.area}`}
           width={1200}
           height={912}
-           className="aspect-[4/3] w-full border border-foreground bg-muted object-cover"
+          className="mx-auto mt-0 aspect-[16/9] max-h-[420px] w-full max-w-3xl border border-foreground bg-muted object-cover"
         />
         <a
           href={questPhoto(quest).source}
           target="_blank"
           rel="noreferrer"
-          className="mt-2 inline-block text-xs text-muted-foreground"
+          className="mx-auto mt-2 block w-fit text-xs text-muted-foreground"
         >
           Photo: {questPhoto(quest).credit} · {questPhoto(quest).license}
         </a>
@@ -110,16 +114,15 @@ function QuestDetail() {
             Open in Google Maps
           </a>
         </p>
-         <h1 className="mt-2 text-5xl font-medium leading-tight sm:text-6xl">{quest.title}</h1>
-        <p className="mt-5 text-xl leading-relaxed">{quest.hook}</p>
+        <QuestRouteMap destination={quest.location} origin={state.approximateLocation ?? CAMPUS_ORIGIN} />
         {scored ? <p className="mt-3 text-muted-foreground">{reasonLine(scored)}</p> : null}
 
-         <h2 className="mt-12 font-hand text-xl text-foreground">the quest</h2>
+        <h2 className="mt-12 font-hand text-xl text-foreground">the quest</h2>
         <p className="mt-3 text-lg leading-relaxed">{quest.mission}</p>
         <ol className="mt-6 space-y-5">
           {quest.steps.map((step, index) => (
             <li key={step} className="grid grid-cols-[2rem_1fr] gap-2">
-               <span className="font-hand text-2xl leading-none text-foreground">{index + 1}</span>
+              <span className="font-hand text-2xl leading-none text-foreground">{index + 1}</span>
               <span className="text-[17px] leading-relaxed">{step}</span>
             </li>
           ))}
@@ -127,7 +130,8 @@ function QuestDetail() {
 
         <p className="mt-12 border-y border-border py-4 text-[15px] font-medium">
           {distance.toFixed(1)} mi · {quest.durationMin} min ·{" "}
-          {quest.costPerPerson === 0 ? "Free" : `$${quest.costPerPerson} each`} · {quest.groupMin}–{quest.groupMax} people
+          {quest.costPerPerson === 0 ? "Free" : `$${quest.costPerPerson} each`} · {quest.groupMin}–
+          {quest.groupMax} people
         </p>
 
         <div className="mt-8">
@@ -135,35 +139,45 @@ function QuestDetail() {
             <Button variant="outline" full disabled>
               Done. Nice.
             </Button>
-          ) : started ? (
-            <Button
-              full
-              onClick={() => {
-                const earned = actions.complete(quest.id, quest.title);
-                toast.success(
-                  state.squadIds.length ? `Quest done with the squad. +${earned} XP` : `Quest done. +${earned} XP`,
-                );
-              }}
-            >
-              I did it
-            </Button>
           ) : (
-            <Button full onClick={() => setStarted(true)}>
-              Start quest
-            </Button>
+            <Link to="/go/$questId" params={{ questId: quest.id }} className="inline-flex min-h-12 w-full items-center justify-center rounded-md bg-primary px-6 text-[15px] font-medium text-primary-foreground hover:opacity-90">Plan this quest</Link>
           )}
         </div>
         <div className="mt-3 flex flex-wrap justify-center gap-6">
-          <button type="button" className={quiet} onClick={() => actions.toggleSave(quest.id)} aria-pressed={saved}>
+          <button
+            type="button"
+            className={quiet}
+            onClick={() => actions.toggleSave(quest.id)}
+            aria-pressed={saved}
+          >
             <Bookmark aria-hidden className="h-4 w-4" fill={saved ? "currentColor" : "none"} />
             {saved ? "Saved" : "Save"}
           </button>
           <button
             type="button"
             className={quiet}
-            onClick={() =>
-              toast(squad.length ? `Sent to ${squad.map((s) => s.name).join(" & ")}` : "Add people to your squad first")
-            }
+            onClick={async () => {
+              if (!squad.length) {
+                toast("Add people to your squad first");
+                return;
+              }
+              const url = window.location.href;
+              try {
+                if (navigator.share) {
+                  await navigator.share({
+                    title: quest.title,
+                    text: "Want to do this quest with me?",
+                    url,
+                  });
+                } else {
+                  await navigator.clipboard.writeText(url);
+                  toast.success("Quest link copied. Send it to your squad.");
+                }
+              } catch (error) {
+                if (!(error instanceof Error && error.name === "AbortError"))
+                  toast.error("Could not share this quest.");
+              }
+            }}
           >
             <Send aria-hidden className="h-4 w-4" /> Send to squad
           </button>
@@ -181,30 +195,6 @@ function QuestDetail() {
           </button>
         </div>
 
-        {completed && rival ? (
-          <section className="mt-16 border-t border-border pt-8">
-            <h2 className="text-2xl font-bold">Which was better?</h2>
-            <p className="mt-1 text-muted-foreground">Helps us pick your next one.</p>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              {[
-                [quest, rival],
-                [rival, quest],
-              ].map(([win, lose]) => (
-                <Button
-                  key={win!.id}
-                  variant="outline"
-                  full
-                  onClick={() => {
-                    actions.rank(win!.id, lose!.id);
-                    toast("Got it");
-                  }}
-                >
-                  {win!.title}
-                </Button>
-              ))}
-            </div>
-          </section>
-        ) : null}
       </article>
     </AppShell>
   );
