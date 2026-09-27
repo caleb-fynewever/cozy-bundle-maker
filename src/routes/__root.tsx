@@ -9,7 +9,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
@@ -133,17 +133,19 @@ function RootComponent() {
   const pathname = useRouterState({ select: (routerState) => routerState.location.pathname });
   const onAuthPage = pathname === "/auth";
   const onSetupPage = pathname === "/setup";
-
-  useEffect(() => {
-    if (!loading) bindUser(session?.user.id ?? null);
-  }, [loading, session?.user.id]);
   const userState = useUserState();
   const userId = session?.user.id ?? null;
+  const [checkedProfileFor, setCheckedProfileFor] = useState<string | null>(null);
 
-  // If this device has no local setup but the account already has a profile,
-  // restore it instead of forcing setup again.
+  // Bind local state and restore the account profile before deciding whether
+  // setup is needed. This avoids redirecting returning users to /setup first.
   useEffect(() => {
-    if (loading || !userId || userState.configured) return;
+    if (loading) return;
+    bindUser(userId);
+    if (!userId) {
+      setCheckedProfileFor(null);
+      return;
+    }
     let cancelled = false;
     getMyProfile()
       .then((profile) => {
@@ -158,20 +160,25 @@ function RootComponent() {
         }));
       })
       .catch(() => {
-        /* offline or hiccup — leave the gate as-is */
+        /* offline or hiccup — fall back to this device's saved setup */
+      })
+      .finally(() => {
+        if (!cancelled) setCheckedProfileFor(userId);
       });
     return () => {
       cancelled = true;
     };
-  }, [loading, userId, userState.configured]);
+  }, [loading, userId]);
 
   let body: ReactNode;
-  if (loading) {
+  if (loading || (userId && checkedProfileFor !== userId)) {
     body = <div className="min-h-screen bg-background" />;
   } else if (!session && !onAuthPage) {
     body = <Navigate to="/auth" replace />;
   } else if (session && !userState.configured && !onSetupPage) {
     body = <Navigate to="/setup" replace />;
+  } else if (session && userState.configured && onSetupPage) {
+    body = <Navigate to="/" replace />;
   } else {
     body = <Outlet />;
   }
