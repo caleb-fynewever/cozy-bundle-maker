@@ -102,6 +102,8 @@ export type DemoUser = {
   preferredGroup: [number, number];
   taste: Record<Vibe, number>;
   socials?: { instagram?: string; tiktok?: string; x?: string; github?: string };
+  /** Profile photo under /public. Without one the avatar shows an initial. */
+  photo?: string;
 };
 
 export type SessionContext = {

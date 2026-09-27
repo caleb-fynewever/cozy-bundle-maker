@@ -20,6 +20,10 @@ processEnv["VITE_SUPABASE_PUBLISHABLE_KEY"] ??=
   "sb_publishable_CnQHNZirCr8CkFC44irEzg_iMPYLO1F";
 
 for (const key of [
+  "SUPABASE_URL",
+  "SUPABASE_PUBLISHABLE_KEY",
+  "LOVABLE_API_KEY",
+  "LOVABLE_SEND_URL",
   "ANTHROPIC_API_KEY",
   "RESEND_API_KEY",
   "EMAIL_FROM",

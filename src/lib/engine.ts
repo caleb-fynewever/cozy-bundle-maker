@@ -1,4 +1,4 @@
-import { QUESTS } from "@/data/quests";
+import { ALL_QUESTS, QUESTS } from "@/data/quests";
 import { NEARBY_STUDENTS } from "@/data/people";
 import { VIBES, type DemoUser, type Quest, type SessionContext, type TasteVector, type TimeSlot, type Vibe } from "@/lib/types";
 import type { UserState } from "@/lib/store";
@@ -40,7 +40,7 @@ export function distanceMi(a: { lat: number; lng: number }, b: { lat: number; ln
 }
 
 /** Weighted taste vector: completions count most, saves add interest, passes subtract. */
-export function buildTasteVector(state: UserState, quests: Quest[] = QUESTS): TasteVector {
+export function buildTasteVector(state: UserState, quests: Quest[] = ALL_QUESTS): TasteVector {
   const byId = new Map(quests.map((q) => [q.id, q]));
   const taste = emptyTaste();
   const events: { quest: Quest; weight: number }[] = [];
@@ -216,7 +216,7 @@ function scoreQuest(
 
   const seenVibes = new Set(
     [...state.completed, ...state.saved].flatMap(
-      (id) => QUESTS.find((q) => q.id === id)?.vibes ?? [],
+      (id) => ALL_QUESTS.find((q) => q.id === id)?.vibes ?? [],
     ),
   );
   const unseenVibes = quest.vibes.filter((v) => !seenVibes.has(v)).length;

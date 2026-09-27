@@ -1,0 +1,598 @@
+/*
+ * Quest detail, Let's go, Lists and Map. Colors only through the semantic tokens in ../styles.css.
+ * Motion: transform and opacity (plus a paint-only strike line), tokens from :root.
+ */
+@layer components {
+  /* ---------------------------------------------------------------------------------------------
+   * Route stops: a quest's steps as stops on a walk. Numbers sit in small paper discs joined by a
+   * dashed path, and the last stop is the clover finish. On /go they can be ticked off.
+   * ------------------------------------------------------------------------------------------- */
+  .route-stops {
+    display: grid;
+    gap: 20px;
+  }
+
+  .route-stop {
+    position: relative;
+    font-size: 17px;
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
+
+  .route-stop > .route-stop-body {
+    display: block;
+    padding-left: 44px;
+  }
+
+  /*
+   * The walked path from this stop's disc down to the next one: dotted like the stamp's inner ring,
+   * from just under this disc until it tucks under the next.
+   */
+  .route-stop:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    left: 13px;
+    top: 30px;
+    bottom: -22px;
+    border-left: 2px dotted color-mix(in srgb, var(--muted-foreground) 48%, transparent);
+    pointer-events: none;
+  }
+
+  /* Room under the last disc for its "finish" note. */
+  .route-stop:last-child {
+    min-height: 46px;
+  }
+
+  .route-stop-dot {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: grid;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border: 1px solid var(--border-strong);
+    border-radius: 9999px;
+    background: var(--card);
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    transition:
+      transform var(--dur-quick) var(--ease-spring),
+      background-color var(--dur-quick) var(--ease-out),
+      color var(--dur-quick) var(--ease-out);
+  }
+
+  .route-stop-dot[data-last] {
+    background: var(--primary);
+  }
+
+  /* The finish, said in the margin under the clover disc. */
+  .route-stop-dot[data-last]::after {
+    content: "finish";
+    position: absolute;
+    top: calc(100% + 3px);
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--muted-foreground);
+    font-family: var(--font-hand);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .route-stop-dot[data-ticked] {
+    background: var(--foreground);
+    color: var(--background);
+  }
+
+  /* A tickable stop is one full-width button: tap anywhere on the row. */
+  .route-stop-toggle {
+    position: relative;
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    padding-left: 44px;
+    border-radius: var(--radius-md);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .route-stop-toggle .route-stop-dot {
+    top: 0;
+  }
+
+  @media (hover: hover) {
+    .route-stop-toggle:hover .route-stop-dot:not([data-ticked]) {
+      background: var(--surface);
+    }
+  }
+
+  .route-stop-toggle:active .route-stop-dot {
+    transform: scale(0.9);
+    transition-duration: var(--dur-press);
+  }
+
+  /* The strike runs along every line of a wrapped step, drawn left to right. */
+  .route-strike {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-repeat: no-repeat;
+    background-position: 0 60%;
+    background-size: 0% 2px;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    transition:
+      background-size 300ms var(--ease-out),
+      color var(--dur-quick) var(--ease-out);
+  }
+
+  .route-stop-toggle[aria-checked="true"] .route-strike {
+    background-size: 100% 2px;
+    color: var(--muted-foreground);
+  }
+
+  /* ---------------------------------------------------------------------------------------------
+   * The action dock: a stage's one action rides above the tab bar until you scroll to it. At rest
+   * it is just the buttons on the page; while it floats, a paper ticket slides in under them.
+   * ------------------------------------------------------------------------------------------- */
+  .quest-dock {
+    position: sticky;
+    bottom: calc(88px + env(safe-area-inset-bottom));
+    z-index: 30;
+    isolation: isolate;
+  }
+
+  @media (min-width: 768px) {
+    .quest-dock {
+      bottom: 24px;
+    }
+  }
+
+  .quest-dock::before {
+    content: "";
+    position: absolute;
+    inset: -8px;
+    z-index: -1;
+    border: 1px solid var(--foreground);
+    border-radius: calc(var(--radius) + 4px);
+    background: var(--card);
+    box-shadow: var(--shadow-paper);
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+    transition:
+      opacity var(--dur-quick) var(--ease-out),
+      transform var(--dur-base) var(--ease-out);
+    pointer-events: none;
+  }
+
+  .quest-dock[data-stuck]::before {
+    opacity: 1;
+    transform: none;
+  }
+
+  /*
+   * Phones: the ticket rests just above the glass tab bar, so it takes the bar's edges (16px from
+   * the screen), a rounder corner, a soft hairline and the bar's own shadow: one bottom area.
+   */
+  @media (max-width: 767.98px) {
+    .quest-dock::before {
+      inset: -8px -4px;
+      border-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+      border-radius: 24px;
+      box-shadow:
+        0 14px 34px -14px color-mix(in srgb, var(--foreground) 38%, transparent),
+        0 2px 6px -2px color-mix(in srgb, var(--foreground) 10%, transparent);
+    }
+  }
+
+  /* ---------------------------------------------------------------------------------------------
+   * Let's go: stage changes, the rating sliders, the proof photo.
+   * ------------------------------------------------------------------------------------------- */
+  .stage-in {
+    animation: stage-in 320ms var(--ease-out) backwards;
+  }
+
+  /* The XP receipt under the postmark: it fades up once the stamp has landed. */
+  .xp-receipt {
+    opacity: 0;
+    transform: translateY(6px);
+    transition:
+      opacity var(--dur-base) var(--ease-out),
+      transform var(--dur-slow) var(--ease-spring);
+  }
+
+  .xp-receipt[data-ready] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .quest-range {
+    --pct: 50%;
+    display: block;
+    width: 100%;
+    height: 44px;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    touch-action: pan-y;
+  }
+
+  .quest-range:focus-visible {
+    outline: none;
+  }
+
+  .quest-range::-webkit-slider-runnable-track {
+    height: 10px;
+    border: 1px solid var(--foreground);
+    border-radius: 9999px;
+    background: linear-gradient(to right, var(--primary) var(--pct), var(--card) var(--pct));
+  }
+
+  .quest-range::-webkit-slider-thumb {
+    box-sizing: border-box;
+    width: 26px;
+    height: 26px;
+    margin-top: -9px;
+    border: 2px solid var(--foreground);
+    border-radius: 9999px;
+    background: var(--card);
+    box-shadow: 0 2px 0 var(--foreground);
+    -webkit-appearance: none;
+    appearance: none;
+    transition: transform var(--dur-quick) var(--ease-spring);
+  }
+
+  .quest-range:active::-webkit-slider-thumb {
+    transform: scale(1.12);
+    transition-duration: var(--dur-press);
+  }
+
+  .quest-range:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  .quest-range::-moz-range-track {
+    box-sizing: border-box;
+    height: 10px;
+    border: 1px solid var(--foreground);
+    border-radius: 9999px;
+    background: var(--card);
+  }
+
+  .quest-range::-moz-range-progress {
+    box-sizing: border-box;
+    height: 10px;
+    border: 1px solid var(--foreground);
+    border-radius: 9999px;
+    background: var(--primary);
+  }
+
+  .quest-range::-moz-range-thumb {
+    box-sizing: border-box;
+    width: 26px;
+    height: 26px;
+    border: 2px solid var(--foreground);
+    border-radius: 9999px;
+    background: var(--card);
+    box-shadow: 0 2px 0 var(--foreground);
+    transition: transform var(--dur-quick) var(--ease-spring);
+  }
+
+  .quest-range:active::-moz-range-thumb {
+    transform: scale(1.12);
+  }
+
+  .quest-range:focus-visible::-moz-range-thumb {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* Not rated yet: an empty track and a dashed thumb, so it never looks like a 5. */
+  .quest-range[data-unrated]::-webkit-slider-runnable-track {
+    background: var(--card);
+  }
+
+  .quest-range[data-unrated]::-webkit-slider-thumb {
+    border-style: dashed;
+    box-shadow: none;
+  }
+
+  .quest-range[data-unrated]::-moz-range-progress {
+    background: transparent;
+    border-color: transparent;
+  }
+
+  .quest-range[data-unrated]::-moz-range-thumb {
+    border-style: dashed;
+    box-shadow: none;
+  }
+
+  /* 0 to 10 under the track, centred on where the thumb's centre can go. */
+  .quest-ticks {
+    display: flex;
+    justify-content: space-between;
+    height: 24px;
+    padding-inline: 13px;
+  }
+
+  .quest-ticks > span {
+    position: relative;
+    width: 1px;
+    height: 5px;
+    background: var(--border);
+  }
+
+  .quest-ticks > span[data-label] {
+    height: 7px;
+    background: var(--muted-foreground);
+  }
+
+  .quest-ticks > span[data-label]::after {
+    content: attr(data-label);
+    position: absolute;
+    top: 9px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--muted-foreground);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .proof-in {
+    animation: proof-in 280ms var(--ease-out) backwards;
+  }
+
+  /* ---------------------------------------------------------------------------------------------
+   * Lists: a row's directions settle in (fade and a small drop; the height just opens), and the
+   * "just added" wash.
+   * ------------------------------------------------------------------------------------------- */
+  .list-directions {
+    animation: list-directions-in var(--dur-base) var(--ease-out) backwards;
+  }
+
+  .list-row[data-arrived]::before {
+    content: "";
+    position: absolute;
+    inset: 0 -12px;
+    z-index: -1;
+    border-radius: var(--radius-md);
+    background: var(--secondary);
+    opacity: 0;
+    animation: list-arrive 1600ms var(--ease-out) 250ms backwards;
+    pointer-events: none;
+  }
+
+  /* ---------------------------------------------------------------------------------------------
+   * Map: pins, the quest card, the hint and the loading note.
+   * ------------------------------------------------------------------------------------------- */
+  .quest-pin {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 9999px;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .quest-pin:focus-visible {
+    outline: none;
+  }
+
+  .quest-pin-dot {
+    position: relative;
+    display: block;
+    width: 18px;
+    height: 18px;
+    border: 3px solid var(--card);
+    border-radius: 9999px;
+    background: var(--primary);
+    box-shadow: 0 1px 3px color-mix(in srgb, var(--foreground) 40%, transparent);
+    pointer-events: none;
+    transition: transform 220ms var(--ease-spring);
+  }
+
+  .quest-pin[data-drop] .quest-pin-dot {
+    animation: pin-drop 240ms var(--ease-out) backwards;
+    animation-delay: var(--drop-delay, 0ms);
+  }
+
+  .quest-pin[data-picked] .quest-pin-dot {
+    transform: scale(1.55);
+    box-shadow:
+      0 0 0 1.5px var(--foreground),
+      0 2px 6px color-mix(in srgb, var(--foreground) 40%, transparent);
+  }
+
+  .quest-pin:focus-visible .quest-pin-dot {
+    box-shadow:
+      0 0 0 2px var(--card),
+      0 0 0 4px var(--foreground);
+  }
+
+  /* Saved: a small ink centre, like a pin pushed through. */
+  .quest-pin[data-saved] .quest-pin-dot::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border-radius: 9999px;
+    background: var(--foreground);
+  }
+
+  /* Done: ink with a paper check. */
+  .quest-pin[data-done] .quest-pin-dot {
+    background: var(--foreground);
+  }
+
+  .quest-pin[data-done] .quest-pin-dot::after {
+    content: "";
+    position: absolute;
+    inset: auto;
+    left: 4.25px;
+    top: 1.75px;
+    width: 3.5px;
+    height: 6.5px;
+    border: solid var(--card);
+    border-width: 0 1.6px 1.6px 0;
+    border-radius: 0;
+    background: none;
+    transform: rotate(45deg);
+  }
+
+  .map-card {
+    animation: map-card-in var(--dur-slow) var(--ease-spring) backwards;
+  }
+
+  .map-card-swap {
+    animation: map-card-swap var(--dur-quick) var(--ease-out) backwards;
+  }
+
+  .map-hint {
+    animation: map-fade-in var(--dur-base) var(--ease-out) 400ms backwards;
+  }
+
+  .map-loading {
+    animation: map-fade-in var(--dur-base) var(--ease-out) 300ms backwards;
+    transition: opacity var(--dur-quick) var(--ease-in);
+  }
+
+  .map-loading[data-done] {
+    opacity: 0;
+  }
+}
+
+@keyframes stage-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes proof-in {
+  from {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes list-directions-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes list-arrive {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes pin-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes map-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@keyframes map-card-swap {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes map-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/*
+ * Let's go morph: the quest photo glides between the page it was on and the plan's thumbnail
+ * (the name is on the quest hero and the /go thumbnail, and on a clicked row or map card).
+ */
+::view-transition-group(quest-photo) {
+  animation-duration: var(--dur-slow);
+  animation-timing-function: var(--ease-out);
+}
+
+::view-transition-old(quest-photo),
+::view-transition-new(quest-photo) {
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0s !important;
+  }
+}
+
+/*
+ * MapLibre's own stylesheet is unlayered, so these overrides have to be too (a layered rule loses
+ * to an unlayered one whatever its specificity). Scoped to the quest map.
+ */
+/*
+ * Where pins overlap, the ones that mean something to you (done, saved) sit on top of plain ones.
+ * The picked pin is raised above both inline (z-index 2) by QuestMap.
+ */
+.wego-map .quest-pin[data-saved],
+.wego-map .quest-pin[data-done] {
+  z-index: 1;
+}
+
+.wego-map .maplibregl-ctrl-group:not(:empty) {
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: none;
+}
+
+.wego-map .maplibregl-ctrl-group button {
+  width: 44px;
+  height: 44px;
+}
+
+.wego-map .maplibregl-ctrl-group button + button {
+  border-top: 1px solid var(--border);
+}
+
+.wego-map .maplibregl-ctrl-group button:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--ring);
+}
+
+.wego-map .maplibregl-ctrl-top-right .maplibregl-ctrl {
+  margin: 12px 12px 0 0;
+}
+
+@media (min-width: 768px) {
+  .wego-map .maplibregl-ctrl-top-right .maplibregl-ctrl {
+    margin: 20px 20px 0 0;
+  }
+}
+
+.wego-map .maplibregl-ctrl-attrib {
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  font-size: 10px;
+}

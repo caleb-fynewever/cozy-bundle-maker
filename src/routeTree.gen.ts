@@ -14,6 +14,8 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CreateRouteImport } from './routes/create'
 import { Route as FeedRouteImport } from './routes/feed'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
+import { Route as ListsRouteImport } from './routes/lists'
+import { Route as MapRouteImport } from './routes/map'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
@@ -47,6 +49,16 @@ const FeedRoute = FeedRouteImport.update({
 const LeaderboardRoute = LeaderboardRouteImport.update({
   id: '/leaderboard',
   path: '/leaderboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ListsRoute = ListsRouteImport.update({
+  id: '/lists',
+  path: '/lists',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MapRoute = MapRouteImport.update({
+  id: '/map',
+  path: '/map',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -102,6 +114,8 @@ export interface FileRoutesByFullPath {
   '/create': typeof CreateRoute
   '/feed': typeof FeedRoute
   '/leaderboard': typeof LeaderboardRoute
+  '/lists': typeof ListsRoute
+  '/map': typeof MapRoute
   '/profile': typeof ProfileRoute
   '/setup': typeof SetupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -118,6 +132,8 @@ export interface FileRoutesByTo {
   '/create': typeof CreateRoute
   '/feed': typeof FeedRoute
   '/leaderboard': typeof LeaderboardRoute
+  '/lists': typeof ListsRoute
+  '/map': typeof MapRoute
   '/profile': typeof ProfileRoute
   '/setup': typeof SetupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -135,6 +151,8 @@ export interface FileRoutesById {
   '/create': typeof CreateRoute
   '/feed': typeof FeedRoute
   '/leaderboard': typeof LeaderboardRoute
+  '/lists': typeof ListsRoute
+  '/map': typeof MapRoute
   '/profile': typeof ProfileRoute
   '/setup': typeof SetupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -153,6 +171,8 @@ export interface FileRouteTypes {
     | '/create'
     | '/feed'
     | '/leaderboard'
+    | '/lists'
+    | '/map'
     | '/profile'
     | '/setup'
     | '/sitemap.xml'
@@ -169,6 +189,8 @@ export interface FileRouteTypes {
     | '/create'
     | '/feed'
     | '/leaderboard'
+    | '/lists'
+    | '/map'
     | '/profile'
     | '/setup'
     | '/sitemap.xml'
@@ -185,6 +207,8 @@ export interface FileRouteTypes {
     | '/create'
     | '/feed'
     | '/leaderboard'
+    | '/lists'
+    | '/map'
     | '/profile'
     | '/setup'
     | '/sitemap.xml'
@@ -202,6 +226,8 @@ export interface RootRouteChildren {
   CreateRoute: typeof CreateRoute
   FeedRoute: typeof FeedRoute
   LeaderboardRoute: typeof LeaderboardRoute
+  ListsRoute: typeof ListsRoute
+  MapRoute: typeof MapRoute
   ProfileRoute: typeof ProfileRoute
   SetupRoute: typeof SetupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -248,6 +274,20 @@ declare module '@tanstack/react-router' {
       path: '/leaderboard'
       fullPath: '/leaderboard'
       preLoaderRoute: typeof LeaderboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lists': {
+      id: '/lists'
+      path: '/lists'
+      fullPath: '/lists'
+      preLoaderRoute: typeof ListsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/map': {
+      id: '/map'
+      path: '/map'
+      fullPath: '/map'
+      preLoaderRoute: typeof MapRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -322,6 +362,8 @@ const rootRouteChildren: RootRouteChildren = {
   CreateRoute: CreateRoute,
   FeedRoute: FeedRoute,
   LeaderboardRoute: LeaderboardRoute,
+  ListsRoute: ListsRoute,
+  MapRoute: MapRoute,
   ProfileRoute: ProfileRoute,
   SetupRoute: SetupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,

@@ -42,13 +42,29 @@ export type UserState = {
   hearted: string[];
   /** Your comments on any post, keyed by post id. */
   comments: Record<string, FeedComment[]>;
+  xpSeen: number;
+  stampsSeen: string[];
+  ranksSeen: Record<string, number>;
 };
+
+export type CompleteSnapshot = Pick<
+  UserState,
+  "streak" | "lastQuestDay" | "saved" | "passed" | "inProgress" | "scheduledQuests"
+>;
 
 export type ApproximateLocation = { lat: number; lng: number; label: string };
 export type ScheduledQuest = { questId: string; when: string; endWhen?: string };
 export type UserSquad = { id: string; name: string; leaderId: string; memberIds: string[] };
 export type Friend = { id: string; name: string; email: string };
-export type SquadInvite = { id: string; personId: string; personName: string; squadId?: string; squadName?: string; direction: "sent" | "received"; at: number };
+export type SquadInvite = {
+  id: string;
+  personId: string;
+  personName: string;
+  squadId?: string;
+  squadName?: string;
+  direction: "sent" | "received";
+  at: number;
+};
 export type XpKind = "complete" | "squad" | "create" | "join" | "verify";
 export type XpEvent = { kind: XpKind; xp: number; at: number; label: string; refId?: string };
 
@@ -89,6 +105,9 @@ const initialState: UserState = {
   posts: [],
   hearted: [],
   comments: {},
+  xpSeen: 0,
+  stampsSeen: [],
+  ranksSeen: {},
 };
 
 let state: UserState = initialState;
@@ -140,17 +159,31 @@ export function hydrate() {
       // Accounts from before setup existed count as configured if they have real activity.
       if (parsed.configured === undefined) {
         state.configured = Boolean(
-          parsed.xp || parsed.squads?.length || parsed.completed?.length || (parsed.name && parsed.name !== "You"),
+          parsed.xp ||
+          parsed.squads?.length ||
+          parsed.completed?.length ||
+          (parsed.name && parsed.name !== "You"),
         );
       }
       state.inProgress = state.inProgress.filter((id) => !state.completed.includes(id)).slice(-1);
-      state.scheduledQuests = state.scheduledQuests.filter((item) => !state.completed.includes(item.questId) && !state.inProgress.includes(item.questId));
+      state.scheduledQuests = state.scheduledQuests.filter(
+        (item) =>
+          !state.completed.includes(item.questId) && !state.inProgress.includes(item.questId),
+      );
       if (!Array.isArray(parsed.squads) && state.squadIds.length) {
-        state.squads = [{ id: "squad_main", name: "My squad", leaderId: parsed.squadLeaderId ?? "me", memberIds: state.squadIds }];
+        state.squads = [
+          {
+            id: "squad_main",
+            name: "My squad",
+            leaderId: parsed.squadLeaderId ?? "me",
+            memberIds: state.squadIds,
+          },
+        ];
         state.activeSquadId = "squad_main";
       }
       state.squads = Array.isArray(state.squads) ? state.squads : [];
-      if (!state.squads.some((squad) => squad.id === state.activeSquadId)) state.activeSquadId = state.squads[0]?.id ?? null;
+      if (!state.squads.some((squad) => squad.id === state.activeSquadId))
+        state.activeSquadId = state.squads[0]?.id ?? null;
       state.squadIds = [...new Set(state.squads.flatMap((squad) => squad.memberIds))];
       const activeSquad = state.squads.find((squad) => squad.id === state.activeSquadId);
       state.squadLeaderId = activeSquad?.leaderId ?? null;
@@ -187,7 +220,9 @@ export function hydrate() {
 }
 
 export function setState(update: (current: UserState) => UserState) {
-  state = update(state);
+  const next = update(state);
+  if (next === state) return;
+  state = next;
   persist();
   emit();
 }
@@ -224,6 +259,13 @@ function nextStreak(s: UserState) {
   return s.lastQuestDay === yesterday ? s.streak + 1 : 1;
 }
 
+/** `list` with `id` added at `at` (or at the end). */
+function insertAt(list: string[], id: string, at?: number) {
+  const rest = list.filter((x) => x !== id);
+  if (at === undefined || at < 0 || at >= rest.length) return [...rest, id];
+  return [...rest.slice(0, at), id, ...rest.slice(at)];
+}
+
 function gain(
   s: UserState,
   kind: XpKind,
@@ -238,10 +280,10 @@ function gain(
 }
 
 export const actions = {
-  toggleSave(id: string) {
+  toggleSave(id: string, at?: number) {
     setState((s) => {
       if (s.saved.includes(id)) return { ...s, saved: s.saved.filter((x) => x !== id) };
-      return { ...s, saved: [...s.saved, id] };
+      return { ...s, saved: insertAt(s.saved, id, at) };
     });
   },
   pass(id: string) {
@@ -257,6 +299,64 @@ export const actions = {
       return {
         ...s,
         saved: s.saved.filter((x) => x !== id),
+      };
+    });
+  },
+  /** The profile pressed these stamps in; they won't animate again. */
+  seeStamps(ids: string[]) {
+    setState((s) =>
+      ids.every((id) => s.stampsSeen.includes(id))
+        ? s
+        : { ...s, stampsSeen: [...new Set([...s.stampsSeen, ...ids])] },
+    );
+  },
+  /** Remember the rank a leaderboard last showed you. */
+  seeRank(board: string, rank: number) {
+    setState((s) =>
+      s.ranksSeen[board] === rank ? s : { ...s, ranksSeen: { ...s.ranksSeen, [board]: rank } },
+    );
+  },
+  /** Several boards at once, in one write. */
+  seeRanks(patch: Record<string, number>) {
+    setState((s) =>
+      Object.entries(patch).every(([board, rank]) => s.ranksSeen[board] === rank)
+        ? s
+        : { ...s, ranksSeen: { ...s.ranksSeen, ...patch } },
+    );
+  },
+  /** The profile bar finished showing this much XP. */
+  seeXp(xp: number) {
+    setState((s) => (s.xpSeen === xp ? s : { ...s, xpSeen: xp }));
+  },
+  /** Takes back a "Did it" from the deck: everything complete() changed for that quest goes back. */
+  undoComplete(id: string, before: CompleteSnapshot) {
+    setState((s) => {
+      if (!s.completed.includes(id)) return s;
+      const earned = s.log.filter(
+        (e) => e.refId === id && (e.kind === "complete" || e.kind === "squad"),
+      );
+      // Put the id back where it was in each list complete() took it out of.
+      const restore = (was: string[], now: string[]) => {
+        const at = was.indexOf(id);
+        if (at < 0 || now.includes(id)) return now;
+        const rest = now.filter((x) => x !== id);
+        return [...rest.slice(0, at), id, ...rest.slice(at)];
+      };
+      const scheduled = before.scheduledQuests.find((item) => item.questId === id);
+      return {
+        ...s,
+        completed: s.completed.filter((x) => x !== id),
+        xp: Math.max(0, s.xp - earned.reduce((sum, e) => sum + e.xp, 0)),
+        log: s.log.filter((e) => !earned.includes(e)),
+        streak: before.streak,
+        lastQuestDay: before.lastQuestDay,
+        saved: restore(before.saved, s.saved),
+        passed: restore(before.passed, s.passed),
+        inProgress: before.inProgress.includes(id) ? [id] : s.inProgress,
+        scheduledQuests:
+          scheduled && !s.scheduledQuests.some((item) => item.questId === id)
+            ? [...s.scheduledQuests, scheduled]
+            : s.scheduledQuests,
       };
     });
   },
@@ -286,23 +386,45 @@ export const actions = {
     return earned;
   },
   startQuest(id: string) {
-    setState((s) => s.completed.includes(id) || (s.inProgress.length === 1 && s.inProgress[0] === id)
-      ? s
-      : { ...s, inProgress: [id], scheduledQuests: s.scheduledQuests.filter((item) => item.questId !== id), saved: s.saved.filter((questId) => questId !== id) });
+    setState((s) =>
+      s.completed.includes(id) || (s.inProgress.length === 1 && s.inProgress[0] === id)
+        ? s
+        : {
+            ...s,
+            inProgress: [id],
+            scheduledQuests: s.scheduledQuests.filter((item) => item.questId !== id),
+            saved: s.saved.filter((questId) => questId !== id),
+          },
+    );
   },
   scheduleQuest(id: string, when: string, endWhen?: string) {
-    setState((s) => s.completed.includes(id) || s.inProgress.includes(id)
-      ? s
-      : {
-          ...s,
-          scheduledQuests: [...s.scheduledQuests.filter((item) => item.questId !== id), { questId: id, when, ...(endWhen ? { endWhen } : {}) }],
-          saved: s.saved.filter((questId) => questId !== id),
-        });
+    setState((s) =>
+      s.completed.includes(id) || s.inProgress.includes(id)
+        ? s
+        : {
+            ...s,
+            scheduledQuests: [
+              ...s.scheduledQuests.filter((item) => item.questId !== id),
+              { questId: id, when, ...(endWhen ? { endWhen } : {}) },
+            ],
+            saved: s.saved.filter((questId) => questId !== id),
+          },
+    );
   },
   createSquad(name: string) {
     const id = `squad_${Date.now()}`;
-    const squad: UserSquad = { id, name: name.trim() || "New squad", leaderId: "me", memberIds: [] };
-    setState((s) => ({ ...s, squads: [...s.squads, squad], activeSquadId: id, squadLeaderId: "me" }));
+    const squad: UserSquad = {
+      id,
+      name: name.trim() || "New squad",
+      leaderId: "me",
+      memberIds: [],
+    };
+    setState((s) => ({
+      ...s,
+      squads: [...s.squads, squad],
+      activeSquadId: id,
+      squadLeaderId: "me",
+    }));
     return id;
   },
   setActiveSquad(id: string) {
@@ -312,14 +434,21 @@ export const actions = {
     });
   },
   renameSquad(id: string, name: string) {
-    setState((s) => ({ ...s, squads: s.squads.map((squad) => squad.id === id ? { ...squad, name: name.trim() || squad.name } : squad) }));
+    setState((s) => ({
+      ...s,
+      squads: s.squads.map((squad) =>
+        squad.id === id && squad.leaderId === "me"
+          ? { ...squad, name: name.trim() || squad.name }
+          : squad,
+      ),
+    }));
   },
   deleteSquad(id: string) {
     setState((s) => {
       const squad = s.squads.find((item) => item.id === id);
       if (!squad || squad.leaderId !== "me") return s;
       const squads = s.squads.filter((item) => item.id !== id);
-      const activeSquadId = s.activeSquadId === id ? squads[0]?.id ?? null : s.activeSquadId;
+      const activeSquadId = s.activeSquadId === id ? (squads[0]?.id ?? null) : s.activeSquadId;
       return {
         ...s,
         squads,
@@ -335,7 +464,7 @@ export const actions = {
       const squad = s.squads.find((item) => item.id === id);
       if (!squad || squad.leaderId === "me") return s;
       const squads = s.squads.filter((item) => item.id !== id);
-      const activeSquadId = s.activeSquadId === id ? squads[0]?.id ?? null : s.activeSquadId;
+      const activeSquadId = s.activeSquadId === id ? (squads[0]?.id ?? null) : s.activeSquadId;
       return {
         ...s,
         squads,
@@ -346,13 +475,33 @@ export const actions = {
       };
     });
   },
-  inviteSquadMember(id: string, name: string, squadId: string) {
+  inviteSquadMember(id: string, name: string, squadId?: string) {
     setState((s) => {
+      squadId = squadId ?? s.activeSquadId ?? undefined;
       const squad = s.squads.find((item) => item.id === squadId);
-      if (!squad || s.squadInvites.some((invite) => invite.personId === id && invite.squadId === squadId && invite.direction === "sent")) return s;
+      if (
+        !squad ||
+        squad.leaderId !== "me" ||
+        s.squadInvites.some(
+          (invite) =>
+            invite.personId === id && invite.squadId === squadId && invite.direction === "sent",
+        )
+      )
+        return s;
       return {
         ...s,
-        squadInvites: [...s.squadInvites, { id: `invite_${id}_${Date.now()}`, personId: id, personName: name, squadId, squadName: squad.name, direction: "sent", at: Date.now() }],
+        squadInvites: [
+          ...s.squadInvites,
+          {
+            id: `invite_${id}_${Date.now()}`,
+            personId: id,
+            personName: name,
+            squadId: squad.id,
+            squadName: squad.name,
+            direction: "sent",
+            at: Date.now(),
+          },
+        ],
       };
     });
   },
@@ -362,17 +511,19 @@ export const actions = {
       if (!invite) return s;
       const squadId = invite.squadId ?? `squad_invite_${invite.id}`;
       const existingSquad = s.squads.find((item) => item.id === squadId);
-      const joinedSquad = existingSquad ? {
-        ...existingSquad,
-        memberIds: [...new Set([...existingSquad.memberIds, invite.personId])],
-      } : {
-        id: squadId,
-        name: invite.squadName ?? `${invite.personName}'s squad`,
-        leaderId: invite.personId,
-        memberIds: [invite.personId],
-      };
+      const joinedSquad = existingSquad
+        ? {
+            ...existingSquad,
+            memberIds: [...new Set([...existingSquad.memberIds, invite.personId])],
+          }
+        : {
+            id: squadId,
+            name: invite.squadName ?? `${invite.personName}'s squad`,
+            leaderId: invite.personId,
+            memberIds: [invite.personId],
+          };
       const squads = existingSquad
-        ? s.squads.map((item) => item.id === squadId ? joinedSquad : item)
+        ? s.squads.map((item) => (item.id === squadId ? joinedSquad : item))
         : [...s.squads, joinedSquad];
       return {
         ...s,
@@ -389,19 +540,42 @@ export const actions = {
     setState((s) => {
       const squad = s.squads.find((item) => item.id === squadId);
       if (!squad) return s;
-      const friends = s.friends.some((f) => f.id === friend.id) ? s.friends.map((f) => f.id === friend.id ? friend : f) : [...s.friends, friend];
+      const friends = s.friends.some((f) => f.id === friend.id)
+        ? s.friends.map((f) => (f.id === friend.id ? friend : f))
+        : [...s.friends, friend];
       if (squad.memberIds.includes(friend.id)) return { ...s, friends };
-      const squads = s.squads.map((item) => item.id === squadId ? { ...item, memberIds: [...item.memberIds, friend.id] } : item);
-      return { ...s, friends, squads, squadIds: [...new Set(squads.flatMap((item) => item.memberIds))] };
+      const squads = s.squads.map((item) =>
+        item.id === squadId ? { ...item, memberIds: [...item.memberIds, friend.id] } : item,
+      );
+      return {
+        ...s,
+        friends,
+        squads,
+        squadIds: [...new Set(squads.flatMap((item) => item.memberIds))],
+      };
     });
   },
   /** Invitee side: join the inviter's squad after accepting a real invite. */
   joinFriendSquad(squadId: string, squadName: string, leader: Friend) {
     setState((s) => {
-      const friends = s.friends.some((f) => f.id === leader.id) ? s.friends : [...s.friends, leader];
-      if (s.squads.some((item) => item.id === squadId)) return { ...s, friends, activeSquadId: squadId };
-      const squads = [...s.squads, { id: squadId, name: squadName, leaderId: leader.id, memberIds: [leader.id] }];
-      return { ...s, friends, squads, activeSquadId: squadId, squadLeaderId: leader.id, squadIds: [...new Set(squads.flatMap((item) => item.memberIds))] };
+      const friends = s.friends.some((f) => f.id === leader.id)
+        ? s.friends
+        : [...s.friends, leader];
+      const existing = s.squads.find((item) => item.id === squadId);
+      if (existing)
+        return { ...s, friends, activeSquadId: squadId, squadLeaderId: existing.leaderId };
+      const squads = [
+        ...s.squads,
+        { id: squadId, name: squadName, leaderId: leader.id, memberIds: [leader.id] },
+      ];
+      return {
+        ...s,
+        friends,
+        squads,
+        activeSquadId: squadId,
+        squadLeaderId: leader.id,
+        squadIds: [...new Set(squads.flatMap((item) => item.memberIds))],
+      };
     });
   },
   dismissSquadInvite(id: string) {
@@ -411,14 +585,29 @@ export const actions = {
     setState((s) => {
       const selectedId = squadId ?? s.activeSquadId;
       const selected = s.squads.find((squad) => squad.id === selectedId);
-      if (!selected) return s;
+      if (!selected || selected.leaderId !== "me") return s;
       const removing = selected.memberIds.includes(id);
-      const squads = s.squads.map((squad) => squad.id === selected.id
-        ? { ...squad, memberIds: removing ? squad.memberIds.filter((memberId) => memberId !== id) : [...squad.memberIds, id] }
-        : squad);
-      const next = { ...s, squads, squadIds: [...new Set(squads.flatMap((squad) => squad.memberIds))] };
+      const squads = s.squads.map((squad) =>
+        squad.id === selected.id
+          ? {
+              ...squad,
+              memberIds: removing
+                ? squad.memberIds.filter((memberId) => memberId !== id)
+                : [...squad.memberIds, id],
+            }
+          : squad,
+      );
+      const next = {
+        ...s,
+        squads,
+        squadIds: [...new Set(squads.flatMap((squad) => squad.memberIds))],
+      };
       if (removing || s.xpClaims.includes(`join:${id}`)) return next;
-      return { ...next, xpClaims: [...s.xpClaims, `join:${id}`], ...gain(s, "join", XP.squad, `${name} joined your squad`, id) };
+      return {
+        ...next,
+        xpClaims: [...s.xpClaims, `join:${id}`],
+        ...gain(s, "join", XP.squad, `${name} joined your squad`, id),
+      };
     });
   },
   verify(email: string) {
@@ -434,13 +623,33 @@ export const actions = {
     );
   },
   setPrivacy(patch: Partial<Pick<UserState, "optInNearby" | "shareLocation" | "publicProfile">>) {
-    setState((s) => ({ ...s, ...patch, ...(patch.shareLocation === false ? { approximateLocation: null } : {}) }));
+    setState((s) => ({
+      ...s,
+      ...patch,
+      ...(patch.shareLocation === false ? { approximateLocation: null } : {}),
+    }));
   },
   updateProfile(patch: Partial<Pick<UserState, "name" | "handle" | "bio">>) {
     setState((s) => ({ ...s, ...patch }));
   },
-  saveSettings(patch: Pick<UserState, "name" | "handle" | "bio" | "avatarUrl" | "favoriteVibes" | "optInNearby" | "shareLocation" | "publicProfile">) {
-    setState((s) => ({ ...s, ...patch, ...(patch.shareLocation ? {} : { approximateLocation: null }) }));
+  saveSettings(
+    patch: Pick<
+      UserState,
+      | "name"
+      | "handle"
+      | "bio"
+      | "avatarUrl"
+      | "favoriteVibes"
+      | "optInNearby"
+      | "shareLocation"
+      | "publicProfile"
+    >,
+  ) {
+    setState((s) => ({
+      ...s,
+      ...patch,
+      ...(patch.shareLocation ? {} : { approximateLocation: null }),
+    }));
   },
   setApproximateLocation(lat: number, lng: number) {
     setState((s) => ({
@@ -516,10 +725,22 @@ export const actions = {
       inProgress: [],
       passed: ["q_farmers_market_dare"],
       squadIds: ["u_alex", "u_jordan"],
-      squads: [{ id: "squad_main", name: "The usuals", leaderId: "me", memberIds: ["u_alex", "u_jordan"] }],
+      squads: [
+        { id: "squad_main", name: "The usuals", leaderId: "me", memberIds: ["u_alex", "u_jordan"] },
+      ],
       activeSquadId: "squad_main",
       squadLeaderId: "me",
-      squadInvites: [{ id: "demo-invite-alex", personId: "u_maya", personName: "Maya Chen", squadId: "squad_maya", squadName: "Maya's crew", direction: "received", at: now - h }],
+      squadInvites: [
+        {
+          id: "demo-invite-alex",
+          personId: "u_maya",
+          personName: "Maya Chen",
+          squadId: "squad_maya",
+          squadName: "Maya's crew",
+          direction: "received",
+          at: now - h,
+        },
+      ],
       xp: 1670,
       streak: 6,
       lastQuestDay: dayKey(new Date(now - 20 * h)),

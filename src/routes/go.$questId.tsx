@@ -1,33 +1,82 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
+import { Doodle } from "@/components/Doodle";
 import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type CSSProperties,
+  type DragEvent,
+  type ReactNode,
+  type RefObject,
+} from "react";
+import {
+  ArrowLeft,
   Bookmark,
   CalendarPlus,
-  Clock,
-  Footprints,
-  Heart,
+  Check,
+  Download,
   ImagePlus,
-  PartyPopper,
+  ListChecks,
+  Newspaper,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
-import { Button, Chip, PageHeader } from "@/components/ui-kit";
+import {
+  Avatar,
+  Button,
+  Chip,
+  PageHeader,
+  SectionHeading,
+  Tally,
+  TextButton,
+  buttonClass,
+} from "@/components/ui-kit";
+import { Stamp } from "@/components/Stamp";
+import { HelpDot } from "@/components/HelpDot";
+import { QuestDirections, RouteStops } from "@/components/QuestDirections";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getQuest } from "@/data/quests";
 import { NEARBY_STUDENTS } from "@/data/people";
 import { questImage } from "@/lib/imagery";
-import { actions, useUserState } from "@/lib/store";
-import { CAMPUS_ORIGIN, distanceMi } from "@/lib/engine";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { BackButton } from "@/components/BackButton";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { QuestRouteMap } from "@/components/QuestRouteMap";
+import { XP, actions, hydrate, useUserState, type UserState } from "@/lib/store";
+import { CAMPUS_ORIGIN } from "@/lib/engine";
+import { EASE_IN, SPRING, burst, flyToNav, reducedMotion, useCountUp } from "@/lib/motion";
+import {
+  downloadCalendarFile,
+  googleCalendarUrl,
+  isAhead,
+  joinWhen,
+  normalizeWhen,
+  parseWhen,
+  slotLabel,
+  splitWhen,
+  timeSlots,
+  upcomingDays,
+  whenLabel,
+  type CalendarEvent,
+} from "@/lib/when";
+import type { Quest } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+type From = "quest" | "lists";
+type Stage = "plan" | "out" | "share";
+/** What finishing just earned, kept on the page so the moment can show it. */
+type Finished = { earned: number; squad: boolean; at: number; fresh: boolean };
 
 export const Route = createFileRoute("/go/$questId")({
   staticData: { sitemap: false },
+  validateSearch: (search: Record<string, unknown>) => ({
+    ...(search["from"] === "quest" || search["from"] === "lists"
+      ? { from: search["from"] as From }
+      : {}),
+  }),
   loader: ({ params }) => {
     const quest = getQuest(params.questId);
-    return { title: quest?.title ?? null };
+    // A quest you made lives in this browser's storage, so the server can't know its title yet.
+    return { title: quest?.title ?? null, local: params.questId.startsWith("q_user_") };
   },
   head: ({ loaderData }) => ({
     meta: loaderData?.title
@@ -42,197 +91,422 @@ export const Route = createFileRoute("/go/$questId")({
           { property: "og:type", content: "website" },
           { name: "twitter:card", content: "summary" },
         ]
-      : [{ title: "Quest unavailable — wego" }, { name: "robots", content: "noindex" }],
+      : [
+          { title: loaderData?.local ? "Let's go — wego" : "Quest unavailable — wego" },
+          { name: "robots", content: "noindex" },
+        ],
   }),
   component: GoPage,
 });
 
-function pad(n: number) {
-  return String(n).padStart(2, "0");
+/**
+ * The plan as a calendar event: the real start, the quest's own length, where it is, and a line
+ * about it that links back to the quest.
+ */
+function questEvent(quest: Quest, when: string, endWhen?: string): CalendarEvent | null {
+  const start = parseWhen(when);
+  if (!start) return null;
+  const url = `${typeof window === "undefined" ? "" : window.location.origin}/quest/${quest.id}`;
+  return {
+    id: `quest-${quest.id}`,
+    title: `wego: ${quest.title}`,
+    location: quest.location.name,
+    start,
+    minutes:
+      endWhen && parseWhen(endWhen)
+        ? Math.max(1, (parseWhen(endWhen)!.getTime() - start.getTime()) / 60_000)
+        : quest.durationMin,
+    details: `${quest.hook}\n\nThe quest on wego: ${url}`,
+    url,
+  };
 }
 
-function localDateValue(date: Date) {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+/** The date line on a stamp: "sep 26". */
+function stampDate(at: number) {
+  return new Date(at).toLocaleDateString([], { month: "short", day: "numeric" }).toLowerCase();
 }
 
-function localDateTimeValue(date: Date) {
-  return `${localDateValue(date)}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+/** "The $10 Mystery Snack Crawl" and "the snack crawl" both boil down to letters and digits. */
+function plain(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/^did\s+/, "")
+    .replace(/^the\s+/, "")
+    .replace(/[^a-z0-9]/g, "");
 }
 
-function formatTimeInput(date: Date) {
-  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+/**
+ * When you did it: the XP log's entry for the quest, else your own post about it, else (older saved
+ * state, whose log lines carry no quest id) the "Did …" line that names it.
+ */
+function completedAt(state: UserState, quest: Quest) {
+  const logged = state.log.find(
+    (event) => event.refId === quest.id && (event.kind === "complete" || event.kind === "squad"),
+  );
+  if (logged) return logged.at;
+  const post = state.posts.find((item) => item.questId === quest.id && item.authorId === "me");
+  if (post) return post.at;
+  const title = plain(quest.title);
+  return state.log.find((event) => {
+    if (event.kind !== "complete" || event.refId) return false;
+    const said = plain(event.label);
+    return said.length >= 6 && title.includes(said);
+  })?.at;
 }
 
-function parseTimeInput(value: string) {
-  const twelveHour = value.trim().match(/^(1[0-2]|[1-9]):([0-5]\d)\s*(AM|PM)$/i);
-  if (twelveHour) {
-    const hour = Number(twelveHour[1]) % 12 + (twelveHour[3]!.toUpperCase() === "PM" ? 12 : 0);
-    return { hour, minute: Number(twelveHour[2]) };
+/**
+ * True once this browser's saved state is loaded (before paint). Until then the page matches the
+ * server, which has never seen the quests you made.
+ */
+function useHydrated() {
+  const [ready, setReady] = useState(false);
+  useLayoutEffect(() => {
+    hydrate();
+    setReady(true);
+  }, []);
+  return ready;
+}
+
+function score(n: number) {
+  return Number.isInteger(n) ? String(n) : n.toFixed(1);
+}
+
+/** "you + Alex, Jordan", or "you + Alex, Jordan and 4 more" once the crew gets big. */
+function crewNote(names: string[]) {
+  if (!names.length) return "going solo works too";
+  if (names.length <= 3) return `you + ${names.join(", ")}`;
+  return `you + ${names.slice(0, 2).join(", ")} and ${names.length - 2} more`;
+}
+
+/*
+ * Photos are stored with the post in localStorage (about 5MB for everything), so a phone photo is
+ * developed down to a small JPEG first: long edge 1280px, which lands around 150-300KB.
+ */
+const MAX_EDGE = 1280;
+
+async function decodePhoto(file: File): Promise<ImageBitmap | HTMLImageElement> {
+  if (typeof createImageBitmap === "function") {
+    try {
+      return await createImageBitmap(file, { imageOrientation: "from-image" });
+    } catch {
+      /* fall back to an <img> decode below */
+    }
   }
-  const twentyFourHour = value.trim().match(/^([01]\d|2[0-3]):([0-5]\d)$/);
-  if (twentyFourHour) return { hour: Number(twentyFourHour[1]), minute: Number(twentyFourHour[2]) };
-  return null;
-}
-
-function dateTimeLabel(value: string) {
-  // Old locally saved schedules used HH:mm. Keep them readable after migration.
-  const date = value.includes("T") ? new Date(value) : new Date(`${localDateValue(new Date())}T${value}`);
-  return date.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-}
-
-function calendarUrl(title: string, location: string, date: Date, startTime: string, endTime: string, scheduled: boolean) {
-  if (!scheduled) {
-    const start = new Date();
-    const end = new Date(start.getTime() + 90 * 60 * 1000);
-    const stamp = (d: Date) => d.toISOString().replace(/[-:]|\.\d{3}/g, "");
-    const params = new URLSearchParams({ action: "TEMPLATE", text: `wego: ${title}`, dates: `${stamp(start)}/${stamp(end)}`, location });
-    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    img.decoding = "async";
+    img.src = url;
+    await img.decode();
+    return img;
+  } finally {
+    URL.revokeObjectURL(url);
   }
-  const startParts = parseTimeInput(startTime);
-  const endParts = parseTimeInput(endTime);
-  const start = new Date(date);
-  start.setHours(startParts?.hour ?? 18, startParts?.minute ?? 0, 0, 0);
-  const end = new Date(date);
-  end.setHours(endParts?.hour ?? 19, endParts?.minute ?? 30, 0, 0);
-  if (end <= start) end.setDate(end.getDate() + 1);
-  const stamp = (d: Date) => d.toISOString().replace(/[-:]|\.\d{3}/g, "");
-  const params = new URLSearchParams({
-    action: "TEMPLATE",
-    text: `wego: ${title}`,
-    dates: `${stamp(start)}/${stamp(end)}`,
-    location,
-  });
-  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
+
+async function developPhoto(file: File) {
+  const source = await decodePhoto(file);
+  const w = "naturalWidth" in source ? source.naturalWidth : source.width;
+  const h = "naturalHeight" in source ? source.naturalHeight : source.height;
+  const scale = Math.min(1, MAX_EDGE / Math.max(w, h, 1));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(w * scale));
+  canvas.height = Math.max(1, Math.round(h * scale));
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("No canvas");
+  // JPEG has no transparency: lay a transparent PNG on the card's paper instead of black.
+  context.fillStyle =
+    getComputedStyle(document.documentElement).getPropertyValue("--card").trim() || "white";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.imageSmoothingQuality = "high";
+  context.drawImage(source, 0, 0, canvas.width, canvas.height);
+  if ("close" in source) source.close();
+  return canvas.toDataURL("image/jpeg", 0.8);
+}
+
+const backClass =
+  "group inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground transition-colors duration-(--dur-quick) hover:text-foreground";
 
 function GoPage() {
   const { questId } = Route.useParams();
+  const { from } = Route.useSearch();
+  const { title: knownTitle } = Route.useLoaderData();
   const state = useUserState();
+  const ready = useHydrated();
   const navigate = useNavigate();
   const quest = useMemo(
     () => state.createdQuests.find((q) => q.id === questId) ?? getQuest(questId),
     [questId, state.createdQuests],
   );
+  const [selectedSquadIds, setSelectedSquadIds] = useState<string[]>(() =>
+    state.activeSquadId ? [state.activeSquadId] : [],
+  );
+  const [endTime, setEndTime] = useState("");
   const [crew, setCrew] = useState<string[] | null>(null);
-  const [selectedSquadIds, setSelectedSquadIds] = useState<string[]>([]);
+  /** The last person you ticked in or out, so only their check draws itself. */
+  const [lastToggled, setLastToggled] = useState<string | null>(null);
   const [when, setWhen] = useState<string | null>(null);
-  const [timePickerOpen, setTimePickerOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(() => new Date(Date.now() + 60 * 60 * 1000));
-  const [startTime, setStartTime] = useState(() => formatTimeInput(new Date(Date.now() + 60 * 60 * 1000)));
-  const [endTime, setEndTime] = useState(() => formatTimeInput(new Date(Date.now() + 150 * 60 * 1000)));
-  const [stage, setStage] = useState<"plan" | "out" | "celebrating" | "share">("plan");
-  const [celebrationXp, setCelebrationXp] = useState(0);
+  const [whenTouched, setWhenTouched] = useState(false);
+  const [timeOpen, setTimeOpen] = useState(false);
+  const [stage, setStage] = useState<Stage>("plan");
+  /** True once you've moved between stages here, so entrances and focus only follow your actions. */
+  const [moved, setMoved] = useState(false);
   const [rating, setRating] = useState(8);
   const [memberRatings, setMemberRatings] = useState<Record<string, number>>({});
   const [caption, setCaption] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
+  const [developing, setDeveloping] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [ticked, setTicked] = useState<number[]>([]);
+  const [finished, setFinished] = useState<Finished | null>(null);
+  const [slam, setSlam] = useState(false);
+  const [xpReady, setXpReady] = useState(false);
+  const [announce, setAnnounce] = useState("");
+  const stageRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const printRef = useRef<HTMLSpanElement>(null);
+  const stampRef = useRef<HTMLSpanElement>(null);
+  const doneRef = useRef<HTMLSpanElement>(null);
+  const swapping = useRef(false);
+  /** The plan you just scheduled here, so its calendar step can arrive (and take focus) once. */
+  const [scheduledHere, setScheduledHere] = useState<string | null>(null);
+  const calendarRef = useRef<HTMLAnchorElement>(null);
   const scheduledWhen = state.scheduledQuests.find((item) => item.questId === questId)?.when;
   const scheduledEndWhen = state.scheduledQuests.find((item) => item.questId === questId)?.endWhen;
+  useEffect(() => {
+    setEndTime(scheduledEndWhen?.slice(11, 16) ?? "");
+  }, [questId, scheduledEndWhen]);
+  // Older saves hold just "HH:MM"; read those as today, or tomorrow once the time has passed.
+  const savedWhen = useMemo(
+    () => (scheduledWhen ? normalizeWhen(scheduledWhen) : null),
+    [scheduledWhen],
+  );
 
   useEffect(() => {
-    if (state.inProgress.includes(questId)) setStage((current) => current === "plan" ? "out" : current);
+    if (swapping.current) return;
+    if (state.inProgress.includes(questId))
+      setStage((current) => (current === "plan" ? "out" : current));
   }, [questId, state.inProgress]);
 
   useEffect(() => {
-    if (scheduledWhen && !state.inProgress.includes(questId)) {
-      let start: Date;
-      if (scheduledWhen.includes("T")) {
-        start = new Date(scheduledWhen);
-      } else {
-        // Backward compatibility for schedules saved before date selection existed.
-        const [hour, minute] = scheduledWhen.split(":").map(Number);
-        start = new Date();
-        start.setHours(hour ?? 18, minute ?? 0, 0, 0);
-      }
-      if (!Number.isNaN(start.getTime())) {
-        setSelectedDate(start);
-        setStartTime(formatTimeInput(start));
-      }
-      setWhen(scheduledWhen);
-      const end = scheduledEndWhen
-        ? new Date(scheduledEndWhen.includes("T") ? scheduledEndWhen : `${localDateValue(start)}T${scheduledEndWhen}`)
-        : new Date(start.getTime() + 90 * 60 * 1000);
-      if (!Number.isNaN(end.getTime())) setEndTime(formatTimeInput(end));
+    if (savedWhen && !state.inProgress.includes(questId)) setWhen(savedWhen);
+  }, [questId, savedWhen, state.inProgress]);
+
+  // Just scheduled: the calendar step is the next thing to do, so it takes focus (the Schedule
+  // button it replaces is gone) and scrolls clear of the dock if it landed under it.
+  useEffect(() => {
+    const link = calendarRef.current;
+    if (!scheduledHere || !link) return;
+    link.focus({ preventScroll: true });
+    const box = link.getBoundingClientRect();
+    if (box.bottom > window.innerHeight - 180 || box.top < 80) {
+      link.scrollIntoView({ block: "center", behavior: reducedMotion() ? "auto" : "smooth" });
     }
-  }, [questId, scheduledWhen, scheduledEndWhen, state.inProgress]);
+  }, [scheduledHere]);
 
-  if (!quest) throw notFound();
+  // After you move to a new stage: bring the top back into view, focus the new stage's heading,
+  // and, if you just finished, press the postmark once the header is back on screen.
+  useEffect(() => {
+    if (!moved) return;
+    headingRef.current?.focus({ preventScroll: true });
+    const scrolled = window.scrollY > 4;
+    if (scrolled) window.scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" });
+    if (stage !== "share" || !finished?.fresh) return;
+    const timer = window.setTimeout(() => setSlam(true), scrolled && !reducedMotion() ? 460 : 160);
+    return () => window.clearTimeout(timer);
+  }, [stage, moved, finished]);
 
-  const squadIds = selectedSquadIds;
-  const selectedSquads = state.squads.filter((squad) => squadIds.includes(squad.id));
+  // The postmark hits the page: ink sparks fly off it, and the XP counts up beside it.
+  useEffect(() => {
+    if (!slam) return;
+    const still = reducedMotion();
+    const contact = window.setTimeout(
+      () => {
+        const mark = stampRef.current;
+        if (still || !mark) return;
+        const box = mark.getBoundingClientRect();
+        burst(box.left + box.width / 2, box.top + box.height / 2, {
+          sparks: 10,
+          stars: 3,
+          spread: 48,
+        });
+        navigator.vibrate?.(12);
+      },
+      still ? 0 : 250,
+    );
+    const receipt = window.setTimeout(() => setXpReady(true), still ? 0 : 420);
+    return () => {
+      window.clearTimeout(contact);
+      window.clearTimeout(receipt);
+    };
+  }, [slam]);
+
+  const allTicked = Boolean(
+    quest && quest.steps.length > 0 && ticked.length === quest.steps.length,
+  );
+
+  // Every stop ticked: "We did it" gives one small nudge.
+  useEffect(() => {
+    if (!allTicked || reducedMotion()) return;
+    doneRef.current?.animate(
+      [
+        { transform: "scale(1)" },
+        { transform: "scale(1.04)", offset: 0.4 },
+        { transform: "scale(1)" },
+      ],
+      { duration: 360, easing: SPRING },
+    );
+  }, [allTicked]);
+
+  // A quest you made has no title on the server; name the tab once it's found here.
+  useEffect(() => {
+    if (quest && !knownTitle) document.title = `Let's go: ${quest.title} — wego`;
+  }, [quest, knownTitle]);
+
+  if (!quest) {
+    if (!ready) {
+      return (
+        <AppShell>
+          <div aria-busy="true" className="mx-auto max-w-2xl pt-12">
+            <p className="font-hand text-lg leading-tight text-muted-foreground">
+              finding your quest…
+            </p>
+            <div
+              aria-hidden
+              className="mt-4 size-[72px] rounded-md border border-border bg-card sm:size-24"
+            />
+          </div>
+        </AppShell>
+      );
+    }
+    throw notFound();
+  }
+
+  const selectedSquads = state.squads.filter((squad) => selectedSquadIds.includes(squad.id));
+  const isSquadLeader = selectedSquads.every((squad) => squad.leaderId === "me");
   const selectedMemberIds = [...new Set(selectedSquads.flatMap((squad) => squad.memberIds))];
-  const canLeadSelectedSquads = selectedSquads.every((squad) => squad.leaderId === "me");
-  const people: { id: string; name: string }[] = [
+  const chosen = isSquadLeader
+    ? (crew ?? selectedMemberIds).filter((id) => selectedMemberIds.includes(id))
+    : [];
+  const people = [
     ...NEARBY_STUDENTS.filter((person) => selectedMemberIds.includes(person.id)),
-    ...state.friends.filter((friend) => selectedMemberIds.includes(friend.id)),
+    ...state.friends
+      .filter((person) => selectedMemberIds.includes(person.id))
+      .map((friend) => ({ ...friend, photo: null })),
   ];
-  const chosen = canLeadSelectedSquads ? (crew ?? selectedMemberIds) : [];
-  const miles = distanceMi(state.approximateLocation ?? CAMPUS_ORIGIN, quest.location);
-  const walkMin = Math.max(2, Math.round(miles * 20));
-  const directions = `https://www.google.com/maps/dir/?api=1&travelmode=walking&destination=${quest.location.lat},${quest.location.lng}`;
-  const toggle = (id: string) =>
+  const origin = state.approximateLocation ?? CAMPUS_ORIGIN;
+  const toggle = (id: string) => {
+    setLastToggled(id);
     setCrew(chosen.includes(id) ? chosen.filter((x) => x !== id) : [...chosen, id]);
-  const names = people.filter((person) => chosen.includes(person.id)).map((person) => person.name);
-  const members = people.filter((person) => chosen.includes(person.id));
+  };
+  const names = people.filter((u) => chosen.includes(u.id)).map((u) => u.name);
+  const members = people.filter((u) => chosen.includes(u.id));
   const ratedMembers = members.filter((member) => memberRatings[member.id] !== undefined);
   const ratingTotal =
     rating + ratedMembers.reduce((sum, member) => sum + memberRatings[member.id]!, 0);
   const ratingAverage = ratingTotal / (ratedMembers.length + 1);
   const allMembersRated = ratedMembers.length === members.length;
+  const alreadyDone = state.completed.includes(quest.id);
+  /** Doing a quest you've already stamped: it still works, it just doesn't pay out again. */
+  const repeat = alreadyDone && !finished;
+  const doneAt = finished?.at ?? (alreadyDone ? completedAt(state, quest) : undefined);
+  // The postmark is the payoff of finishing, so it only appears once you've shared that you did it.
+  const stamped = stage === "share" && (finished?.fresh ? slam : true);
+  /** The picked time is the one saved in Lists. */
+  const listed =
+    when !== null &&
+    when === savedWhen &&
+    (endTime || undefined) === (scheduledEndWhen?.slice(11, 16) || undefined);
+  /** The picked time is scheduled (a quest you've done isn't kept in Lists, but still gets its calendar step). */
+  const planned = listed || (when !== null && when === scheduledHere);
+  const endWhen =
+    when && endTime
+      ? (() => {
+          const start = parseWhen(when);
+          if (!start) return undefined;
+          const end = new Date(start);
+          const [h, m] = endTime.split(":").map(Number);
+          end.setHours(h!, m!, 0, 0);
+          if (end <= start) end.setDate(end.getDate() + 1);
+          return `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}T${endTime}`;
+        })()
+      : undefined;
+  const event = planned && when ? questEvent(quest, when, endWhen) : null;
 
-  function toggleSquad(squadId: string) {
-    const current = new Set(squadIds);
-    if (current.has(squadId)) current.delete(squadId);
-    else current.add(squadId);
-    setSelectedSquadIds([...current]);
-    setCrew(null);
+  /** Old stage steps back and fades (quick, ease-in); the new one rises in. */
+  function swapStage(next: Stage) {
+    swapping.current = true;
+    const done = () => {
+      swapping.current = false;
+      setMoved(true);
+      setStage(next);
+    };
+    const el = stageRef.current;
+    if (!el || reducedMotion()) return done();
+    const leave = el.animate(
+      [
+        { opacity: 1, transform: "none" },
+        { opacity: 0, transform: "translateY(-6px)" },
+      ],
+      { duration: 140, easing: EASE_IN, fill: "forwards" },
+    );
+    leave.onfinish = done;
+    leave.oncancel = done;
   }
 
-  function startDateTime() {
-    const parts = parseTimeInput(startTime);
-    if (!parts) return null;
-    const date = new Date(selectedDate);
-    date.setHours(parts.hour, parts.minute, 0, 0);
-    return date;
-  }
-
-  function endDateTime() {
-    const start = startDateTime();
-    const parts = parseTimeInput(endTime);
-    if (!start || !parts) return null;
-    const date = new Date(selectedDate);
-    date.setHours(parts.hour, parts.minute, 0, 0);
-    if (date <= start) date.setDate(date.getDate() + 1);
-    return date;
+  async function takePhoto(file: File | undefined) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("That file isn’t a photo.");
+      return;
+    }
+    setDeveloping(true);
+    try {
+      setPhoto(await developPhoto(file));
+    } catch {
+      toast.error("Couldn’t read that photo. Try a JPG or PNG.");
+    } finally {
+      setDeveloping(false);
+    }
   }
 
   function onPhoto(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setPhoto(String(reader.result));
-    reader.readAsDataURL(file);
+    void takePhoto(event.target.files?.[0]);
+    event.target.value = "";
   }
 
+  function onDrop(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    setDragging(false);
+    void takePhoto(event.dataTransfer.files[0]);
+  }
+
+  // Always finishable: if someone else leads your squad you go solo (`chosen` is empty), never stuck.
   function finish() {
-    if (!canLeadSelectedSquads && selectedSquads.length) {
-      toast.error("Only your squad leader can start a squad activity.");
+    if (swapping.current) return;
+    if (!isSquadLeader) {
+      toast.error("Only a selected squad’s leader can finish its activity.");
       return;
     }
-    const earned = actions.complete(quest!.id, quest!.title, chosen.length > 0);
-    setCelebrationXp(earned);
-    setStage("celebrating");
+    const fresh = !state.completed.includes(quest!.id);
+    const withSquad = chosen.length > 0;
+    const earned = actions.complete(quest!.id, quest!.title, withSquad);
+    setFinished({ earned, squad: withSquad && earned > 0, at: Date.now(), fresh });
+    setAnnounce(earned ? `Quest complete. Plus ${earned} XP.` : "Quest complete.");
+    swapStage("share");
   }
 
   async function headOut() {
-    if (!canLeadSelectedSquads && selectedSquads.length) {
-      toast.error("Only a selected squad’s leader can start that squad activity. Deselect it to go solo.");
+    if (swapping.current) return;
+    if (!isSquadLeader) {
+      toast.error("Only a selected squad’s leader can start its activity. Deselect it to go solo.");
       return;
     }
     actions.startQuest(quest!.id);
-    setStage("out");
+    setAnnounce(repeat ? "You’re out again." : "You’re out. Your quest is active.");
+    swapStage("out");
     if (!names.length) return;
-    const time = when === null ? "right now" : startTime;
+    const time = when === null ? "right now" : whenLabel(when);
     const text = `Want to join us for ${quest!.title} at ${quest!.location.name} ${time}?`;
     try {
       if (navigator.share) {
@@ -247,20 +521,63 @@ function GoPage() {
     }
   }
 
+  // Scheduling files the plan into Lists (the print flies to the tab) and stays here, where the
+  // calendar step appears under the time. Lists doesn't keep a quest you've already done, so a
+  // repeat only gets the calendar step, and nothing claims it was saved.
   function scheduleQuest() {
-    const start = startDateTime();
-    const end = endDateTime();
-    if (!start || !end) {
-      toast.error("Enter a start and end time, like 6:00 PM.");
+    if (!when) return;
+    if (!isSquadLeader) {
+      toast.error(
+        "Only a selected squad’s leader can schedule its activity. Deselect it to go solo.",
+      );
       return;
     }
-    if (!canLeadSelectedSquads && selectedSquads.length) {
-      toast.error("Only a selected squad’s leader can schedule that squad activity. Deselect it to plan solo.");
-      return;
-    }
-    actions.scheduleQuest(quest!.id, localDateTimeValue(start), localDateTimeValue(end));
-    toast.success(`Scheduled for ${dateTimeLabel(localDateTimeValue(start))}.`);
-    void navigate({ to: "/", search: { tab: "yours" } });
+    const keeps = !alreadyDone && !state.inProgress.includes(quest!.id);
+    if (keeps) actions.scheduleQuest(quest!.id, when, endWhen);
+    setScheduledHere(when);
+    const planEvent = questEvent(quest!, when, endWhen);
+    const label = whenLabel(when);
+    const said = keeps ? `Scheduled for ${label}.` : `Picked ${label}.`;
+    setAnnounce(`${said} Add it to your calendar below.`);
+    toast.success(
+      keeps ? said : `${said} Add it to your calendar below.`,
+      planEvent
+        ? {
+            action: {
+              label: "Add to Google Calendar",
+              onClick: () =>
+                window.open(googleCalendarUrl(planEvent), "_blank", "noopener,noreferrer"),
+            },
+          }
+        : undefined,
+    );
+    if (keeps && printRef.current) flyToNav(printRef.current, "quests", questImage(quest!));
+  }
+
+  function saveCalendarFile() {
+    if (!event) return;
+    downloadCalendarFile(event);
+    setAnnounce("Calendar file downloaded. Open it to add the quest to your calendar.");
+  }
+
+  function saveForLater() {
+    if (!state.saved.includes(quest!.id)) actions.toggleSave(quest!.id);
+    if (printRef.current) flyToNav(printRef.current, "quests", questImage(quest!));
+    toast("Saved for later");
+    void navigate({ to: "/" });
+  }
+
+  /** A new day and time; `done` closes the picker (picking a day alone keeps it open). */
+  function pickTime(value: string, done = true) {
+    setWhenTouched(true);
+    setWhen(value);
+    if (done) setTimeOpen(false);
+  }
+
+  function toggleStep(index: number) {
+    setTicked((current) =>
+      current.includes(index) ? current.filter((i) => i !== index) : [...current, index],
+    );
   }
 
   function share() {
@@ -282,254 +599,492 @@ function GoPage() {
     void navigate({ to: "/feed" });
   }
 
+  const rise = (i: number) =>
+    moved
+      ? { className: "reveal", style: { "--i": i } as CSSProperties }
+      : { className: "", style: {} };
+
   return (
     <AppShell>
       <div className="mx-auto max-w-2xl">
-        <BackButton fallback="/" label="Back to Quests" />
+        {from === "quest" ? (
+          <Link
+            to="/quest/$questId"
+            params={{ questId: quest.id }}
+            viewTransition
+            className={backClass}
+          >
+            <BackArrow /> Back to quest
+          </Link>
+        ) : from === "lists" ? (
+          <Link to="/" search={{ tab: "mine" }} className={backClass}>
+            <BackArrow /> Back to My quests
+          </Link>
+        ) : (
+          <Link to="/" className={backClass}>
+            <BackArrow /> Back to Quests
+          </Link>
+        )}
 
         <PageHeader
           className="mt-2"
-          eyebrow={stage === "share" ? "you did it" : stage === "out" ? "good luck out there" : "let's go"}
+          eyebrow={
+            <span key={stage} className={moved ? "morph-in inline-block" : undefined}>
+              {stage === "share"
+                ? "you did it"
+                : stage === "out"
+                  ? "good luck out there"
+                  : repeat
+                    ? "let’s go again · no XP for repeats"
+                    : "let’s go"}
+            </span>
+          }
           title={quest.title}
-          leading={<img src={questImage(quest)} alt="" className="h-20 w-20 shrink-0 rounded-xl border border-border object-cover sm:h-28 sm:w-28" />}
+          leading={
+            <span
+              ref={printRef}
+              className="mr-2 block shrink-0 rounded-md border border-border-strong bg-card p-1"
+            >
+              <img
+                src={questImage(quest)}
+                alt=""
+                className="block h-[72px] w-[72px] rounded-[3px] bg-muted object-cover [view-transition-name:quest-photo] sm:h-24 sm:w-24"
+              />
+            </span>
+          }
+          meta={
+            stage === "share" ? (
+              // The payoff: the postmark lands on the page's paper, and what it earned counts up beside it.
+              <div className="flex items-center gap-5">
+                <span ref={stampRef} className="grid size-20 shrink-0 place-items-center">
+                  {stamped ? (
+                    <Stamp
+                      label={finished?.squad ? "we did it" : "did it"}
+                      {...(doneAt ? { sub: stampDate(doneAt) } : {})}
+                      size={80}
+                      tilt={-12}
+                      slam={Boolean(finished?.fresh)}
+                    />
+                  ) : null}
+                </span>
+                <div className="min-w-0">
+                  {finished && finished.earned > 0 ? (
+                    <XpReceipt
+                      earned={finished.earned}
+                      squad={finished.squad}
+                      ready={xpReady}
+                      pour={state.xpSeen < state.xp}
+                    />
+                  ) : (
+                    <p className="font-hand text-lg leading-tight text-muted-foreground">
+                      already stamped · no XP for repeats
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : undefined
+          }
         />
 
-        {stage === "plan" || stage === "out" ? (
-          <QuestRouteMap destination={quest.location} origin={state.approximateLocation ?? CAMPUS_ORIGIN} />
-        ) : null}
-
         {stage === "plan" ? (
-          <div className="mt-8 space-y-8">
-            <section>
-              <h2 className="text-base font-semibold">Which squads are going?</h2>
-              {state.squads.length === 0 ? <p className="mt-2 text-sm text-muted-foreground">You don’t have a squad yet. <Link to="/squad" className="underline underline-offset-2">Create one</Link>, or head out solo.</p> : <>
-                <p className="mt-2 text-sm text-muted-foreground">Choose one or more squads. Then you can remove anyone who can’t make it.</p>
-                <ul className="mt-3 flex flex-wrap gap-2">
-                  {state.squads.map((squad) => <li key={squad.id}><Chip active={squadIds.includes(squad.id)} onClick={() => toggleSquad(squad.id)}>{squad.name}</Chip></li>)}
+          <div key="plan" ref={stageRef} className={cn("space-y-9", moved && "stage-in")}>
+            <section aria-labelledby="go-crew">
+              <h2
+                id="go-crew"
+                ref={headingRef}
+                tabIndex={-1}
+                className="text-lg font-semibold leading-tight"
+              >
+                Which squads are going?
+              </h2>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Chip
+                  active={selectedSquads.length === 0}
+                  onClick={() => {
+                    setSelectedSquadIds([]);
+                    setCrew(null);
+                  }}
+                >
+                  Going solo
+                </Chip>
+                {state.squads.map((squad) => (
+                  <Chip
+                    key={squad.id}
+                    active={selectedSquadIds.includes(squad.id)}
+                    onClick={() => {
+                      setSelectedSquadIds((ids) =>
+                        ids.includes(squad.id)
+                          ? ids.filter((id) => id !== squad.id)
+                          : [...ids, squad.id],
+                      );
+                      setCrew(null);
+                    }}
+                  >
+                    {squad.name}
+                  </Chip>
+                ))}
+              </div>
+              {!isSquadLeader ? (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Only the leader of each selected squad can start or schedule its activity.
+                  Deselect that squad to go solo.
+                </p>
+              ) : null}
+              {isSquadLeader && selectedMemberIds.length === 0 ? (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  No accepted squad members yet.{" "}
+                  <Link
+                    to="/squad"
+                    className="font-medium text-foreground underline decoration-primary decoration-2 underline-offset-4"
+                  >
+                    Invite people
+                  </Link>
+                  , or head out solo.
+                </p>
+              ) : null}
+              {isSquadLeader && selectedMemberIds.length > 0 ? (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Tap anyone who can’t make it. You’re always in.
+                </p>
+              ) : null}
+              {people.length ? (
+                // Who's coming, as faces: in full colour with an ink check, or faded out when they can't make it.
+                <ul className="mt-4 flex flex-wrap gap-x-2 gap-y-3">
+                  {people.map((u) => {
+                    const on = chosen.includes(u.id);
+                    return (
+                      <li key={u.id}>
+                        <button
+                          type="button"
+                          aria-pressed={on}
+                          aria-label={u.name}
+                          onClick={() => toggle(u.id)}
+                          className="press grid w-16 cursor-pointer justify-items-center gap-1.5 rounded-md pb-1.5 pt-2 hover:bg-surface"
+                        >
+                          <span className="relative block">
+                            <span
+                              className={cn(
+                                "block transition-opacity duration-(--dur-quick) ease-(--ease-out)",
+                                !on && "opacity-45 grayscale",
+                              )}
+                            >
+                              <Avatar name={u.name} size={48} imageUrl={u.photo ?? null} />
+                            </span>
+                            {on ? (
+                              <span
+                                aria-hidden
+                                className="absolute -bottom-1 -right-1 grid size-4 place-items-center rounded-full bg-foreground text-background ring-2 ring-background"
+                              >
+                                <Check
+                                  className={cn("size-3", lastToggled === u.id && "draw-check")}
+                                  strokeWidth={3.5}
+                                />
+                              </span>
+                            ) : null}
+                          </span>
+                          <span
+                            className={cn(
+                              "max-w-full truncate text-[13px] leading-tight transition-colors duration-(--dur-quick)",
+                              on ? "font-medium text-foreground" : "text-muted-foreground",
+                            )}
+                          >
+                            {u.name}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
-              </>}
-              {selectedSquads.length > 0 && !canLeadSelectedSquads ? <p className="mt-3 rounded-md bg-surface p-3 text-sm text-muted-foreground">Only the leader of each selected squad can start its activity. Deselect those squads to go solo.</p> : null}
-              {selectedSquads.length > 0 && canLeadSelectedSquads ? <>
-                <h3 className="mt-5 text-sm font-semibold">Who’s coming from {selectedSquads.map((squad) => squad.name).join(" + ")}?</h3>
-                <p className="mt-1 text-sm text-muted-foreground">You’ll be included automatically. Remove anyone who can’t make it.</p>
-              </> : null}
-              <ul className="mt-3 flex flex-wrap gap-2">
-                {canLeadSelectedSquads ? people.map((u) => (
-                  <li key={u.id}>
-                    <Chip active={chosen.includes(u.id)} onClick={() => toggle(u.id)}>
-                      {u.name}
-                    </Chip>
-                  </li>
-                )) : null}
-              </ul>
-              <p className="mt-2 font-hand text-base text-muted-foreground">
-                {names.length ? `you + ${names.join(", ")}` : selectedSquads.length ? "going solo works too" : "going solo works too"}
+              ) : null}
+              <p className="mt-3 font-hand text-lg leading-tight text-muted-foreground">
+                {crewNote(names)}
               </p>
             </section>
-            <section>
-              <h2 className="text-base font-semibold">When?</h2>
-              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+
+            <section aria-labelledby="go-when">
+              <h2 id="go-when" className="text-lg font-semibold leading-tight">
+                When?
+              </h2>
+              <div className="relative mt-4 grid w-full grid-cols-2 rounded-lg border border-border-strong bg-card p-1 sm:max-w-sm">
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-md bg-foreground transition-transform duration-(--dur-slow) ease-(--ease-spring)"
+                  style={{ transform: when === null ? "translateX(0)" : "translateX(100%)" }}
+                />
                 <button
                   type="button"
                   aria-pressed={when === null}
-                  onClick={() => setWhen(null)}
-                  className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-md border px-4 text-sm font-semibold transition-colors ${when === null ? "border-primary bg-primary text-primary-foreground" : "border-border-strong bg-card hover:bg-surface"}`}
+                  onClick={() => {
+                    setWhenTouched(true);
+                    setWhen(null);
+                  }}
+                  className={cn(
+                    "press relative inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-md px-3 text-sm font-semibold",
+                    when === null ? "text-background" : "text-foreground hover:bg-surface",
+                  )}
                 >
                   Right now
                 </button>
-                <Popover open={timePickerOpen} onOpenChange={setTimePickerOpen}>
+                <Popover open={timeOpen} onOpenChange={setTimeOpen}>
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      aria-expanded={timePickerOpen}
-                      aria-haspopup="dialog"
-                      onClick={() => setWhen("scheduled")}
-                      className={`inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md border px-4 text-sm font-semibold transition-colors ${when !== null ? "border-primary bg-primary text-primary-foreground" : "border-border-strong bg-card hover:bg-surface"}`}
+                      className={cn(
+                        "press relative inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-md px-3 text-sm font-semibold tabular-nums",
+                        when !== null ? "text-background" : "text-foreground hover:bg-surface",
+                      )}
                     >
-                      <Clock aria-hidden className="h-4 w-4 shrink-0" />
-                      {when === null ? "Pick a date & time" : `${selectedDate.toLocaleDateString([], { month: "short", day: "numeric" })} · ${startTime}`}
+                      {when === null ? "Pick a day and time" : whenLabel(when, { start: true })}
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent align="start" className="w-auto max-w-[calc(100vw-2rem)] p-2">
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={(date) => {
-                        if (date) {
-                          setSelectedDate(date);
-                          setWhen("scheduled");
-                          setTimePickerOpen(false);
-                        }
-                      }}
-                      disabled={{ before: new Date(new Date().setHours(0, 0, 0, 0)) }}
-                      showOutsideDays={false}
-                      className="[--cell-size:2.5rem]"
-                    />
+                  <PopoverContent
+                    align="end"
+                    sideOffset={8}
+                    aria-label="Choose a day and time"
+                    className="w-[min(360px,calc(100vw-2rem))] rounded-lg border-border-strong bg-card p-4 shadow-(--shadow-lift)"
+                  >
+                    <WhenPicker value={when} onPick={pickTime} />
                   </PopoverContent>
                 </Popover>
               </div>
-              {when !== null ? (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <label className="block text-sm font-medium">Start time
-                    <input
-                      type="text"
-                      autoComplete="off"
-                      value={startTime}
-                      onChange={(event) => setStartTime(event.target.value)}
-                      placeholder="6:00 PM"
-                      aria-describedby="time-format-help"
-                      className="mt-1 min-h-12 w-full rounded-md border border-input bg-background px-3 text-base"
-                    />
-                  </label>
-                  <label className="block text-sm font-medium">End time
-                    <input
-                      type="text"
-                      autoComplete="off"
-                      value={endTime}
-                      onChange={(event) => setEndTime(event.target.value)}
-                      placeholder="7:30 PM"
-                      aria-describedby="time-format-help"
-                      className="mt-1 min-h-12 w-full rounded-md border border-input bg-background px-3 text-base"
-                    />
-                  </label>
-                  <p id="time-format-help" className="text-sm text-muted-foreground sm:col-span-2">Type a time like 6:00 PM. End times earlier than the start are treated as the next day.</p>
+              {when ? (
+                <label className="mt-4 block text-sm font-medium">
+                  End time (optional)
+                  <input
+                    type="time"
+                    value={endTime}
+                    onChange={(event) => {
+                      setEndTime(event.target.value);
+                      setScheduledHere(null);
+                    }}
+                    className="ml-3 min-h-11 rounded-md border border-input bg-card px-3"
+                  />
+                  <span className="mt-1 block text-xs font-normal text-muted-foreground">
+                    Earlier than the start means the following day. Leave blank to use the quest’s
+                    duration.
+                  </span>
+                </label>
+              ) : null}
+              <p className="mt-3 font-hand text-lg leading-tight text-muted-foreground">
+                <span
+                  key={`${when ?? "now"}:${listed}`}
+                  className={
+                    whenTouched || scheduledHere ? "morph-in inline-block" : "inline-block"
+                  }
+                >
+                  {/* Only a plan Lists kept is "scheduled"; a repeat you picked a time for is still just aimed at. */}
+                  {when === null
+                    ? "heading out right now"
+                    : `${listed ? "scheduled for" : "aiming for"} ${whenLabel(when)}`}
+                </span>
+              </p>
+              {event ? (
+                // The calendar step: plain paper buttons under the plan, never a second clover one.
+                <div
+                  role="group"
+                  aria-label="Add it to your calendar"
+                  className={cn(
+                    "mt-4 flex flex-wrap items-center gap-2",
+                    scheduledHere === when && "reveal",
+                  )}
+                >
+                  <a
+                    ref={calendarRef}
+                    href={googleCalendarUrl(event)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={buttonClass({ variant: "outline", size: "sm" })}
+                  >
+                    <CalendarPlus aria-hidden className="h-4 w-4" />
+                    Add to Google Calendar
+                    <span className="sr-only"> (opens in a new tab)</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={saveCalendarFile}
+                    className={buttonClass({ variant: "outline", size: "sm" })}
+                  >
+                    <Download aria-hidden className="h-4 w-4" />
+                    Apple Calendar
+                  </button>
+                  <span className="inline-grid size-11 place-items-center">
+                    <HelpDot label="How adding to your calendar works" align="center">
+                      Google Calendar opens in a new tab with the time, the place and a link back to
+                      this quest. Apple Calendar saves a small .ics file: on iPhone, open it and tap
+                      Add to Calendar; on a laptop, open it from your downloads (Outlook reads it
+                      too).
+                    </HelpDot>
+                  </span>
                 </div>
               ) : null}
-              <p className="mt-2 font-hand text-base text-muted-foreground">
-                {when === null ? "heading out right now" : startDateTime() ? `aiming for ${dateTimeLabel(localDateTimeValue(startDateTime()!))} · until ${endTime}` : "enter a start time"}
-              </p>
             </section>
-            <div className="flex flex-wrap gap-3">
-              <Button disabled={!canLeadSelectedSquads && selectedSquads.length > 0} onClick={() => { if (when === null) void headOut(); else scheduleQuest(); }}>
-                {when === null ? <Footprints aria-hidden className="h-5 w-5" /> : <CalendarPlus aria-hidden className="h-5 w-5" />} {when === null ? "Head out" : "Schedule"}
-              </Button>
-              <Button
-                variant="ghost"
-                className="border-border-strong bg-card px-6 text-[15px] font-medium hover:bg-surface"
-                onClick={() => {
-                  if (!state.saved.includes(quest.id)) actions.toggleSave(quest.id);
-                  toast("Saved for later");
-                  void navigate({ to: "/" });
-                }}
-              >
-                <Bookmark aria-hidden className="h-5 w-5" /> Save for later
-              </Button>
-              <a
-                href={calendarUrl(quest.title, quest.location.name, selectedDate, startTime, endTime, when !== null)}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-border-strong bg-card px-6 text-[15px] font-medium transition hover:bg-surface"
-              >
-                <CalendarPlus aria-hidden className="h-5 w-5" /> Add to calendar
-              </a>
-            </div>
+
+            <Dock>
+              {listed ? (
+                // Scheduled: the plan lives in Lists now, and that's where this page leads.
+                <Link
+                  to="/" search={{ tab: "mine" }}
+                  hash={`q-${quest.id}`}
+                  className={cn(buttonClass(), "max-sm:flex-1")}
+                >
+                  <ListChecks aria-hidden className="h-5 w-5" />
+                  See it in My quests
+                </Link>
+              ) : (
+                <Button
+                  onClick={() => (when === null ? void headOut() : scheduleQuest())}
+                  className="max-sm:flex-1"
+                >
+                  {when === null ? (
+                    <Doodle name="steps" size={20} />
+                  ) : (
+                    <CalendarPlus aria-hidden className="h-5 w-5" />
+                  )}
+                  {when === null ? "Head out" : "Schedule"}
+                </Button>
+              )}
+              {listed ? null : (
+                <TextButton onClick={saveForLater} className="px-2">
+                  <Bookmark aria-hidden className="h-4 w-4" /> Save for later
+                </TextButton>
+              )}
+            </Dock>
           </div>
         ) : null}
 
         {stage === "out" ? (
-          <div className="mt-8 space-y-6">
-            <p role="status" className="rounded-lg border border-primary/30 bg-secondary px-4 py-3 font-hand text-xl">
-              Good luck out there! Your quest is active. Come back here when you’re ready to wrap it up.
-            </p>
-            <a
-              href={directions}
-              target="_blank"
-              rel="noreferrer"
-              className="flex min-h-14 items-center justify-between border border-border-strong bg-card px-4"
-            >
-              <span>
-                <span className="block font-semibold">Walk to {quest.location.name}</span>
-                <span className="text-sm text-muted-foreground">
-                  {quest.location.area} · opens Google Maps
-                </span>
-              </span>
-              <Footprints aria-hidden className="h-5 w-5" />
-            </a>
+          <div key="out" ref={stageRef} className={cn("space-y-8", moved && "stage-in")}>
             <section>
-              <h2 className="text-base font-semibold">The quest</h2>
-              <p className="mt-2">{quest.mission}</p>
-              <ol className="mt-4 space-y-3">
-                {quest.steps.map((step, i) => (
-                  <li key={step} className="grid grid-cols-[28px_minmax(0,1fr)] gap-2">
-                    <span className="font-hand text-xl">{i + 1}.</span>
-                    <span>{step}</span>
-                  </li>
-                ))}
-              </ol>
+              <h2
+                ref={headingRef}
+                tabIndex={-1}
+                className="flex items-center gap-2.5 text-[15px] font-semibold"
+              >
+                <span
+                  aria-hidden
+                  className="live-dot relative h-2 w-2 shrink-0 rounded-full bg-primary"
+                />
+                {repeat ? "You’re out again." : "Your quest is active."}
+              </h2>
+              <p className="mt-0.5 pl-[18px] text-[15px] text-muted-foreground">
+                Come back here when you’re ready to wrap it up.
+              </p>
             </section>
-              <Button onClick={finish}>We did it</Button>
+
+            <QuestDirections
+              destination={quest.location}
+              origin={origin}
+              className="border-y border-border py-5"
+            />
+
+            <section aria-labelledby="go-steps">
+              <SectionHeading id="go-steps" eyebrow="the quest" title="What you’ll do" />
+              <p className="mt-3 text-[17px] leading-relaxed text-pretty">{quest.mission}</p>
+              <p className="mt-6 font-hand text-lg leading-tight text-muted-foreground">
+                tick them off as you go
+              </p>
+              <RouteStops
+                steps={quest.steps}
+                ticked={ticked}
+                onToggle={toggleStep}
+                className="mt-3"
+              />
+            </section>
+
+            <Dock>
+              <span ref={doneRef} className="inline-flex max-sm:flex-1">
+                <Button full onClick={finish}>
+                  We did it
+                </Button>
+              </span>
+              <p
+                className="shrink-0 px-1 font-hand text-lg leading-tight text-muted-foreground tabular-nums"
+                aria-live="polite"
+              >
+                {allTicked
+                  ? "that’s all of them"
+                  : ticked.length
+                    ? `${ticked.length} of ${quest.steps.length}`
+                    : ""}
+              </p>
+            </Dock>
           </div>
         ) : null}
 
         {stage === "share" ? (
-          <div className="mt-8 space-y-6">
-            <section>
-              <h2 className="text-base font-semibold">How did it rate?</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
+          <div key="share" ref={stageRef} className="space-y-10">
+            <section aria-labelledby="go-rate" {...rise(1)}>
+              <h2
+                id="go-rate"
+                ref={headingRef}
+                tabIndex={-1}
+                className="text-lg font-semibold leading-tight"
+              >
+                How did it rate?
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground text-pretty">
                 {members.length
                   ? "Your rating is enough to share. Add any squad ratings you have; only submitted ratings count toward the average."
                   : "Give it your own score out of 10."}
               </p>
-              <div className="mt-4 space-y-4">
-                <label htmlFor="rating-you" className="block">
-                  <span className="flex items-center justify-between text-sm font-medium">
-                    <span>Your rating</span>
-                    <output>{rating}/10</output>
-                  </span>
-                  <input
+              <div className="mt-6 grid gap-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-10">
+                <div className="space-y-5">
+                  <RatingSlider
                     id="rating-you"
-                    type="range"
-                    min={0}
-                    max={10}
-                    step={1}
+                    label="Your rating"
                     value={rating}
-                    onChange={(event) => setRating(Number(event.target.value))}
-                    className="rating-range mt-2 w-full"
+                    onChange={setRating}
                   />
-                </label>
-                {members.map((member) => {
-                  const value = memberRatings[member.id] ?? 5;
-                  return (
-                    <label key={member.id} htmlFor={`rating-${member.id}`} className="block">
-                      <span className="flex items-center justify-between text-sm font-medium">
-                        <span>{member.name}'s rating</span>
-                        <output>
-                          {memberRatings[member.id] === undefined ? "not rated" : `${value}/10`}
-                        </output>
-                      </span>
-                      <input
-                        id={`rating-${member.id}`}
-                        type="range"
-                        min={0}
-                        max={10}
-                        step={1}
-                        value={value}
-                        onChange={(event) =>
-                          setMemberRatings((current) => ({
-                            ...current,
-                            [member.id]: Number(event.target.value),
-                          }))
-                        }
-                        className="rating-range mt-2 w-full"
-                      />
-                    </label>
-                  );
-                })}
+                  {members.map((member) => (
+                    <RatingSlider
+                      key={member.id}
+                      id={`rating-${member.id}`}
+                      label={`${member.name}'s rating`}
+                      value={memberRatings[member.id]}
+                      onChange={(value) =>
+                        setMemberRatings((current) => ({ ...current, [member.id]: value }))
+                      }
+                    />
+                  ))}
+                </div>
+                <figure className="flex items-center gap-3 self-start max-sm:order-first sm:flex-col sm:gap-2 sm:pt-1">
+                  <LiveRing
+                    rating={ratingAverage}
+                    label={
+                      members.length
+                        ? allMembersRated
+                          ? "Squad average"
+                          : "Average so far"
+                        : "Your rating"
+                    }
+                  />
+                  <figcaption className="font-hand text-base leading-tight text-muted-foreground sm:max-w-[7rem] sm:text-center">
+                    how it’ll show on the feed
+                  </figcaption>
+                </figure>
               </div>
               {members.length ? (
-                <p className="mt-4 rounded-md bg-surface p-3 text-sm font-semibold">
+                <p className="mt-4 text-sm text-muted-foreground">
                   {allMembersRated ? "Squad average" : "Average so far"}:{" "}
-                  {Number.isInteger(ratingAverage) ? ratingAverage : ratingAverage.toFixed(1)}/10
+                  <span className="font-semibold tabular-nums text-foreground">
+                    {score(ratingAverage)}/10
+                  </span>
                   {!allMembersRated
                     ? ` · add ${members.length - ratedMembers.length} more ${members.length - ratedMembers.length === 1 ? "rating" : "ratings"}`
                     : null}
                 </p>
               ) : null}
             </section>
-            <section>
-              <label htmlFor="caption" className="text-base font-semibold">
-                Say something about it
-              </label>
+
+            <section {...rise(2)}>
+              <div className="flex items-baseline justify-between gap-3">
+                <label htmlFor="caption" className="text-lg font-semibold leading-tight">
+                  Say something about it
+                </label>
+                <span className="text-[13px] tabular-nums text-muted-foreground">
+                  {caption.length}/280
+                </span>
+              </div>
               <textarea
                 id="caption"
                 value={caption}
@@ -537,65 +1092,408 @@ function GoPage() {
                 rows={3}
                 maxLength={280}
                 placeholder="The best part was…"
-                className="mt-2 block w-full rounded-md border border-input bg-card p-3"
+                className="mt-3 block w-full resize-y rounded-md border border-input bg-card p-3 text-base leading-relaxed transition-colors duration-(--dur-quick) placeholder:text-muted-foreground focus-visible:border-foreground"
               />
             </section>
-            <section>
-              <label className="inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-md border border-border-strong px-4 text-[15px] font-medium">
-                <ImagePlus aria-hidden className="h-5 w-5" />{" "}
-                {photo ? "Change photo" : "Add a photo"}
+
+            <section {...rise(3)}>
+              <label
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setDragging(true);
+                }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={onDrop}
+                data-dragging={dragging ? "" : undefined}
+                className={cn(
+                  "relative grid aspect-[4/3] w-full cursor-pointer place-items-center overflow-hidden rounded-md border bg-card transition-colors duration-(--dur-quick) sm:w-80",
+                  "has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-ring",
+                  photo
+                    ? "border-border-strong"
+                    : "border-dashed border-border-strong hover:bg-surface",
+                  dragging && "border-solid bg-surface",
+                )}
+              >
+                {photo ? (
+                  <>
+                    <img
+                      key={photo}
+                      src={photo}
+                      alt="Your photo"
+                      className="proof-in absolute inset-0 h-full w-full object-cover"
+                    />
+                    <span
+                      className={cn(
+                        buttonClass({ variant: "outline", size: "sm" }),
+                        "absolute bottom-2 right-2",
+                      )}
+                    >
+                      <ImagePlus aria-hidden className="h-4 w-4" />{" "}
+                      {developing ? "Developing…" : "Change photo"}
+                    </span>
+                  </>
+                ) : (
+                  <span className="grid justify-items-center gap-1.5 px-6 text-center">
+                    <ImagePlus aria-hidden className="h-6 w-6" />
+                    <span className="text-[15px] font-semibold">Add a photo</span>
+                    <span className="font-hand text-lg leading-tight text-muted-foreground">
+                      {developing ? "developing…" : "add the proof"}
+                    </span>
+                  </span>
+                )}
                 <input type="file" accept="image/*" onChange={onPhoto} className="sr-only" />
               </label>
-              {photo ? (
-                <img
-                  src={photo}
-                  alt="Your photo"
-                  className="mx-auto mt-3 block max-h-64 w-[86%] max-w-[420px] rounded-2xl border border-border object-cover"
-                />
-              ) : null}
             </section>
-            <div className="flex flex-wrap gap-3">
-              <Button onClick={share}>
-                <Heart aria-hidden className="h-5 w-5" /> Share to feed
+
+            <Dock>
+              <Button onClick={share} className="max-sm:flex-1" disabled={developing}>
+                <Newspaper aria-hidden className="h-5 w-5" /> Share to feed
               </Button>
               <Button variant="ghost" onClick={() => void navigate({ to: "/" })}>
                 Skip
               </Button>
-            </div>
+            </Dock>
           </div>
         ) : null}
+
+        <p role="status" className="sr-only">
+          {announce}
+        </p>
       </div>
-      <Dialog open={stage === "celebrating"} onOpenChange={(open) => { if (!open && stage === "celebrating") setStage("share"); }}>
-        <DialogContent fullScreen className="quest-celebration-content">
-          <div className="quest-celebration-glow" aria-hidden="true" />
-          <div className="quest-confetti" aria-hidden="true">
-            {Array.from({ length: 42 }, (_, index) => (
-              <span
-                key={index}
-                className={`quest-confetti-piece quest-confetti-piece-${index % 4}`}
-                style={{
-                  "--confetti-x": `${(index * 37) % 100}vw`,
-                  "--confetti-delay": `${(index % 12) * 45}ms`,
-                  "--confetti-turn": `${(index * 71) % 360}deg`,
-                } as CSSProperties}
-              />
-            ))}
-          </div>
-          <section className="quest-celebration-card" aria-labelledby="quest-celebration-title">
-            <div className="quest-celebration-icon" aria-hidden="true"><PartyPopper /></div>
-            <p className="font-hand text-xl">a little victory lap</p>
-            <h2 id="quest-celebration-title" className="mt-2 text-4xl font-extrabold tracking-tight sm:text-6xl">Quest complete!</h2>
-            <p className="mt-3 max-w-lg text-base text-muted-foreground sm:text-lg">You made a plan happen. That’s the good stuff.</p>
-            <p className="quest-xp-pop mt-7 inline-flex min-h-14 items-center rounded-full bg-secondary px-7 font-hand text-2xl font-bold text-secondary-foreground">
-              {celebrationXp > 0 ? `+${celebrationXp} XP` : "Nice work!"}
-            </p>
-            <p className="mt-4 max-w-md truncate text-sm font-semibold text-muted-foreground">{quest.title}</p>
-            <Button className="mt-8 min-h-12 px-7" onClick={() => setStage("share")}>
-              Share your win <Heart aria-hidden className="h-5 w-5" />
-            </Button>
-          </section>
-        </DialogContent>
-      </Dialog>
     </AppShell>
   );
+}
+
+function BackArrow() {
+  return (
+    <ArrowLeft
+      aria-hidden
+      className="h-4 w-4 transition-transform duration-(--dur-quick) ease-(--ease-out) group-hover:-translate-x-0.5"
+    />
+  );
+}
+
+/** "+180 XP" counting up once the postmark lands, the squad bonus, and a way to the vial. */
+function XpReceipt({
+  earned,
+  squad,
+  ready,
+  pour,
+}: {
+  earned: number;
+  squad: boolean;
+  ready: boolean;
+  pour: boolean;
+}) {
+  const shown = Math.round(useCountUp(ready ? earned : 0, 700));
+  return (
+    <div
+      data-ready={ready ? "" : undefined}
+      className="xp-receipt flex flex-wrap items-center gap-x-5 gap-y-1"
+    >
+      <p className="text-[22px] font-semibold leading-none tabular-nums text-primary-deep">
+        <span className="sr-only">Earned </span>+{shown} XP
+      </p>
+      {squad ? (
+        <p className="text-sm text-muted-foreground">includes the +{XP.squadBonus} squad bonus</p>
+      ) : null}
+      {pour ? (
+        <Link
+          to="/profile"
+          className="inline-flex min-h-11 items-center font-hand text-lg leading-none text-muted-foreground underline decoration-primary decoration-2 underline-offset-4 transition-colors duration-(--dur-quick) hover:text-foreground"
+        >
+          watch it pour
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+const pickClass = (on: boolean) =>
+  cn(
+    "press min-h-11 cursor-pointer rounded-md border px-1 text-sm font-semibold tabular-nums",
+    on
+      ? "border-foreground bg-foreground text-background"
+      : "border-border-strong bg-card hover:bg-surface",
+  );
+
+/**
+ * A day (today, tomorrow, the five after), then a time on it: six quick slots that follow the day
+ * (today only offers what's still ahead), or any time on the native wheel.
+ */
+function WhenPicker({
+  value,
+  onPick,
+}: {
+  value: string | null;
+  onPick: (value: string, done?: boolean) => void;
+}) {
+  const days = useMemo(() => upcomingDays(), []);
+  const picked = value ? splitWhen(value) : null;
+  const [day, setDay] = useState(() => {
+    if (picked) return picked.day;
+    // Late in the evening today has nothing left, so start on tomorrow.
+    return timeSlots(days[0]!.key).length ? days[0]!.key : days[1]!.key;
+  });
+  const slots = useMemo(() => timeSlots(day), [day]);
+  // The wheel starts on your time, or an easy one that's still ahead on the day it opens to.
+  const [custom, setCustom] = useState(
+    () =>
+      picked?.time ?? (day === days[0]!.key ? (slots[2] ?? slots.at(-1)) : undefined) ?? "19:00",
+  );
+  const customGone = Boolean(custom) && !isAhead(joinWhen(day, custom));
+
+  // A new day keeps the time you already had, if that's still ahead on it; otherwise pick a time.
+  function chooseDay(key: string) {
+    setDay(key);
+    if (picked && picked.day !== key && isAhead(joinWhen(key, picked.time)))
+      onPick(joinWhen(key, picked.time), false);
+  }
+
+  return (
+    <div>
+      <p className="font-hand text-lg leading-tight text-muted-foreground">pick a day and time</p>
+      <div role="group" aria-label="Day" className="mt-3 grid grid-cols-4 gap-2">
+        {days.map((option) => (
+          <button
+            key={option.key}
+            type="button"
+            aria-pressed={day === option.key}
+            onClick={() => chooseDay(option.key)}
+            className={pickClass(day === option.key)}
+          >
+            {option.label}
+            <span className="sr-only">{option.spoken}</span>
+          </button>
+        ))}
+      </div>
+      <label className="mt-4 block text-[13px] text-muted-foreground">
+        Another day
+        <input
+          type="date"
+          min={days[0]!.key}
+          value={day}
+          onChange={(event) => {
+            if (event.target.value) chooseDay(event.target.value);
+          }}
+          className="mt-1 block min-h-11 w-full rounded-md border border-input bg-card px-3 text-[15px] text-foreground"
+        />
+      </label>
+      <div role="group" aria-label="Time" className="mt-4 border-t border-border pt-4">
+        {slots.length ? (
+          <div className="grid grid-cols-3 gap-2">
+            {slots.map((slot) => {
+              const on = value === joinWhen(day, slot);
+              return (
+                <button
+                  key={slot}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => onPick(joinWhen(day, slot))}
+                  className={pickClass(on)}
+                >
+                  {slotLabel(slot)}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No more easy times today. Pick another day, or set a time below.
+          </p>
+        )}
+      </div>
+      <div className="mt-4 flex items-end gap-2 border-t border-border pt-4">
+        <label className="min-w-0 flex-1 text-[13px] text-muted-foreground">
+          Other time
+          <input
+            type="time"
+            step={900}
+            value={custom}
+            aria-describedby={customGone ? "when-gone" : undefined}
+            aria-invalid={customGone || undefined}
+            onChange={(event) => setCustom(event.target.value)}
+            className="mt-1 block h-11 w-full rounded-md border border-input bg-card px-3 text-[15px] tabular-nums text-foreground transition-colors duration-(--dur-quick) focus-visible:border-foreground"
+          />
+        </label>
+        <Button
+          variant="ink"
+          size="sm"
+          disabled={!custom || customGone}
+          onClick={() => custom && onPick(joinWhen(day, custom))}
+        >
+          Set time
+        </Button>
+      </div>
+      {customGone ? (
+        <p id="when-gone" className="mt-2 text-[13px] text-destructive">
+          That time has already passed today.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+const RING_RADIUS = 20;
+const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
+
+/**
+ * The feed's rating ring (same arc, track and disc as RatingRing), but live: the arc glides to the
+ * new average as you slide instead of replaying its fill from zero.
+ */
+function LiveRing({ rating, label }: { rating: number; label: string }) {
+  const value = Math.round(Math.min(10, Math.max(0, rating)) * 10) / 10;
+  return (
+    <div
+      role="img"
+      aria-label={`${label}: ${score(value)} out of 10`}
+      className="relative grid size-16 shrink-0 place-items-center rounded-full bg-card"
+    >
+      <svg aria-hidden viewBox="0 0 44 44" className="absolute inset-0 size-full -rotate-90">
+        <circle
+          cx="22"
+          cy="22"
+          r={RING_RADIUS}
+          fill="none"
+          strokeWidth="4"
+          className="stroke-muted"
+        />
+        <circle
+          cx="22"
+          cy="22"
+          r={RING_RADIUS}
+          fill="none"
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeDasharray={RING_LENGTH}
+          className="stroke-primary-deep transition-[stroke-dashoffset,opacity] duration-(--dur-slow) ease-(--ease-spring)"
+          style={{
+            strokeDashoffset: RING_LENGTH * (1 - value / 10),
+            opacity: value > 0.05 ? 1 : 0,
+          }}
+        />
+      </svg>
+      <span aria-hidden className="relative text-[19px] font-bold leading-none tracking-[-0.01em]">
+        <Tally value={value} />
+      </span>
+    </div>
+  );
+}
+
+/**
+ * A 0-10 rating on a paper track. The score is the big number; a squadmate who hasn't rated yet
+ * shows an empty track and a dashed thumb ("tap to rate"), never a pretend 5.
+ */
+function RatingSlider({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: number | undefined;
+  onChange: (value: number) => void;
+}) {
+  const rated = value !== undefined;
+  const shown = value ?? 5;
+  return (
+    <div>
+      <div className="flex items-end justify-between gap-3">
+        <label htmlFor={id} className="text-[15px] font-medium">
+          {label}
+        </label>
+        {rated ? (
+          <span aria-hidden className="flex items-baseline gap-0.5 leading-none">
+            <Tally value={value} className="text-[28px] font-semibold" />
+            <span className="text-sm text-muted-foreground">/10</span>
+          </span>
+        ) : (
+          <span aria-hidden className="font-hand text-lg leading-none text-muted-foreground">
+            tap to rate
+          </span>
+        )}
+      </div>
+      <input
+        id={id}
+        type="range"
+        min={0}
+        max={10}
+        step={1}
+        value={shown}
+        aria-valuetext={rated ? `${value} out of 10` : "not rated"}
+        data-unrated={rated ? undefined : ""}
+        onChange={(event) => onChange(Number(event.target.value))}
+        // Tapping the resting spot of an unrated slider doesn't fire a change, so commit it here.
+        onPointerUp={(event) => {
+          if (!rated) onChange(Number(event.currentTarget.value));
+        }}
+        className="quest-range mt-1"
+        style={{ "--pct": `${shown * 10}%` } as CSSProperties}
+      />
+      <div aria-hidden className="quest-ticks">
+        {Array.from({ length: 11 }, (_, i) => (
+          <span key={i} data-label={i % 5 === 0 ? String(i) : undefined} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The stage's one action, sticky just above the phone tab bar. At rest it's the buttons on the
+ * page; while it floats, a paper ticket slides in under them.
+ */
+function Dock({ children }: { children: ReactNode }) {
+  const dock = useRef<HTMLDivElement>(null);
+  const rest = useRef<HTMLDivElement>(null);
+  const stuck = useStuck(dock, rest);
+  return (
+    <>
+      {/* The stage's space-y would put a bottom margin on the dock and read as a lift, so it rests flush. */}
+      <div
+        ref={dock}
+        data-stuck={stuck ? "" : undefined}
+        className="quest-dock !mt-10 !mb-0 flex flex-wrap items-center gap-2 sm:w-fit sm:gap-3"
+      >
+        {children}
+      </div>
+      <div ref={rest} aria-hidden className="!mt-0 h-px" />
+    </>
+  );
+}
+
+/**
+ * True while a sticky element is lifted off its resting place (its spot marked by `rest`). Any
+ * bottom margin on the element is part of where it rests, not a lift.
+ */
+function useStuck(el: RefObject<HTMLElement | null>, rest: RefObject<HTMLElement | null>) {
+  const [stuck, setStuck] = useState(false);
+  useLayoutEffect(() => {
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const node = el.current;
+      const box = node?.getBoundingClientRect();
+      const spot = rest.current?.getBoundingClientRect();
+      if (!node || !box || !spot || box.height === 0) return setStuck(false);
+      const margin = parseFloat(getComputedStyle(node).marginBottom) || 0;
+      setStuck(spot.top - box.bottom - margin > 1);
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
+    measure();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    const observer = new ResizeObserver(schedule);
+    observer.observe(document.body);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      observer.disconnect();
+    };
+  }, [el, rest]);
+  return stuck;
 }

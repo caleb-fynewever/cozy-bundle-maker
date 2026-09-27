@@ -35,3 +35,11 @@ Email codes are sent through [Resend](https://resend.com). Add `RESEND_API_KEY`,
 - TypeScript
 - React
 - Tailwind CSS
+
+### Combined development
+
+The `deploy` branch combines the backend and multi-squad features from `cf/dev` with the interface and map from `overhaul`. See [the integration notes](docs/branch-integration.md) for feature ownership, validation, and rollout details.
+
+Use **Node 22.12 or newer**. Run `npm run typecheck`, `npm test`, and `npm run build` before deployment.
+
+Account sign-in, shared profiles, and real squad invitations use the existing Lovable Cloud/Supabase connection. Squad emails use Lovable's managed email service (`LOVABLE_API_KEY`); the older optional student-verification flow uses Resend. Local server configuration is listed in `.env.example`. Seed quests require no external API, but signed-in backend features require the configured connection.

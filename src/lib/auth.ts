@@ -51,5 +51,6 @@ export async function verifyEmailCode(email: string, code: string) {
 }
 
 export async function signOut() {
-  await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
 }

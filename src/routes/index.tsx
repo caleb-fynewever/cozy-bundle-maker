@@ -1,30 +1,26 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { Bookmark, Footprints } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useMemo, useState, useSyncExternalStore } from "react";
+import { ChevronDown, MapPin } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { SwipeDeck } from "@/components/SwipeDeck";
-import { CAMPUS_ORIGIN, currentTimeSlot, distanceMi, recommend } from "@/lib/engine";
+import { CAMPUS_ORIGIN, currentTimeSlot, recommend } from "@/lib/engine";
 import { QUESTS } from "@/data/quests";
 import { actions, useUserState } from "@/lib/store";
-import type { Quest, SessionContext } from "@/lib/types";
-import { questImage } from "@/lib/imagery";
+import type { SessionContext, TimeSlot } from "@/lib/types";
+import { MyQuests } from "@/components/MyQuests";
 import { CreateQuestForm } from "@/components/CreateQuestForm";
-import { PageHeader, SectionHeading } from "@/components/ui-kit";
+import { PageHeader, buttonClass, textButtonClass } from "@/components/ui-kit";
+import { Tabs } from "@/components/Tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+
+type View = "discover" | "mine" | "create";
 
 export const Route = createFileRoute("/")({
   staticData: { sitemap: false },
+  // The Create tab lives in the URL (/?tab=create), so a refresh, Back or a "Make one" link lands on it.
   validateSearch: (search: Record<string, unknown>) => ({
-    ...(search["tab"] === "yours" ? { tab: "yours" as const } : {}),
+    ...(search["tab"] === "create" || search["tab"] === "mine" ? { tab: search["tab"] as "create" | "mine" } : {}),
   }),
   head: () => ({
     meta: [
@@ -47,163 +43,202 @@ export const Route = createFileRoute("/")({
   component: Discover,
 });
 
+const VIEWS: { id: View; label: string; controls: string }[] = [
+  { id: "discover", label: "Discover", controls: "find-quests-panel" },
+  { id: "mine", label: "My quests", controls: "my-quests-panel" },
+  { id: "create", label: "Create quest", controls: "create-quest-panel" },
+];
+
 // Plan details are set when you hit "Let's go", so the quest deck keeps plain defaults.
-function defaultContext(squadIds: string[], origin: SessionContext["origin"]): SessionContext {
+function defaultContext(squadIds: string[], origin: SessionContext["origin"], timeSlot: TimeSlot): SessionContext {
   return {
     groupSize: 3,
     timeBudgetMin: 90,
     maxCost: 25,
     vibes: [],
     chaos: 3,
-    timeSlot: currentTimeSlot(),
+    timeSlot,
     origin,
     radiusMi: 3,
     squadIds,
   };
 }
 
-function scheduledTimeLabel(value: { start: string; end?: string }) {
-  const now = new Date();
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  const start = value.start.includes("T") ? new Date(value.start) : new Date(`${today}T${value.start}`);
-  const startLabel = value.start.includes("T")
-    ? start.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
-    : start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  if (!value.end) return startLabel;
-  const end = value.end.includes("T") ? new Date(value.end) : new Date(`${today}T${value.end}`);
-  const endLabel = end.toDateString() === start.toDateString()
-    ? end.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
-    : end.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-  return `${startLabel}–${endLabel}`;
+/*
+ * The time of day, read on the client only. The server (UTC) and a browser in Minneapolis can be
+ * in different slots, so the server renders a fixed slot and the browser switches to its own right
+ * after hydration, instead of the two disagreeing about the deck mid-hydration.
+ */
+const noSubscribe = () => () => {};
+const serverTimeSlot = (): TimeSlot => "afternoon";
+function useTimeSlot(): TimeSlot {
+  return useSyncExternalStore(noSubscribe, () => currentTimeSlot(), serverTimeSlot);
 }
 
 function Discover() {
   const state = useUserState();
   const search = Route.useSearch();
-  const [tab, setTab] = useState<"discover" | "yours" | "create">(search.tab ?? "discover");
+  const navigate = useNavigate();
+  const tab: View = search.tab ?? "discover";
+  // Panels only animate in once you've switched; the first view is the deck's deal.
+  const [switched, setSwitched] = useState(false);
+  const [locationBusy, setLocationBusy] = useState(false);
+  const [locationError, setLocationError] = useState("");
   const origin = state.approximateLocation ?? CAMPUS_ORIGIN;
+  const timeSlot = useTimeSlot();
+
+  function switchTab(next: View) {
+    if (next === tab) return;
+    setSwitched(true);
+    void navigate({ to: "/", search: next === "discover" ? {} : { tab: next }, replace: true, resetScroll: false });
+  }
+
+  function requestLocation() {
+    if (locationBusy) return;
+    if (!navigator.geolocation) {
+      setLocationError("This browser can’t share a location. You can keep using East Bank as the starting point.");
+      return;
+    }
+    setLocationBusy(true);
+    setLocationError("");
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        actions.setApproximateLocation(coords.latitude, coords.longitude);
+        setLocationBusy(false);
+      },
+      (error) => {
+        setLocationBusy(false);
+        setLocationError(error.code === error.PERMISSION_DENIED
+          ? "Location access was denied. Allow it in your browser settings, then try again."
+          : "Couldn’t get your location. Check your connection and try again.");
+      },
+      { enableHighAccuracy: false, maximumAge: 5 * 60 * 1000, timeout: 12_000 },
+    );
+  }
 
   const allQuests = useMemo(() => [...state.createdQuests, ...QUESTS], [state.createdQuests]);
   // Passed quests aren't gone: they come back after everything fresh, oldest pass first.
   const { results } = useMemo(
-    () => recommend(defaultContext(state.squadIds, origin), { ...state, passed: [] }, allQuests, allQuests.length),
-    [state, allQuests, origin],
+    () => recommend(defaultContext(state.squadIds, origin, timeSlot), { ...state, passed: [] }, allQuests, allQuests.length),
+    [state, allQuests, origin, timeSlot],
   );
   const deck = useMemo(() => {
-    const open = results.filter(({ quest }) => !state.saved.includes(quest.id) && !state.completed.includes(quest.id));
+    // Quests you made stay in My quests › Created by you; the deck never deals your own back to you.
+    const mine = new Set(state.createdQuests.map((quest) => quest.id));
+    const open = results.filter(({ quest }) => !mine.has(quest.id) && !state.saved.includes(quest.id) && !state.completed.includes(quest.id));
     const fresh = open.filter(({ quest }) => !state.passed.includes(quest.id));
     const later = state.passed.map((id) => open.find(({ quest }) => quest.id === id)).filter((x): x is (typeof open)[number] => !!x);
     return [...fresh, ...later];
-  }, [results, state.saved, state.completed, state.passed]);
-  const questById = useMemo(() => new Map(allQuests.map((quest) => [quest.id, quest])), [allQuests]);
-  const saved = state.saved
-    .filter((id) => !state.inProgress.includes(id) && !state.completed.includes(id) && !state.scheduledQuests.some((item) => item.questId === id))
-    .map((id) => questById.get(id))
-    .filter((quest): quest is Quest => Boolean(quest));
-  const inProgress = state.inProgress.map((id) => questById.get(id)).filter((quest): quest is Quest => quest !== undefined && !state.completed.includes(quest.id));
-  const scheduled = state.scheduledQuests.map(({ questId }) => questById.get(questId)).filter((quest): quest is Quest => Boolean(quest));
-  const created = state.createdQuests.filter((quest) => !state.inProgress.includes(quest.id) && !state.scheduledQuests.some((item) => item.questId === quest.id));
-  const myQuestCount = saved.length + inProgress.length + scheduled.length + created.length;
+  }, [results, state.createdQuests, state.saved, state.completed, state.passed]);
 
   return (
     <AppShell compact>
-      <div className="mx-auto max-w-2xl">
-        <PageHeader title="Quests" eyebrow="with your people" className="mb-4 pb-4" />
-        <div className="mt-4 flex border-b border-border" role="tablist" aria-label="Your quests">
-          <button id="find-quests-tab" type="button" role="tab" aria-controls="find-quests-panel" aria-selected={tab === "discover"} tabIndex={tab === "discover" ? 0 : -1} onClick={() => setTab("discover")} className={`min-h-12 border-b-2 px-4 text-sm font-semibold ${tab === "discover" ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>
-            Discover
-          </button>
-          <button id="saved-quests-tab" type="button" role="tab" aria-controls="saved-quests-panel" aria-selected={tab === "yours"} tabIndex={tab === "yours" ? 0 : -1} onClick={() => setTab("yours")} className={`min-h-12 border-b-2 px-4 text-sm font-semibold ${tab === "yours" ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>
-            My quests <span className="ml-1 text-xs text-muted-foreground">{myQuestCount}</span>
-          </button>
-          <button id="create-quest-tab" type="button" role="tab" aria-controls="create-quest-panel" aria-selected={tab === "create"} tabIndex={tab === "create" ? 0 : -1} onClick={() => setTab("create")} className={`min-h-12 border-b-2 px-4 text-sm font-semibold ${tab === "create" ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}>
-            Create quest
-          </button>
+      {/* Short phones (Safari with its toolbar showing) pull the header in, so the deck's Pass and
+          Save clear the floating tab bar (see quests.css, "Short phones"). */}
+      <div className="mx-auto max-w-2xl max-sm:[@media(max-height:45rem)]:-mt-2 md:-mt-3 lg:max-w-4xl">
+        <PageHeader title="Quests" eyebrow="with your people" bare className="mb-3 pb-0 max-sm:[@media(max-height:45rem)]:mb-1" />
+        {/* The tab rule is the page's only divider; tab text starts flush with the title. Where
+            distances are measured from is one quiet line at the end of the same row. */}
+        <div className="flex items-center justify-between gap-3 border-b border-border">
+          <Tabs
+            tabs={VIEWS}
+            value={tab}
+            onChange={switchTab}
+            label="Quests"
+            idPrefix="quests"
+            className="gap-7 border-b-0 [&>[role=tab]]:px-0"
+          />
+          {tab === "discover" ? (
+            <LocationNote
+              located={Boolean(state.approximateLocation)}
+              busy={locationBusy}
+              onUse={requestLocation}
+              onClear={() => {
+                setLocationError("");
+                actions.clearApproximateLocation();
+              }}
+            />
+          ) : null}
         </div>
+        {tab === "discover" && locationError ? (
+          <p role="alert" className="mt-3 text-sm text-destructive text-pretty">
+            {locationError}
+          </p>
+        ) : null}
 
-        {tab === "discover" ? <div id="find-quests-panel" role="tabpanel" aria-labelledby="find-quests-tab"><SwipeDeck items={deck} /></div> : tab === "create" ? (
-          <div id="create-quest-panel" className="mt-6" role="tabpanel" aria-labelledby="create-quest-tab">
-            <CreateQuestForm embedded />
-          </div>
-        ) : (
-      <div id="saved-quests-panel" className="mt-6 space-y-10" role="tabpanel" aria-labelledby="saved-quests-tab">
-            <QuestShelf title="In progress" empty="No active quest yet. Start one from Discover, Saved for later, or Created by you." quests={inProgress} origin={origin} active />
-            {scheduled.length ? <QuestShelf title="Scheduled" empty="" quests={scheduled} origin={origin} scheduledTimes={Object.fromEntries(state.scheduledQuests.map((item) => [item.questId, { start: item.when, ...(item.endWhen ? { end: item.endWhen } : {}) }]))} scheduled /> : null}
-            <QuestShelf title="Saved for later" empty="Saved quests will be waiting here." quests={saved} origin={origin} onRemove={(quest) => actions.toggleSave(quest.id)} />
-            <QuestShelf title="Created by you" empty="Quests you create will show up here." quests={created} origin={origin} />
-            {!saved.length && !inProgress.length && !scheduled.length && !created.length ? <button type="button" onClick={() => setTab("discover")} className="text-sm font-semibold underline underline-offset-4">Find a quest to save</button> : null}
-          </div>
-        )}
+        {/* Both panels stay mounted, so a half-written quest survives a look at the deck. */}
+        <div
+          id="find-quests-panel"
+          role="tabpanel"
+          aria-labelledby="quests-discover-tab"
+          hidden={tab !== "discover"}
+          className={switched ? "quests-panel-in" : undefined}
+        >
+          <SwipeDeck items={deck} />
+        </div>
+        <div
+          id="my-quests-panel"
+          role="tabpanel"
+          aria-labelledby="quests-mine-tab"
+          hidden={tab !== "mine"}
+          className={cn(switched && "quests-panel-in")}
+        >
+          {tab === "mine" ? <MyQuests /> : null}
+        </div>
+        <div
+          id="create-quest-panel"
+          role="tabpanel"
+          aria-labelledby="quests-create-tab"
+          hidden={tab !== "create"}
+          className={cn("mt-6 sm:mt-8", switched && "quests-panel-in")}
+        >
+          <CreateQuestForm embedded />
+        </div>
       </div>
     </AppShell>
   );
 }
 
-function QuestShelf({
-  title,
-  empty,
-  quests,
-  origin,
-  onRemove,
-  active = false,
-  scheduled = false,
-  scheduledTimes,
-}: {
-  title: string;
-  empty: string;
-  quests: Quest[];
-  origin: SessionContext["origin"];
-  onRemove?: (quest: Quest) => void;
-  active?: boolean;
-  scheduled?: boolean;
-  scheduledTimes?: Record<string, { start: string; end?: string }>;
-}) {
-  const [pendingUnsave, setPendingUnsave] = useState<Quest | null>(null);
-
+/**
+ * Where distances are measured from: one quiet line at the end of the tab row. The controls (turn
+ * your location on, update it, turn it off) and the privacy note open from it on a slip of paper.
+ * The words carry a thin underline in muted ink and a small chevron, so it reads as something to tap.
+ */
+function LocationNote({ located, busy, onUse, onClear }: { located: boolean; busy: boolean; onUse: () => void; onClear: () => void }) {
   return (
-    <section aria-label={title}>
-      <SectionHeading title={title} action={<span className="text-sm text-muted-foreground">{quests.length}</span>} />
-      {quests.length ? (
-        <ul className="mt-3 divide-y divide-border border-y border-border">
-          {quests.map((quest) => (
-            <li key={quest.id} className="py-3">
-              <div className="flex items-center gap-3">
-                <Link to={active || scheduled ? "/go/$questId" : "/quest/$questId"} params={{ questId: quest.id }} className="flex min-w-0 flex-1 items-center gap-3">
-                  <img src={questImage(quest)} alt="" className="h-16 w-16 shrink-0 rounded-md bg-muted object-cover" />
-                  <span className="min-w-0">
-                    <span className="block truncate font-semibold">{quest.title}</span>
-                    <span className="mt-1 block truncate text-sm text-muted-foreground">{scheduledTimes?.[quest.id] ? `Scheduled for ${scheduledTimeLabel(scheduledTimes[quest.id]!)} · ` : ""}{quest.location.name} · {distanceMi(origin, quest.location).toFixed(1)} mi away · {quest.durationMin} min</span>
-                  </span>
-                </Link>
-                <div className="flex shrink-0 items-center gap-1">
-                  {onRemove ? <button type="button" onClick={() => setPendingUnsave(quest)} aria-label={`Remove ${quest.title} from saved`} className="grid h-10 w-10 place-items-center rounded-md text-muted-foreground hover:bg-surface"><Bookmark aria-hidden className="h-4 w-4" fill="currentColor" /></button> : null}
-                  <Link to="/go/$questId" params={{ questId: quest.id }} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-transparent bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:opacity-90 sm:px-6 sm:text-[15px]">
-                    <Footprints aria-hidden className="h-5 w-5" /> {active ? "Continue quest" : scheduled ? "View plan" : "Let’s go"}
-                  </Link>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : <p className="mt-3 border-y border-border py-4 text-sm text-muted-foreground">{empty}</p>}
-      {onRemove ? (
-        <AlertDialog open={Boolean(pendingUnsave)} onOpenChange={(open) => { if (!open) setPendingUnsave(null); }}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Remove from saved?</AlertDialogTitle>
-              <AlertDialogDescription>
-                {pendingUnsave?.title} will be removed from Saved for later. You can find it again in Discover.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Keep saved</AlertDialogCancel>
-              <AlertDialogAction onClick={() => { if (pendingUnsave) onRemove(pendingUnsave); setPendingUnsave(null); }}>
-                Remove quest
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      ) : null}
-    </section>
+    <Popover>
+      <PopoverTrigger asChild>
+        <button type="button" className={cn(textButtonClass, "group shrink-0 gap-1 text-[13px] hover:no-underline data-[state=open]:text-foreground")}>
+          <MapPin aria-hidden className="size-3.5 shrink-0" strokeWidth={1.75} />
+          <span className="underline decoration-muted-foreground/45 decoration-1 underline-offset-[5px] transition-[text-decoration-color] duration-(--dur-quick) ease-(--ease-out) group-hover:decoration-foreground group-data-[state=open]:decoration-foreground">
+            {located ? "Near your area" : "From East Bank"}
+          </span>
+          <ChevronDown aria-hidden className="size-3.5 shrink-0 transition-transform duration-(--dur-quick) ease-(--ease-out) group-data-[state=open]:rotate-180" strokeWidth={1.75} />
+          <span className="sr-only">, location settings</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" sideOffset={4} aria-label="Location settings" className="w-[min(18rem,calc(100vw-2rem))]">
+        <p className="text-sm font-semibold text-pretty">{located ? "Distances are from your approximate area." : "Distances start from East Bank."}</p>
+        <p id="quests-location-privacy" className="mt-1 text-[13px] leading-snug text-muted-foreground text-pretty">
+          Only an approximate area is saved on this device.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <button
+            type="button"
+            onClick={onUse}
+            aria-disabled={busy || undefined}
+            aria-describedby="quests-location-privacy"
+            className={cn(buttonClass({ variant: "outline", size: "sm" }), "aria-disabled:cursor-progress")}
+          >
+            {busy ? "Finding you…" : located ? "Update location" : "Use my location"}
+          </button>
+          {located ? (
+            <button type="button" onClick={onClear} className={cn(textButtonClass, "px-1")}>
+              Turn off
+            </button>
+          ) : null}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
