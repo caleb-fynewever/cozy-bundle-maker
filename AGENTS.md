@@ -28,3 +28,5 @@
 - Keep Discover as a single-card swipe-only deck with real images and pass/save actions; this gives each quest one clear decision without a scrolling feed.
 - Keep public Lovable Cloud browser connection identifiers as Vite fallbacks because the deployment builder may omit its managed aliases; they are publishable values, never privileged credentials.
 - Use the same code-only auth email for signup, magic-link, and recovery events because passwordless sign-in may classify returning users as recovery.
+
+- Squads with uuid ids are shared rows in the `squads`/`squad_members` tables and mirrored into the local store by `useSharedSquadSync`; accepting an invite adds membership via a DB trigger, so every member points at one squad.
