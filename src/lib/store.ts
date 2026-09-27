@@ -421,8 +421,8 @@ export const actions = {
           },
     );
   },
-  createSquad(name: string) {
-    const id = `squad_${Date.now()}`;
+  createSquad(name: string, sharedId?: string) {
+    const id = sharedId ?? `squad_${Date.now()}`;
     const squad: UserSquad = {
       id,
       name: name.trim() || "New squad",
