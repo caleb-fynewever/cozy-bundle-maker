@@ -4,6 +4,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { ChevronDown } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { InviteButton } from "@/components/InviteButton";
 import { Avatar, Button, Chip, PageHeader, SectionHeading } from "@/components/ui-kit";
 import { NEARBY_STUDENTS } from "@/data/people";
 import { buildTasteVector, compatibility, topVibes } from "@/lib/engine";
@@ -135,15 +136,6 @@ function SquadPage() {
     }
   };
 
-  const inviteToSquad = (id: string, name: string, squadId = state.activeSquadId) => {
-    const targetSquad = state.squads.find((item) => item.id === squadId);
-    if (!targetSquad || targetSquad.leaderId !== "me") {
-      toast.error("Create or choose a squad first.");
-      return;
-    }
-    actions.inviteSquadMember(id, name, targetSquad.id);
-    toast(`Invite sent to ${name} for ${targetSquad.name}.`);
-  };
 
   const sendInvite = useServerFn(sendSquadInvite);
   const revokeInvite = useServerFn(revokeSquadInvite);
