@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { LocalLegends } from "@/components/LocalLegends";
-import { PageHeader } from "@/components/ui-kit";
 
 export const Route = createFileRoute("/leaderboard")({
   staticData: { sitemap: false },
@@ -22,7 +21,6 @@ function LeaderboardPage() {
   return (
     <AppShell>
       <div className="mx-auto max-w-4xl">
-        <PageHeader title="Ranks" eyebrow="a little friendly competition" />
         <LocalLegends />
       </div>
     </AppShell>

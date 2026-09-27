@@ -3,7 +3,7 @@ import { ChevronDown } from "lucide-react";
 import { Doodle } from "@/components/Doodle";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { Avatar, SectionHeading, Tally, textButtonClass } from "@/components/ui-kit";
+import { Avatar, PageHeader, Tally, textButtonClass } from "@/components/ui-kit";
 import { Stamp } from "@/components/Stamp";
 import { Tabs } from "@/components/Tabs";
 import { BOARDS, SCOPES, boardKeyOf, nextUp, passedLine, passedSince, rankBoard, rankOf, type BoardKey, type Entry, type Scope } from "@/lib/leaderboard";
@@ -373,13 +373,28 @@ export function LocalLegends({ className }: { className?: string }) {
 
   return (
     <section id="ranks" aria-labelledby="ranks-heading" className={`scroll-mt-24 ${className ?? ""}`}>
-      <div className="legends-heading">
-        <SectionHeading
-          id="ranks-heading"
-          title="Local Legends"
-
-        />
-      </div>
+      <PageHeader
+          title={<span id="ranks-heading">Ranks</span>}
+          eyebrow="a little friendly competition"
+          action={
+            <div className="legends-scope" role="group" aria-label="Who to compare with" data-scope={scope}>
+              <span className="legends-scope-indicator" aria-hidden />
+              {SCOPES.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  aria-pressed={scope === option}
+                  aria-controls="legends-panel"
+                  onClick={() => {
+                    if (scope !== option) change(() => setScope(option));
+                  }}
+                >
+                  {SCOPE_LABEL[option]}
+                </button>
+              ))}
+            </div>
+          }
+      />
 
       <div ref={boardsRef} className="legends-boards hide-scrollbar -mx-5 mt-3 overflow-x-auto px-5 py-1 md:-mx-1 md:px-1">
         <Tabs
