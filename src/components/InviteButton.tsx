@@ -1,13 +1,23 @@
+import { useState } from "react";
 import { Check, UserPlus } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { actions, useUserState } from "@/lib/store";
-import { buttonClass } from "@/components/ui-kit";
+import { buttonClass, textButtonClass } from "@/components/ui-kit";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 /**
- * Invite someone to your squad. The button knows the relationship: Invite, then (morphing in
- * place, with a check that draws itself) Sent. It stays the same button, so keyboard focus stays
- * on it. Someone already in your squad gets a quiet note instead of a button that does nothing.
+ * Invite someone to a squad. The button opens a picker of the squads you lead; choosing one
+ * sends the invite there. Rows for squads they're already in (or already invited to) say so
+ * instead of sending a second invite.
  */
 export function InviteButton({
   personId,
@@ -21,16 +31,11 @@ export function InviteButton({
   full?: boolean;
 }) {
   const state = useUserState();
-  const activeSquad = state.squads.find((squad) => squad.id === state.activeSquadId);
-  const inSquad = activeSquad?.memberIds.includes(personId);
-  const sent = state.squadInvites.some(
-    (invite) =>
-      invite.personId === personId &&
-      invite.squadId === activeSquad?.id &&
-      invite.direction === "sent",
-  );
+  const [open, setOpen] = useState(false);
+  const ledSquads = state.squads.filter((squad) => squad.leaderId === "me");
+  const inAny = state.squads.some((squad) => squad.memberIds.includes(personId));
 
-  if (inSquad) {
+  if (state.squads.length && inAny && !ledSquads.length) {
     return (
       <span
         className={cn(
@@ -45,37 +50,86 @@ export function InviteButton({
   }
 
   return (
-    <button
-      type="button"
-      aria-disabled={sent || undefined}
-      onClick={() => {
-        if (sent) return;
-        if (!activeSquad || activeSquad.leaderId !== "me") {
-          toast.error("Choose a squad you lead on the Squad page first.");
-          return;
-        }
-        actions.inviteSquadMember(personId, name);
-        toast(`Invite sent to ${name}.`);
-      }}
-      className={cn(
-        buttonClass({ variant: "outline", size: "sm", full }),
-        "min-w-32",
-        sent && "cursor-default border-border bg-surface hover:bg-surface active:scale-100",
-        className,
-      )}
-      aria-label={sent ? `Invite sent to ${name}` : `Invite ${name} to your squad`}
-    >
-      <span
-        key={sent ? "sent" : "invite"}
-        className={cn("inline-flex items-center gap-1.5", sent && "morph-in")}
-      >
-        {sent ? (
-          <Check aria-hidden className="draw-check h-4 w-4 text-ring" strokeWidth={2.5} />
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          className={cn(buttonClass({ variant: "outline", size: "sm", full }), "min-w-32", className)}
+          aria-label={`Invite ${name} to a squad`}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <UserPlus aria-hidden className="h-4 w-4" />
+            Invite
+          </span>
+        </button>
+      </DialogTrigger>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Invite {name}</DialogTitle>
+          <DialogDescription>Pick which squad to invite them to.</DialogDescription>
+        </DialogHeader>
+        {ledSquads.length ? (
+          <ul className="mt-2 space-y-2">
+            {ledSquads.map((squad) => {
+              const member = squad.memberIds.includes(personId);
+              const sent = state.squadInvites.some(
+                (invite) =>
+                  invite.personId === personId &&
+                  invite.squadId === squad.id &&
+                  invite.direction === "sent",
+              );
+              return (
+                <li key={squad.id}>
+                  <button
+                    type="button"
+                    disabled={member || sent}
+                    onClick={() => {
+                      actions.inviteSquadMember(personId, name, squad.id);
+                      toast(`Invite to ${squad.name} sent to ${name}.`);
+                      setOpen(false);
+                    }}
+                    className={cn(
+                      "flex w-full items-center justify-between gap-3 rounded-lg border border-border px-4 py-3 text-left transition-colors",
+                      member || sent
+                        ? "cursor-default text-muted-foreground"
+                        : "hover:bg-surface active:scale-[0.99]",
+                    )}
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate font-semibold">{squad.name}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {squad.memberIds.length}{" "}
+                        {squad.memberIds.length === 1 ? "member" : "members"}
+                      </span>
+                    </span>
+                    {member ? (
+                      <span className="inline-flex shrink-0 items-center gap-1 text-sm">
+                        <Check aria-hidden className="h-4 w-4 text-ring" strokeWidth={2.5} />
+                        In squad
+                      </span>
+                    ) : sent ? (
+                      <span className="inline-flex shrink-0 items-center gap-1 text-sm">
+                        <Check aria-hidden className="h-4 w-4 text-ring" strokeWidth={2.5} />
+                        Sent
+                      </span>
+                    ) : (
+                      <span className="shrink-0 text-sm font-semibold text-ring">Invite</span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         ) : (
-          <UserPlus aria-hidden className="h-4 w-4" />
+          <p className="mt-2 text-sm text-muted-foreground">
+            You don't lead a squad yet.{" "}
+            <Link to="/squad" className={textButtonClass} onClick={() => setOpen(false)}>
+              Make one on the Squad page
+            </Link>
+            .
+          </p>
         )}
-        {sent ? "Sent" : "Invite"}
-      </span>
-    </button>
+      </DialogContent>
+    </Dialog>
   );
 }
