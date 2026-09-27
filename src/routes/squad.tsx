@@ -1,15 +1,13 @@
-import { Stamp } from "@/components/Stamp";
 import { cn } from "@/lib/utils";
-import { Tally, buttonClass } from "@/components/ui-kit";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { ChevronDown } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { Avatar, Button, Chip, PageHeader, Panel, SectionHeading } from "@/components/ui-kit";
+import { Avatar, Button, Chip, PageHeader, SectionHeading } from "@/components/ui-kit";
 import { NEARBY_STUDENTS } from "@/data/people";
 import { buildTasteVector, compatibility, topVibes } from "@/lib/engine";
-import { actions, useUserState, XP } from "@/lib/store";
+import { actions, useUserState } from "@/lib/store";
 import { useServerFn } from "@tanstack/react-start";
 import {
   revokeSquadInvite,
@@ -17,7 +15,7 @@ import {
   sendSquadInviteByHandle,
 } from "@/lib/squad-invites.functions";
 import { refreshSquadInvites, useSquadInvites } from "@/lib/squad-invites";
-import { levelName, squadWeek } from "@/lib/progress";
+import { levelName } from "@/lib/progress";
 import { VIBE_EMOJI, VIBE_LABEL } from "@/lib/types";
 import {
   AlertDialog,
@@ -234,7 +232,6 @@ function SquadPage() {
     setPendingSquadAction(null);
   };
 
-  const week = squadWeek(state);
   const people = scope === "matches" ? nearby.slice(0, 3) : nearby;
 
   return (
@@ -270,211 +267,7 @@ function SquadPage() {
         </form>
       ) : null}
 
-      <div className="squad-layout">
-        <div className="squad-main">
-          <section id="find-squad">
-            <SectionHeading title="Find your people" />
-
-            {!state.verified ? (
-              <details className="mt-4 rounded-xl border border-border bg-card p-4">
-                <summary className="min-h-10 cursor-pointer font-semibold">
-                  Verify your .edu email{" "}
-                  <span className="font-normal text-muted-foreground">(optional)</span>
-                </summary>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Verification adds a student badge to your profile. You can find people and build
-                  squads without it.
-                </p>
-                <div className="mt-3">
-                  <p className="text-muted-foreground">
-                    {verificationToken
-                      ? `Enter the six-digit code we sent to ${email}. Your email stays private.`
-                      : "Enter your .edu email to get a six-digit verification code. Your email stays private."}
-                  </p>
-                  <div className="mt-5 flex flex-wrap gap-3">
-                    <label className="sr-only" htmlFor="edu">
-                      {verificationToken ? "Verification code" : "Student email"}
-                    </label>
-                    <input
-                      id="edu"
-                      type={verificationToken ? "text" : "email"}
-                      inputMode={verificationToken ? "numeric" : "email"}
-                      autoComplete={verificationToken ? "one-time-code" : "email"}
-                      maxLength={verificationToken ? 6 : undefined}
-                      value={verificationToken ? code : email}
-                      onChange={(event) => {
-                        setVerificationError("");
-                        if (verificationToken)
-                          setCode(event.target.value.replace(/\D/g, "").slice(0, 6));
-                        else setEmail(event.target.value);
-                      }}
-                      placeholder={verificationToken ? "123456" : "you@umn.edu"}
-                      className="min-h-12 flex-1 rounded-md border border-border-strong bg-card px-5 text-[15px]"
-                    />
-                    <Button
-                      variant="ink"
-                      disabled={verificationBusy}
-                      onClick={verificationToken ? confirmVerificationCode : sendVerificationCode}
-                    >
-                      {verificationBusy
-                        ? "One sec…"
-                        : verificationToken
-                          ? "Verify code"
-                          : "Send code"}
-                    </Button>
-                  </div>
-                  {verificationError ? (
-                    <p role="alert" className="mt-3 text-sm text-destructive">
-                      {verificationError}
-                    </p>
-                  ) : null}
-                  {verificationToken ? (
-                    <div className="mt-2 flex flex-wrap gap-4">
-                      <button
-                        type="button"
-                        disabled={verificationBusy}
-                        onClick={sendVerificationCode}
-                        className="min-h-11 text-sm text-muted-foreground underline underline-offset-4"
-                      >
-                        Send a new code
-                      </button>
-                      <button
-                        type="button"
-                        disabled={verificationBusy}
-                        onClick={() => {
-                          setVerificationToken("");
-                          setCode("");
-                        }}
-                        className="min-h-11 text-sm text-muted-foreground underline underline-offset-4"
-                      >
-                        Use a different email
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              </details>
-            ) : (
-              <p className="mt-4 text-sm text-muted-foreground">Your student email is verified.</p>
-            )}
-
-            {!state.optInNearby ? (
-              <div className="mt-4">
-                <p className="text-muted-foreground">
-                  Turn on nearby so other students can find you. We only ever show rough distance.
-                </p>
-                <div className="mt-5">
-                  <Button variant="ink" onClick={() => actions.setPrivacy({ optInNearby: true })}>
-                    Show me nearby
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="mt-5 flex flex-wrap items-center gap-2">
-                  <Chip active={scope === "matches"} onClick={() => setScope("matches")}>
-                    Best matches
-                  </Chip>
-                  <Chip active={scope === "nearby"} onClick={() => setScope("nearby")}>
-                    Everyone nearby
-                  </Chip>
-                  <label className="sr-only" htmlFor="radius">
-                    Distance
-                  </label>
-                  <select
-                    id="radius"
-                    value={radiusMi}
-                    onChange={(e) => setRadius(Number(e.target.value))}
-                    className="min-h-11 rounded-md border border-border bg-card px-4 text-sm"
-                  >
-                    {[1, 3, 5].map((r) => (
-                      <option key={r} value={r}>
-                        within {r} mi
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <ul className="mt-6 divide-y divide-border">
-                  {people.map(({ user, score }) => {
-                    return (
-                      <li key={user.id} className="flex items-start gap-4 py-6">
-                        <Link
-                          to="/profile"
-                          search={{ handle: user.handle }}
-                          aria-label={`View ${user.name}'s profile`}
-                          className="shrink-0 rounded-[30%] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                        >
-                          <Avatar name={user.name} size={52} />
-                        </Link>
-                        <div className="min-w-0 flex-1">
-                          <Link
-                            to="/profile"
-                            search={{ handle: user.handle }}
-                            className="text-lg font-bold leading-tight hover:underline"
-                          >
-                            {user.name}{" "}
-                            <span className="text-sm font-normal text-muted-foreground">
-                              @{user.handle}
-                            </span>
-                          </Link>
-                          <p className="text-sm text-muted-foreground">
-                            {user.distanceMi} mi away · {score}% vibe match
-                          </p>
-                          <p className="mt-2 text-[15px]">
-                            {topVibes(user.taste, 3)
-                              .map((v) => `${VIBE_EMOJI[v.vibe]} ${VIBE_LABEL[v.vibe]}`)
-                              .join("   ")}
-                          </p>
-                          <p className="mt-1 text-sm text-muted-foreground">{user.bio}</p>
-                        </div>
-                        <Button
-                          variant="ink"
-                          disabled={
-                            !activeSquad ||
-                            activeSquad.leaderId !== "me" ||
-                            state.squadInvites.some(
-                              (invite) =>
-                                invite.personId === user.id &&
-                                invite.squadId === activeSquad.id &&
-                                invite.direction === "sent",
-                            )
-                          }
-                          onClick={() => inviteToSquad(user.id, user.name)}
-                        >
-                          {activeSquad &&
-                          state.squadInvites.some(
-                            (invite) =>
-                              invite.personId === user.id &&
-                              invite.squadId === activeSquad.id &&
-                              invite.direction === "sent",
-                          )
-                            ? "Invite sent"
-                            : "Invite"}
-                        </Button>
-                      </li>
-                    );
-                  })}
-                  {people.length === 0 ? (
-                    <li className="py-6 text-muted-foreground">
-                      No one around right now. Try a wider distance.
-                    </li>
-                  ) : null}
-                </ul>
-                <button
-                  type="button"
-                  onClick={() => actions.setPrivacy({ optInNearby: false })}
-                  className="mt-4 min-h-11 text-sm text-muted-foreground underline underline-offset-4"
-                >
-                  Stop showing me nearby
-                </button>
-              </>
-            )}
-          </section>
-
-        </div>
-        <aside className="squad-aside squad-manager" aria-label="Your squads and this week">
-          {state.squads.length ? <WeekTogether /> : null}
-          <section className="mt-8" aria-labelledby="your-squads-heading">
+          <section className="mt-12" aria-labelledby="your-squads-heading">
             <SectionHeading
               id="your-squads-heading"
               eyebrow="Your circles"
@@ -691,6 +484,207 @@ function SquadPage() {
             )}
           </section>
 
+      <div className="mt-12">
+          <section id="find-squad">
+            <SectionHeading title="Find your people" />
+
+            {!state.verified ? (
+              <details className="mt-4 rounded-xl border border-border bg-card p-4">
+                <summary className="min-h-10 cursor-pointer font-semibold">
+                  Verify your .edu email{" "}
+                  <span className="font-normal text-muted-foreground">(optional)</span>
+                </summary>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Verification adds a student badge to your profile. You can find people and build
+                  squads without it.
+                </p>
+                <div className="mt-3 text-center">
+                  <p className="text-muted-foreground">
+                    {verificationToken
+                      ? `Enter the six-digit code we sent to ${email}. Your email stays private.`
+                      : "Enter your .edu email to get a six-digit verification code. Your email stays private."}
+                  </p>
+                  <div className="mt-5 flex flex-wrap justify-center gap-3">
+                    <label className="sr-only" htmlFor="edu">
+                      {verificationToken ? "Verification code" : "Student email"}
+                    </label>
+                    <input
+                      id="edu"
+                      type={verificationToken ? "text" : "email"}
+                      inputMode={verificationToken ? "numeric" : "email"}
+                      autoComplete={verificationToken ? "one-time-code" : "email"}
+                      maxLength={verificationToken ? 6 : undefined}
+                      value={verificationToken ? code : email}
+                      onChange={(event) => {
+                        setVerificationError("");
+                        if (verificationToken)
+                          setCode(event.target.value.replace(/\D/g, "").slice(0, 6));
+                        else setEmail(event.target.value);
+                      }}
+                      placeholder={verificationToken ? "123456" : "you@umn.edu"}
+                      className="min-h-12 flex-1 rounded-md border border-border-strong bg-card px-5 text-[15px]"
+                    />
+                    <Button
+                      variant="ink"
+                      disabled={verificationBusy}
+                      onClick={verificationToken ? confirmVerificationCode : sendVerificationCode}
+                    >
+                      {verificationBusy
+                        ? "One sec…"
+                        : verificationToken
+                          ? "Verify code"
+                          : "Send code"}
+                    </Button>
+                  </div>
+                  {verificationError ? (
+                    <p role="alert" className="mt-3 text-sm text-destructive">
+                      {verificationError}
+                    </p>
+                  ) : null}
+                  {verificationToken ? (
+                    <div className="mt-2 flex flex-wrap gap-4">
+                      <button
+                        type="button"
+                        disabled={verificationBusy}
+                        onClick={sendVerificationCode}
+                        className="min-h-11 text-sm text-muted-foreground underline underline-offset-4"
+                      >
+                        Send a new code
+                      </button>
+                      <button
+                        type="button"
+                        disabled={verificationBusy}
+                        onClick={() => {
+                          setVerificationToken("");
+                          setCode("");
+                        }}
+                        className="min-h-11 text-sm text-muted-foreground underline underline-offset-4"
+                      >
+                        Use a different email
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              </details>
+            ) : (
+              <p className="mt-4 text-sm text-muted-foreground">Your student email is verified.</p>
+            )}
+
+            {!state.optInNearby ? (
+              <div className="mt-4">
+                <p className="text-muted-foreground">
+                  Turn on nearby so other students can find you. We only ever show rough distance.
+                </p>
+                <div className="mt-5">
+                  <Button variant="ink" onClick={() => actions.setPrivacy({ optInNearby: true })}>
+                    Show me nearby
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="mt-5 flex flex-wrap items-center gap-2">
+                  <Chip active={scope === "matches"} onClick={() => setScope("matches")}>
+                    Best matches
+                  </Chip>
+                  <Chip active={scope === "nearby"} onClick={() => setScope("nearby")}>
+                    Everyone nearby
+                  </Chip>
+                  <label className="sr-only" htmlFor="radius">
+                    Distance
+                  </label>
+                  <select
+                    id="radius"
+                    value={radiusMi}
+                    onChange={(e) => setRadius(Number(e.target.value))}
+                    className="min-h-11 rounded-md border border-border bg-card px-4 text-sm"
+                  >
+                    {[1, 3, 5].map((r) => (
+                      <option key={r} value={r}>
+                        within {r} mi
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <ul className="mt-6 divide-y divide-border">
+                  {people.map(({ user, score }) => {
+                    return (
+                      <li key={user.id} className="flex items-start gap-4 py-6">
+                        <Link
+                          to="/profile"
+                          search={{ handle: user.handle }}
+                          aria-label={`View ${user.name}'s profile`}
+                          className="shrink-0 rounded-[30%] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                        >
+                          <Avatar name={user.name} size={52} />
+                        </Link>
+                        <div className="min-w-0 flex-1">
+                          <Link
+                            to="/profile"
+                            search={{ handle: user.handle }}
+                            className="text-lg font-bold leading-tight hover:underline"
+                          >
+                            {user.name}{" "}
+                            <span className="text-sm font-normal text-muted-foreground">
+                              @{user.handle}
+                            </span>
+                          </Link>
+                          <p className="text-sm text-muted-foreground">
+                            {user.distanceMi} mi away · {score}% vibe match
+                          </p>
+                          <p className="mt-2 text-[15px]">
+                            {topVibes(user.taste, 3)
+                              .map((v) => `${VIBE_EMOJI[v.vibe]} ${VIBE_LABEL[v.vibe]}`)
+                              .join("   ")}
+                          </p>
+                          <p className="mt-1 text-sm text-muted-foreground">{user.bio}</p>
+                        </div>
+                        <Button
+                          variant="ink"
+                          disabled={
+                            !activeSquad ||
+                            activeSquad.leaderId !== "me" ||
+                            state.squadInvites.some(
+                              (invite) =>
+                                invite.personId === user.id &&
+                                invite.squadId === activeSquad.id &&
+                                invite.direction === "sent",
+                            )
+                          }
+                          onClick={() => inviteToSquad(user.id, user.name)}
+                        >
+                          {activeSquad &&
+                          state.squadInvites.some(
+                            (invite) =>
+                              invite.personId === user.id &&
+                              invite.squadId === activeSquad.id &&
+                              invite.direction === "sent",
+                          )
+                            ? "Invite sent"
+                            : "Invite"}
+                        </Button>
+                      </li>
+                    );
+                  })}
+                  {people.length === 0 ? (
+                    <li className="py-6 text-muted-foreground">
+                      No one around right now. Try a wider distance.
+                    </li>
+                  ) : null}
+                </ul>
+                <button
+                  type="button"
+                  onClick={() => actions.setPrivacy({ optInNearby: false })}
+                  className="mt-4 min-h-11 text-sm text-muted-foreground underline underline-offset-4"
+                >
+                  Stop showing me nearby
+                </button>
+              </>
+            )}
+          </section>
+
+
           <AlertDialog
             open={Boolean(pendingSquadAction)}
             onOpenChange={(open) => {
@@ -718,88 +712,8 @@ function SquadPage() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        </aside>
       </div>
     </AppShell>
   );
 }
 
-function mondayKey(now = new Date()) {
-  const day = new Date(now);
-  day.setHours(0, 0, 0, 0);
-  day.setDate(day.getDate() - ((day.getDay() + 6) % 7));
-  return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
-}
-
-/**
- * The squad's week on one sheet of paper: the total rolls when it changes, filled segments pour in
- * like the XP vial, and hitting the goal joins them into one bar, prints the sheet, and stamps it
- * (once a week).
- */
-function WeekTogether() {
-  const state = useUserState();
-  const week = squadWeek(state);
-  const goalStamp = `squad-goal:${mondayKey()}`;
-  const firstSight = week.done && !state.stampsSeen.includes(goalStamp);
-  const [slam, setSlam] = useState(false);
-
-  useEffect(() => {
-    if (!firstSight) return;
-    setSlam(true);
-    actions.seeStamps([goalStamp]);
-  }, [firstSight, goalStamp]);
-
-  return (
-    <Panel
-      aria-labelledby="squad-week"
-      className={cn("week-panel relative rounded-lg", week.done && "lift border-border-strong")}
-    >
-      <SectionHeading
-        id="squad-week"
-        eyebrow="little things add up"
-        title="This week together"
-        detail={
-          <>
-            <Tally value={week.totalXp} className="font-semibold text-foreground" /> squad XP
-          </>
-        }
-      />
-      <p className="mt-4 text-[15px] text-muted-foreground">
-        {week.done
-          ? `${week.together} quests done. Goal hit!`
-          : `${week.together} of ${week.goal} quests done · ${week.goal - week.together} to go.`}
-      </p>
-      <div
-        role="meter"
-        aria-label="Squad quests this week"
-        aria-valuemin={0}
-        aria-valuemax={week.goal}
-        aria-valuenow={Math.min(week.together, week.goal)}
-        aria-valuetext={`${week.together} of ${week.goal} squad quests this week`}
-        className="week-meter mt-4"
-        style={{ "--n": week.goal } as CSSProperties}
-      >
-        {Array.from({ length: week.goal }, (_, i) => {
-          const filled = i < week.together;
-          return (
-            <span key={i} className="week-seg" data-filled={filled || undefined}>
-              {filled ? <span className="week-fill" style={{ "--i": i } as CSSProperties} /> : null}
-            </span>
-          );
-        })}
-        {week.done ? <span aria-hidden className="week-join" /> : null}
-      </div>
-      <p className="mt-4 text-sm text-pretty text-muted-foreground">
-        Do a quest with someone in your squad for +{XP.squadBonus} bonus XP.
-      </p>
-      <Link to="/" className={cn(buttonClass({ variant: "outline", size: "sm" }), "mt-4")}>
-        Pick a quest
-      </Link>
-      {week.done ? (
-        <span aria-hidden className="week-stamp">
-          <Stamp label="goal hit" size={76} tilt={-8} slam={slam} />
-        </span>
-      ) : null}
-    </Panel>
-  );
-}
