@@ -640,30 +640,7 @@ function SquadPage() {
                           </p>
                           <p className="mt-1 text-sm text-muted-foreground">{user.bio}</p>
                         </div>
-                        <Button
-                          variant="ink"
-                          disabled={
-                            !activeSquad ||
-                            activeSquad.leaderId !== "me" ||
-                            state.squadInvites.some(
-                              (invite) =>
-                                invite.personId === user.id &&
-                                invite.squadId === activeSquad.id &&
-                                invite.direction === "sent",
-                            )
-                          }
-                          onClick={() => inviteToSquad(user.id, user.name)}
-                        >
-                          {activeSquad &&
-                          state.squadInvites.some(
-                            (invite) =>
-                              invite.personId === user.id &&
-                              invite.squadId === activeSquad.id &&
-                              invite.direction === "sent",
-                          )
-                            ? "Invite sent"
-                            : "Invite"}
-                        </Button>
+                        <InviteButton personId={user.id} name={user.name} />
                       </li>
                     );
                   })}
