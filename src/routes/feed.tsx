@@ -10,6 +10,8 @@ import { FRIEND_POSTS, type FeedComment, type FeedPost } from "@/data/feed";
 import { questImage } from "@/lib/imagery";
 import { DURATION, EASE_IN, EASE_OUT, SPRING, burst, reducedMotion } from "@/lib/motion";
 import { actions, useUserState } from "@/lib/store";
+import { useActiveQuestSession } from "@/lib/quest-sessions";
+import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { VIBE_DOODLE } from "@/lib/vibes";
 
@@ -70,6 +72,8 @@ const HEART_PATH =
 
 function FeedPage() {
   const state = useUserState();
+  const { session } = useAuth();
+  const activeQuest = useActiveQuestSession();
 
   // The feed is your squads: your own posts and posts from anyone in one of them.
   const squadmateIds = new Set(state.squadIds);
@@ -81,6 +85,24 @@ function FeedPage() {
     <AppShell>
       <div className="mx-auto max-w-xl lg:max-w-[640px]">
         <PageHeader eyebrow="from your people" title="Feed" />
+        {activeQuest ? (
+          <Link
+            to="/go/$questId"
+            params={{ questId: activeQuest.quest_id }}
+            className="mt-3 block rounded-md border border-primary/40 bg-surface px-4 py-3"
+            aria-label={`Open the quest ${activeQuest.quest_title}`}
+          >
+            <span className="block font-hand text-lg leading-snug">
+              {activeQuest.starter_id === session?.user.id
+                ? "you’re on a quest right now"
+                : `${activeQuest.starter_name} got you out the door`}
+            </span>
+            <span className="block text-sm text-muted-foreground">
+              {activeQuest.quest_title}
+              {activeQuest.location_name ? ` · ${activeQuest.location_name}` : ""} · tap to open
+            </span>
+          </Link>
+        ) : null}
         {posts.length ? (
           <ul className="divide-y divide-border sm:mt-2">
             {posts.map((post, index) => (
