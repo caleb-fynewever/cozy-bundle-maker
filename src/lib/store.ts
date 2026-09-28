@@ -637,8 +637,10 @@ export const actions = {
           if (m.id === me || m.demo) continue;
           const fid = `f_${m.id}`;
           const i = friends.findIndex((f) => f.id === fid);
-          if (i === -1) friends.push({ id: fid, name: m.name, email: "", handle: m.handle || undefined });
-          else friends[i] = { ...friends[i]!, name: m.name, handle: m.handle || friends[i]!.handle };
+          const handle = m.handle || (i === -1 ? "" : (friends[i]!.handle ?? ""));
+          const entry: Friend = { id: fid, name: m.name, email: "", ...(handle ? { handle } : {}) };
+          if (i === -1) friends.push(entry);
+          else friends[i] = entry;
         }
       const activeSquadId = squads.some((sq) => sq.id === s.activeSquadId)
         ? s.activeSquadId
