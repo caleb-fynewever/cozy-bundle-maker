@@ -58,7 +58,8 @@ export const getActiveQuestSession = createServerFn({ method: "GET" })
       .limit(20);
     if (error) throw new Error("Couldn't load active quests.");
     const mine = (data ?? []).find(
-      (row) => row.starter_id === context.userId || (row.member_ids as string[]).includes(context.userId),
+      (row: { starter_id: string; member_ids: string[] }) =>
+        row.starter_id === context.userId || row.member_ids.includes(context.userId),
     );
     if (!mine) return null;
     const { data: starter } = await context.supabase
