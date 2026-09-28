@@ -110,15 +110,25 @@ function AuthPage() {
             maxLength={20}
             className="min-h-12 w-full rounded-lg border border-input bg-card px-4 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="password"
-            autoComplete={mode === "signin" ? "current-password" : "new-password"}
-            maxLength={72}
-            className="min-h-12 w-full rounded-lg border border-input bg-card px-4 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="password"
+              autoComplete={mode === "signin" ? "current-password" : "new-password"}
+              maxLength={72}
+              className="min-h-12 w-full rounded-lg border border-input bg-card pl-4 pr-16 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              {showPassword ? "hide" : "show"}
+            </button>
+          </div>
           <button
             type="submit"
             disabled={busy || loading}
