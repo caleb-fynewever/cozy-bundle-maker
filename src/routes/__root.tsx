@@ -347,6 +347,8 @@ function RootComponent() {
     body = <div className="min-h-screen bg-background" />;
   } else if (!session && !onAuthPage) {
     body = <Navigate to="/auth" replace />;
+  } else if (session && onAuthPage) {
+    body = <Navigate to={userState.configured ? "/" : "/setup"} replace />;
   } else if (session && !userState.configured && !onSetupPage) {
     body = <Navigate to="/setup" replace />;
   } else if (session && userState.configured && onSetupPage) {
