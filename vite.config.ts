@@ -50,9 +50,9 @@ export default defineConfig({
     // connected backend into the dev-server process env, and those win over
     // .env. Force the current project's publishable connection settings here.
     define: {
-      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(processEnv["VITE_SUPABASE_URL"]),
-      "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(processEnv["VITE_SUPABASE_PUBLISHABLE_KEY"]),
-      "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(processEnv["VITE_SUPABASE_PROJECT_ID"]),
+      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(SUPABASE_CONNECTION.url),
+      "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(SUPABASE_CONNECTION.publishableKey),
+      "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(SUPABASE_CONNECTION.projectId),
     },
   },
   tanstackStart: {
