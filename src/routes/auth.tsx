@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
+import { markInstallHintPending } from "@/components/InstallHint";
 
 export const Route = createFileRoute("/auth")({
   staticData: { sitemap: true },
@@ -71,6 +72,7 @@ function AuthPage() {
           toast.error("Account created but sign-in is blocked — email confirmation needs to be off.");
           return;
         }
+        markInstallHintPending();
         toast.success("Account created — welcome to wego.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
