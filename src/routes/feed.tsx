@@ -19,9 +19,9 @@ export const Route = createFileRoute("/feed")({
   staticData: { sitemap: false },
   head: () => ({
     meta: [
-      { title: "Feed — wego" },
+      { title: "Feed | wego" },
       { name: "description", content: "See what your friends got up to: quests they finished, how they rated them, photos and notes." },
-      { property: "og:title", content: "Feed — wego" },
+      { property: "og:title", content: "Feed | wego" },
       { property: "og:description", content: "Your friends' finished quests, ratings, photos and comments." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

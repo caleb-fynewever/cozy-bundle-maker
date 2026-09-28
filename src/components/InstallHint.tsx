@@ -83,7 +83,7 @@ export function InstallHint() {
                   <li>
                     Choose <strong className="text-foreground">Add to Home Screen</strong>
                   </li>
-                  <li>Tap Add — the wego icon lands on your home screen</li>
+                  <li>Tap Add to put the wego icon on your home screen</li>
                 </ol>
               ) : (
                 <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-muted-foreground">

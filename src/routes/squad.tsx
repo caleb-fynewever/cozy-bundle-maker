@@ -36,17 +36,17 @@ export const Route = createFileRoute("/squad")({
   staticData: { sitemap: false },
   head: () => ({
     meta: [
-      { title: "Your squad — wego" },
+      { title: "Your squad | wego" },
       {
         name: "description",
         content:
           "Build squads with students nearby. Email verification is optional; compatibility is scored on taste, shared interests, distance and group size.",
       },
-      { property: "og:title", content: "Your squad — wego" },
+      { property: "og:title", content: "Your squad | wego" },
       {
         property: "og:description",
         content:
-          "Find students nearby by vibe compatibility — approximate distance only. Student email verification is optional.",
+          "Find students nearby by vibe compatibility. Distances are approximate, and student email verification is optional.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

@@ -34,14 +34,22 @@ export const Route = createFileRoute("/quest/$questId")({
   head: ({ loaderData }) => {
     if (!loaderData?.title) {
       return {
-        meta: [{ title: loaderData?.local ? "Quest — wego" : "Quest unavailable — wego" }, { name: "robots", content: "noindex" }],
+        meta: [
+          { title: loaderData?.local ? "Quest | wego" : "Quest unavailable | wego" },
+          { name: "description", content: "See quest details on wego." },
+          { property: "og:title", content: loaderData?.local ? "Quest | wego" : "Quest unavailable | wego" },
+          { property: "og:description", content: "See quest details on wego." },
+          { property: "og:type", content: "article" },
+          { name: "twitter:card", content: "summary" },
+          { name: "robots", content: "noindex" },
+        ],
       };
     }
     return {
       meta: [
-        { title: `${loaderData.title} — wego` },
+        { title: `${loaderData.title} | wego` },
         { name: "description", content: loaderData.hook ?? "" },
-        { property: "og:title", content: `${loaderData.title} — wego` },
+        { property: "og:title", content: `${loaderData.title} | wego` },
         { property: "og:description", content: loaderData.hook ?? "" },
         { property: "og:type", content: "article" },
         { name: "twitter:card", content: "summary_large_image" },
@@ -154,7 +162,7 @@ function QuestDetail() {
 
   // A quest you made has no title on the server; name the tab once it's found here.
   useEffect(() => {
-    if (quest && !knownTitle) document.title = `${quest.title} — wego`;
+    if (quest && !knownTitle) document.title = `${quest.title} | wego`;
   }, [quest, knownTitle]);
 
   if (!quest) {

@@ -100,9 +100,9 @@ export const Route = createFileRoute("/profile")({
   }),
   head: () => ({
     meta: [
-      { title: "Your profile — wego" },
+      { title: "Your profile | wego" },
       { name: "description", content: "Your quests, XP, weekly streak, and badges." },
-      { property: "og:title", content: "Your profile — wego" },
+      { property: "og:title", content: "Your profile | wego" },
       { property: "og:description", content: "Your quests, XP, weekly streak, and badges." },
       { property: "og:type", content: "profile" },
       { name: "twitter:card", content: "summary_large_image" },
