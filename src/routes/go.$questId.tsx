@@ -85,18 +85,18 @@ export const Route = createFileRoute("/go/$questId")({
   head: ({ loaderData }) => ({
     meta: loaderData?.title
       ? [
-          { title: `Let's go: ${loaderData.title} — wego` },
+          { title: `Let's go: ${loaderData.title} | wego` },
           {
             name: "description",
             content: `Pick your crew and a time, then head out for ${loaderData.title}.`,
           },
-          { property: "og:title", content: `Let's go: ${loaderData.title} — wego` },
+          { property: "og:title", content: `Let's go: ${loaderData.title} | wego` },
           { property: "og:description", content: "Pick your crew, pick a time, walk over." },
           { property: "og:type", content: "website" },
           { name: "twitter:card", content: "summary" },
         ]
       : [
-          { title: loaderData?.local ? "Let's go — wego" : "Quest unavailable — wego" },
+          { title: loaderData?.local ? "Let's go | wego" : "Quest unavailable | wego" },
           { name: "robots", content: "noindex" },
         ],
   }),
@@ -366,7 +366,7 @@ function GoPage() {
 
   // A quest you made has no title on the server; name the tab once it's found here.
   useEffect(() => {
-    if (quest && !knownTitle) document.title = `Let's go: ${quest.title} — wego`;
+    if (quest && !knownTitle) document.title = `Let's go: ${quest.title} | wego`;
   }, [quest, knownTitle]);
 
   if (!quest) {

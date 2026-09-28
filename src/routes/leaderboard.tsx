@@ -6,9 +6,9 @@ export const Route = createFileRoute("/leaderboard")({
   staticData: { sitemap: false },
   head: () => ({
     meta: [
-      { title: "Local Legends — wego" },
+      { title: "Local Legends | wego" },
       { name: "description", content: "See how you stack up with your squad and around campus on quests, XP and streaks." },
-      { property: "og:title", content: "Local Legends — wego" },
+      { property: "og:title", content: "Local Legends | wego" },
       { property: "og:description", content: "Friendly competition on wego: weekly XP, quests done, quests made and streaks." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
