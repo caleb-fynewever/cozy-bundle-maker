@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
+import { markInstallHintPending } from "@/components/InstallHint";
 
 export const Route = createFileRoute("/auth")({
   staticData: { sitemap: true },

@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dialog";
 import { GlassTabBar, type GlassTab } from "@/components/GlassTabBar";
 import { EASE_OUT, reducedMotion } from "@/lib/motion";
+import { InstallHint } from "@/components/InstallHint";
 
 const NAV = [
   { to: "/feed", label: "Feed", icon: Newspaper },
@@ -271,6 +272,7 @@ export function AppFrame({ children }: { children: ReactNode }) {
 
         {children}
 
+        <InstallHint />
         <GlassTabBar tabs={tabs} active={active} />
       </div>
     </Framed.Provider>
