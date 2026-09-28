@@ -27,18 +27,34 @@ for (const key of [
 }
 
 // Browser and authenticated server functions use the same public connection settings.
-// Accept either naming convention locally; Lovable supplies the server names in production.
+// The platform injects stale VITE_SUPABASE_* / SUPABASE_* values from a previously
+// connected backend into the dev-server process env, and those win over .env in
+// Vite's env loading — so the current project's settings are pinned here.
 // These are publishable identifiers, never a service-role key or other server secret.
-for (const [serverKey, browserKey, fallback] of [
-  ["SUPABASE_URL", "VITE_SUPABASE_URL", "https://evamtnygvhnyzewmeowe.supabase.co"],
-  ["SUPABASE_PUBLISHABLE_KEY", "VITE_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_RWN9ky3t__efGaj0JsE2SQ_-yfijqAL"],
-] as const) {
-  const value = processEnv[serverKey] || processEnv[browserKey] || localEnv[serverKey] || localEnv[browserKey] || fallback;
-  processEnv[serverKey] = value;
-  processEnv[browserKey] = value;
-}
+const SUPABASE_CONNECTION = {
+  url: "https://evamtnygvhnyzewmeowe.supabase.co",
+  publishableKey: "sb_publishable_RWN9ky3t__efGaj0JsE2SQ_-yfijqAL",
+  projectId: "evamtnygvhnyzewmeowe",
+} as const;
+
+processEnv["SUPABASE_URL"] = SUPABASE_CONNECTION.url;
+processEnv["VITE_SUPABASE_URL"] = SUPABASE_CONNECTION.url;
+processEnv["SUPABASE_PUBLISHABLE_KEY"] = SUPABASE_CONNECTION.publishableKey;
+processEnv["VITE_SUPABASE_PUBLISHABLE_KEY"] = SUPABASE_CONNECTION.publishableKey;
+processEnv["SUPABASE_PROJECT_ID"] = SUPABASE_CONNECTION.projectId;
+processEnv["VITE_SUPABASE_PROJECT_ID"] = SUPABASE_CONNECTION.projectId;
 
 export default defineConfig({
+  vite: {
+    // The platform injects stale VITE_SUPABASE_* values from a previously
+    // connected backend into the dev-server process env, and those win over
+    // .env. Force the current project's publishable connection settings here.
+    define: {
+      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(SUPABASE_CONNECTION.url),
+      "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(SUPABASE_CONNECTION.publishableKey),
+      "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(SUPABASE_CONNECTION.projectId),
+    },
+  },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
