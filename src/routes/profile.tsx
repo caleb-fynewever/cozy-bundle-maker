@@ -1005,6 +1005,22 @@ function SettingsDialog() {
               </p>
             ) : null}
           </fieldset>
+          <div>
+            <span className="block text-sm font-medium">Put wego on your phone</span>
+            <p className="mt-1 font-hand text-lg leading-snug text-muted-foreground">
+              add wego to your home screen so it opens like a real app
+            </p>
+            <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+              <li>
+                <strong className="text-foreground">iPhone:</strong> open wegoquests.com in Safari,
+                tap Share, then Add to Home Screen.
+              </li>
+              <li>
+                <strong className="text-foreground">Android:</strong> open wegoquests.com in
+                Chrome, tap the ⋮ menu, then Install app.
+              </li>
+            </ul>
+          </div>
           <div className="flex flex-wrap items-center gap-x-5 border-t border-border pt-2">
             <TextButton
               onClick={() =>
