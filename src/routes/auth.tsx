@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { sendEmailCode, useAuth, verifyEmailCode } from "@/lib/auth";
+import { lovable } from "@/integrations/lovable/index";
 
 export const Route = createFileRoute("/auth")({
   staticData: { sitemap: true },
@@ -61,6 +62,27 @@ function AuthPage() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "That code didn't work. Try again.");
     } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onGoogle() {
+    setBusy(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast.error("Couldn't start Google sign-in. Try again.");
+        setBusy(false);
+        return;
+      }
+      // The browser is heading to Google (or the session is already set).
+      if (!result.redirected) {
+        navigate({ to: "/", replace: true });
+      }
+    } catch {
+      toast.error("Couldn't start Google sign-in. Try again.");
       setBusy(false);
     }
   }
