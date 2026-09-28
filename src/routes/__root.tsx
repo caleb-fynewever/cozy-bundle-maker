@@ -321,7 +321,12 @@ function RootComponent() {
     let cancelled = false;
     getMyProfile()
       .then((profile) => {
-        if (cancelled || !profile) return;
+        if (cancelled) return;
+        if (!profile) {
+          // No account exists for this email yet — force account creation.
+          setState((current) => ({ ...current, configured: false }));
+          return;
+        }
         setState((current) => ({
           ...current,
           configured: true,
