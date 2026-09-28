@@ -72,13 +72,10 @@ export function InstallHint() {
           <DialogTitle className="text-xl leading-tight">Keep wego on your phone</DialogTitle>
           <DialogDescription asChild>
             <div>
-              <p className="font-hand text-lg leading-snug text-muted-foreground">
-                it takes ten seconds and opens like a real app
-              </p>
               {isIos() ? (
                 <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
                   <li>
-                    Tap the <strong className="text-foreground">Share</strong> button in Safari
+                    Tap the <strong className="text-foreground">Share</strong> button in Safari (under the 3 dots menu)
                   </li>
                   <li>
                     Choose <strong className="text-foreground">Add to Home Screen</strong>
