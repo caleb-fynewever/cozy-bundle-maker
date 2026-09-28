@@ -34,7 +34,15 @@ export const Route = createFileRoute("/quest/$questId")({
   head: ({ loaderData }) => {
     if (!loaderData?.title) {
       return {
-        meta: [{ title: loaderData?.local ? "Quest | wego" : "Quest unavailable | wego" }, { name: "robots", content: "noindex" }],
+        meta: [
+          { title: loaderData?.local ? "Quest | wego" : "Quest unavailable | wego" },
+          { name: "description", content: "See quest details on wego." },
+          { property: "og:title", content: loaderData?.local ? "Quest | wego" : "Quest unavailable | wego" },
+          { property: "og:description", content: "See quest details on wego." },
+          { property: "og:type", content: "article" },
+          { name: "twitter:card", content: "summary" },
+          { name: "robots", content: "noindex" },
+        ],
       };
     }
     return {

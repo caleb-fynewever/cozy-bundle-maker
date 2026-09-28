@@ -97,6 +97,11 @@ export const Route = createFileRoute("/go/$questId")({
         ]
       : [
           { title: loaderData?.local ? "Let's go | wego" : "Quest unavailable | wego" },
+          { name: "description", content: "Plan a quest with your crew on wego." },
+          { property: "og:title", content: loaderData?.local ? "Let's go | wego" : "Quest unavailable | wego" },
+          { property: "og:description", content: "Plan a quest with your crew on wego." },
+          { property: "og:type", content: "website" },
+          { name: "twitter:card", content: "summary" },
           { name: "robots", content: "noindex" },
         ],
   }),

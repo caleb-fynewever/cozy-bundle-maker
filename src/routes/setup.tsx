@@ -11,6 +11,10 @@ export const Route = createFileRoute("/setup")({
     meta: [
       { title: "Set up your account | wego" },
       { name: "description", content: "Tell wego who you are so your friends can find you." },
+      { property: "og:title", content: "Set up your account | wego" },
+      { property: "og:description", content: "Tell wego who you are so your friends can find you." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: SetupPage,

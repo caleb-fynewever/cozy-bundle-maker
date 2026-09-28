@@ -11,6 +11,10 @@ export const Route = createFileRoute("/auth")({
     meta: [
       { title: "Sign in | wego" },
       { name: "description", content: "Sign in to wego with your username and password." },
+      { property: "og:title", content: "Sign in | wego" },
+      { property: "og:description", content: "Sign in to wego with your username and password." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: AuthPage,
