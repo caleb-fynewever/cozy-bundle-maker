@@ -24,13 +24,13 @@ export const Route = createFileRoute("/")({
   }),
   head: () => ({
     meta: [
-      { title: "Quests — wego" },
+      { title: "Quests | wego" },
       {
         name: "description",
         content:
           "wego turns 'what should we do?' into a real plan. One tap and you're headed somewhere worth the walk.",
       },
-      { property: "og:title", content: "Quests — wego" },
+      { property: "og:title", content: "Quests | wego" },
       {
         property: "og:description",
         content:

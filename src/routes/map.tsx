@@ -19,9 +19,9 @@ export const Route = createFileRoute("/map")({
   staticData: { sitemap: false },
   head: () => ({
     meta: [
-      { title: "Map — wego" },
+      { title: "Map | wego" },
       { name: "description", content: "Every quest on one map. Tap a pin to see it." },
-      { property: "og:title", content: "Map — wego" },
+      { property: "og:title", content: "Map | wego" },
       { property: "og:description", content: "Every quest on one map. Tap a pin to see it." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

@@ -9,8 +9,12 @@ export const Route = createFileRoute("/setup")({
   staticData: { sitemap: false },
   head: () => ({
     meta: [
-      { title: "Set up your account — wego" },
+      { title: "Set up your account | wego" },
       { name: "description", content: "Tell wego who you are so your friends can find you." },
+      { property: "og:title", content: "Set up your account | wego" },
+      { property: "og:description", content: "Tell wego who you are so your friends can find you." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: SetupPage,
@@ -30,7 +34,7 @@ function SetupPage() {
     const trimmedName = name.trim();
     const trimmedHandle = handle.trim().replace(/^@+/, "").toLowerCase();
     if (!trimmedName) {
-      toast.error("Give yourself a name — your friends need to recognize you.");
+      toast.error("Give yourself a name so your friends can recognize you.");
       return;
     }
     if (!trimmedHandle) {

@@ -231,7 +231,7 @@ export function CreateQuestForm({ embedded = false }: { embedded?: boolean }) {
     try {
       await saveQuest({data: {...quest, expectedUserId: getBoundUserId() ?? undefined}});
       actions.addQuest(quest);
-      toast.success("Quest published — +90 XP");
+      toast.success("Quest published! You earned 90 XP.");
       void navigate({ to: "/quest/$questId", params: { questId: quest.id } });
     } catch {
       toast.error("Could not publish your quest. Your draft is still here; try again.");
@@ -530,7 +530,7 @@ export function CreateQuestForm({ embedded = false }: { embedded?: boolean }) {
 }
 
 const PUNCH_IT_UP =
-  "Punch it up adds secret picks, a scoring rule and a consequence — the three things that turn an outing into a story. You can edit every word before publishing.";
+  "Punch it up adds secret picks, a scoring rule and a consequence. Together, they turn an outing into a story. You can edit every word before publishing.";
 
 function Field({
   label,

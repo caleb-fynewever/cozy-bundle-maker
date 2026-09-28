@@ -9,8 +9,12 @@ export const Route = createFileRoute("/auth")({
   staticData: { sitemap: true },
   head: () => ({
     meta: [
-      { title: "Sign in — wego" },
+      { title: "Sign in | wego" },
       { name: "description", content: "Sign in to wego with your username and password." },
+      { property: "og:title", content: "Sign in | wego" },
+      { property: "og:description", content: "Sign in to wego with your username and password." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: AuthPage,
@@ -69,11 +73,11 @@ function AuthPage() {
         }
         if (!data.session) {
           // Email confirmation is enabled on the project — tell the user how to fix.
-          toast.error("Account created but sign-in is blocked — email confirmation needs to be off.");
+          toast.error("Account created, but sign-in is blocked. Email confirmation needs to be off.");
           return;
         }
         markInstallHintPending();
-        toast.success("Account created — welcome to wego.");
+        toast.success("Account created. Welcome to wego!");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
