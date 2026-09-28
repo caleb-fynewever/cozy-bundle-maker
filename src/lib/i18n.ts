@@ -112,6 +112,40 @@ const COPY: Pair[] = [
   ["Already invited", "Ya está invitado", "Déjà invité"], ["Accept", "Aceptar", "Accepter"], ["Decline", "Rechazar", "Refuser"], ["Dismiss", "Descartar", "Fermer"],
   ["Squad invites", "Invitaciones a grupos", "Invitations de groupe"], ["Invites and updates for your squad.", "Invitaciones y novedades de tu grupo.", "Invitations et nouvelles de votre groupe."],
   ["You’re all caught up. Squad invites will show up here.", "Estás al día. Las invitaciones aparecerán aquí.", "Vous êtes à jour. Les invitations apparaîtront ici."],
+  ["Build a squad leaderboard", "Crea una clasificación del grupo", "Créez un classement de groupe"],
+  ["Your XP trail starts with your first quest.", "Tu historial de XP empieza con tu primer plan.", "Votre parcours XP commence avec votre première quête."],
+  ["iPhone:", "iPhone:", "iPhone :"], ["Android:", "Android:", "Android :"],
+  ["fresh face on wego.", "cara nueva en wego.", "petit nouveau sur wego."], ["you've been too", "tú también fuiste", "vous y êtes allé aussi"], ["you too", "tú también", "vous aussi"],
+  ["Pick which squad to invite them to.", "Elige a qué grupo invitarle.", "Choisissez le groupe auquel l’inviter."],
+  ["Make one on the Squad page", "Crea uno en la página de grupos", "Créez-en un sur la page Groupe"],
+  ["Choose an image file.", "Elige un archivo de imagen.", "Choisissez un fichier image."],
+  ["That image could not be compressed enough. Try a smaller one.", "No se pudo reducir esa imagen. Prueba con una más pequeña.", "Impossible de réduire cette image. Essayez-en une plus petite."],
+  ["Your quests, XP, weekly streak, and badges.", "Tus planes, XP, racha semanal e insignias.", "Vos quêtes, XP, série hebdomadaire et badges."],
+  ["How XP works", "Cómo funciona la XP", "Comment fonctionne l’XP"],
+  ["This browser cannot share your location.", "Este navegador no puede compartir tu ubicación.", "Ce navigateur ne peut pas partager votre position."],
+  ["Could not get your location. Check browser permissions and try again.", "No se pudo obtener tu ubicación. Revisa los permisos del navegador.", "Impossible d’obtenir votre position. Vérifiez les autorisations du navigateur."],
+  ["Add a name so your squad knows it's you.", "Añade un nombre para que tu grupo sepa que eres tú.", "Ajoutez un nom pour que votre groupe vous reconnaisse."],
+  ["Someone nearby already goes by that handle.", "Alguien cerca ya usa ese usuario.", "Quelqu’un utilise déjà cet identifiant."],
+  ["Could not load that image.", "No se pudo cargar esa imagen.", "Impossible de charger cette image."],
+  ["Could not sign out. Try again.", "No se pudo cerrar sesión. Inténtalo de nuevo.", "Impossible de se déconnecter. Réessayez."],
+  ["Could not save your profile.", "No se pudo guardar tu perfil.", "Impossible d’enregistrer votre profil."],
+  ["In common", "En común", "En commun"], ["A friend", "Un amigo", "Un ami"], ["Couldn't send that invite.", "No se pudo enviar la invitación.", "Impossible d’envoyer l’invitation."],
+  ["In squad", "En el grupo", "Dans le groupe"], ["Sent", "Enviada", "Envoyée"],
+  ["you're here", "estás aquí", "vous êtes ici"], ["Your quest journey", "Tu camino de planes", "Votre parcours de quêtes"], ["to go", "restantes", "restants"],
+  ["total XP", "XP total", "XP au total"], ["this level", "este nivel", "ce niveau"], ["Top level reached", "Nivel máximo alcanzado", "Niveau maximal atteint"],
+  ["All the way up", "Hasta arriba", "Tout en haut"], ["Progress to next level", "Progreso al siguiente nivel", "Progression vers le niveau suivant"],
+  ["Wanderer", "Caminante", "Promeneur"], ["Explorer", "Explorador", "Explorateur"], ["Local", "Local", "Habitué"], ["Adventurer", "Aventurero", "Aventurier"], ["wego Legend", "Leyenda de wego", "Légende wego"],
+  ["Finish a quest", "Completa un plan", "Terminez une quête"], ["…with someone from your squad", "…con alguien de tu grupo", "…avec quelqu’un de votre groupe"],
+  ["Make a quest others can do", "Crea un plan que otros puedan hacer", "Créez une quête pour les autres"], ["Add someone to your squad", "Añade a alguien a tu grupo", "Ajoutez quelqu’un à votre groupe"],
+  ["Verify your student email", "Verifica tu correo estudiantil", "Vérifiez votre adresse étudiante"],
+  ["First step", "Primer paso", "Premier pas"], ["first step", "primer paso", "premier pas"], ["Finish one quest", "Completa un plan", "Terminez une quête"], ["finish one quest", "completa un plan", "terminez une quête"],
+  ["Regular", "Habitual", "Habitué"], ["regular", "habitual", "habitué"], ["Finish five quests", "Completa cinco planes", "Terminez cinq quêtes"],
+  ["Quest maker", "Creador de planes", "Créateur de quêtes"], ["quest maker", "creador de planes", "créateur de quêtes"], ["Make a quest", "Crea un plan", "Créez une quête"], ["make a quest", "crea un plan", "créez une quête"],
+  ["Full squad", "Grupo completo", "Groupe complet"], ["full squad", "grupo completo", "groupe complet"], ["Have three in your squad", "Ten tres personas en tu grupo", "Ayez trois personnes dans votre groupe"],
+  ["Four-week run", "Racha de cuatro semanas", "Série de quatre semaines"], ["4-week run", "racha de 4 semanas", "série de 4 semaines"],
+  ["Finish a quest every week for four weeks", "Completa un plan cada semana durante cuatro semanas", "Terminez une quête chaque semaine pendant quatre semaines"],
+  ["Chill", "Tranqui", "Détente"], ["Active", "Activo", "Actif"], ["Food", "Comida", "Cuisine"], ["Creative", "Creativo", "Créatif"], ["Social", "Social", "Social"],
+  ["Weird", "Raro", "Insolite"], ["Outdoors", "Aire libre", "Plein air"], ["Competitive", "Competitivo", "Compétitif"], ["Late Night", "Noche", "Tard le soir"],
 ];
 
 const resources = {
@@ -148,6 +182,13 @@ function translateTemplate(value: string, locale: Locale) {
     [/^(.+) invited you$/, (m) => locale === "es" ? `${m[1]} te invitó` : `${m[1]} vous a invité`],
     [/^Invite sent to (.+)$/, (m) => locale === "es" ? `Invitación enviada a ${m[1]}` : `Invitation envoyée à ${m[1]}`],
     [/^Open the quest (.+)$/, (m) => locale === "es" ? `Abrir el plan ${m[1]}` : `Ouvrir la quête ${m[1]}`],
+    [/^level (\d+)$/i, (m) => locale === "es" ? `nivel ${m[1]}` : `niveau ${m[1]}`],
+    [/^([\d,.]+) XP to (.+)$/, (m) => locale === "es" ? `${m[1]} XP para ${translate(m[2]!, locale)}` : `${m[1]} XP avant ${translate(m[2]!, locale)}`],
+    [/^(\d+) more (quest|quests|week|weeks)(?: in a row)?$/, (m) => {
+      const n = m[1]; const week = m[2]!.startsWith("week"); const row = m[0].endsWith("in a row");
+      return locale === "es" ? `${n} ${week ? "semanas" : "planes"} más${row ? " seguidas" : ""}` : `encore ${n} ${week ? "semaines" : "quêtes"}${row ? " d’affilée" : ""}`;
+    }],
+    [/^(\d+) more in your squad$/, (m) => locale === "es" ? `${m[1]} más en tu grupo` : `encore ${m[1]} dans votre groupe`],
   ];
   for (const [pattern, render] of patterns) {
     const match = value.match(pattern);
