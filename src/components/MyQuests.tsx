@@ -312,7 +312,7 @@ function QuestRow({
             <span aria-hidden className="live-dot relative h-2 w-2 rounded-full bg-primary" /> out now
           </span>
         ) : null}
-        <span className="line-clamp-2 text-[15px] font-semibold leading-snug text-balance sm:text-base">{quest.title}</span>
+        <span data-no-translate className="line-clamp-2 text-[15px] font-semibold leading-snug text-balance sm:text-base">{quest.title}</span>
         <span className="mt-1 block truncate text-[13px] leading-snug text-muted-foreground">{quest.location.name}</span>
         {/* A plan's day and time get their own line ("Sat, Oct 3 · 7 PM" is a phrase of its own). */}
         {time ? (

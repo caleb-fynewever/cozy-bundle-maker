@@ -168,19 +168,19 @@ function OwnProfile() {
     <AppShell>
       <PageHeader
         eyebrow="your field notes"
-        title={state.name}
+        title={<span data-no-translate>{state.name}</span>}
         leading={<Avatar name={state.name} you size={72} imageUrl={state.avatarUrl} />}
         action={<SettingsDialog />}
         meta={
           <div className="space-y-2">
             <MetaLine
               parts={[
-                <span key="handle">@{state.handle}</span>,
+                <span key="handle" data-no-translate>@{state.handle}</span>,
                 state.verified ? <Verified key="verified" label="UMN student" /> : null,
               ]}
             />
             {state.bio ? (
-              <p className="max-w-prose text-[15px] leading-relaxed text-muted-foreground text-pretty">
+              <p data-no-translate className="max-w-prose text-[15px] leading-relaxed text-muted-foreground text-pretty">
                 {state.bio}
               </p>
             ) : null}
