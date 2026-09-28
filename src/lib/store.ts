@@ -66,7 +66,7 @@ export type CompleteSnapshot = Pick<
 export type ApproximateLocation = { lat: number; lng: number; label: string };
 export type ScheduledQuest = { questId: string; when: string; endWhen?: string };
 export type UserSquad = { id: string; name: string; leaderId: string; memberIds: string[] };
-export type Friend = { id: string; name: string; email: string };
+export type Friend = { id: string; name: string; email: string; handle?: string };
 export type SquadInvite = {
   id: string;
   personId: string;
@@ -616,7 +616,7 @@ export const actions = {
   /** Mirror shared squads and demo memberships from the backend. */
   syncRemoteSquads(
     me: string,
-    remote: { id: string; name: string; leaderId: string; members: { id: string; name: string; demo?: boolean }[] }[],
+    remote: { id: string; name: string; leaderId: string; members: { id: string; name: string; handle?: string; demo?: boolean }[] }[],
   ) {
     setState((s) => {
       const isShared = (id: string) => UUID_RE.test(id);
@@ -637,8 +637,10 @@ export const actions = {
           if (m.id === me || m.demo) continue;
           const fid = `f_${m.id}`;
           const i = friends.findIndex((f) => f.id === fid);
-          if (i === -1) friends.push({ id: fid, name: m.name, email: "" });
-          else friends[i] = { ...friends[i]!, name: m.name };
+          const handle = m.handle || (i === -1 ? "" : (friends[i]!.handle ?? ""));
+          const entry: Friend = { id: fid, name: m.name, email: "", ...(handle ? { handle } : {}) };
+          if (i === -1) friends.push(entry);
+          else friends[i] = entry;
         }
       const activeSquadId = squads.some((sq) => sq.id === s.activeSquadId)
         ? s.activeSquadId

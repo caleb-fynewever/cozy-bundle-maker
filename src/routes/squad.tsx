@@ -386,13 +386,32 @@ function SquadPage() {
                             ))}
                             {friends.map((friend) => (
                               <li key={friend.id} className="flex items-center gap-3 py-3">
-                                <Avatar name={friend.name} size={40} />
-                                <span className="min-w-0 flex-1">
-                                  <span className="block font-medium">{friend.name}</span>
-                                  <span className="block text-sm text-muted-foreground">
-                                    {item.leaderId === friend.id ? "Squad leader" : "Friend"}
-                                  </span>
-                                </span>
+                                {friend.handle ? (
+                                  <Link
+                                    to="/profile"
+                                    search={{ handle: friend.handle }}
+                                    className="flex min-w-0 flex-1 items-center gap-3"
+                                    aria-label={`View ${friend.name}'s profile`}
+                                  >
+                                    <Avatar name={friend.name} size={40} />
+                                    <span className="min-w-0 flex-1">
+                                      <span className="block font-medium underline underline-offset-4">{friend.name}</span>
+                                      <span className="block text-sm text-muted-foreground">
+                                        {item.leaderId === friend.id ? "Squad leader" : "Friend"}
+                                      </span>
+                                    </span>
+                                  </Link>
+                                ) : (
+                                  <>
+                                    <Avatar name={friend.name} size={40} />
+                                    <span className="min-w-0 flex-1">
+                                      <span className="block font-medium">{friend.name}</span>
+                                      <span className="block text-sm text-muted-foreground">
+                                        {item.leaderId === friend.id ? "Squad leader" : "Friend"}
+                                      </span>
+                                    </span>
+                                  </>
+                                )}
                                 {isOwner ? (
                                   <button
                                     type="button"

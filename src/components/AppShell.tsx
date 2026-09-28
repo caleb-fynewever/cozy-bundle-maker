@@ -1,4 +1,5 @@
 import { findQuest } from "@/lib/catalog";
+import { NEARBY_STUDENTS } from "@/data/people";
 import { useDatabaseSync } from "@/lib/database-sync";
 import { useSharedSquadSync } from "@/lib/shared-squads";
 import { useSquadInvites } from "@/lib/squad-invites";
@@ -150,7 +151,21 @@ export function AppFrame({ children }: { children: ReactNode }) {
                         className="flex flex-wrap items-center gap-3 border-b border-border py-3"
                       >
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium">{invite.inviter_name} invited you</p>
+                          <p className="font-medium">
+                            {invite.inviter_handle ? (
+                              <Link
+                                to="/profile"
+                                search={{ handle: invite.inviter_handle }}
+                                className="underline underline-offset-4"
+                                aria-label={`View ${invite.inviter_name}'s profile`}
+                              >
+                                {invite.inviter_name}
+                              </Link>
+                            ) : (
+                              invite.inviter_name
+                            )}{" "}
+                            invited you
+                          </p>
                           <p className="text-sm text-muted-foreground">Join {invite.squad_name}?</p>
                         </div>
                         <Button
@@ -181,9 +196,26 @@ export function AppFrame({ children }: { children: ReactNode }) {
                           <li key={invite.id} className="flex flex-wrap items-center gap-3 py-3">
                             <div className="min-w-0 flex-1">
                               <p className="font-medium">
-                                {invite.direction === "received"
-                                  ? `${invite.personName} invited you`
-                                  : `Invite sent to ${invite.personName}`}
+                                {(() => {
+                                  const handle = NEARBY_STUDENTS.find((p) => p.id === invite.personId)?.handle;
+                                  const name = handle ? (
+                                    <Link
+                                      to="/profile"
+                                      search={{ handle }}
+                                      className="underline underline-offset-4"
+                                      aria-label={`View ${invite.personName}'s profile`}
+                                    >
+                                      {invite.personName}
+                                    </Link>
+                                  ) : (
+                                    invite.personName
+                                  );
+                                  return invite.direction === "received" ? (
+                                    <>{name} invited you</>
+                                  ) : (
+                                    <>Invite sent to {name}</>
+                                  );
+                                })()}
                               </p>
                               <p className="text-sm text-muted-foreground">
                                 {invite.direction === "received"

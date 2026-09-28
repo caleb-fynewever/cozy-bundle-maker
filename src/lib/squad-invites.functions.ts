@@ -8,6 +8,7 @@ export type RemoteInvite = {
   squad_name: string;
   inviter_id: string;
   inviter_name: string;
+  inviter_handle?: string | null;
   invitee_email: string;
   invitee_id: string | null;
   invitee_name: string | null;
@@ -121,6 +122,15 @@ export const listSquadInvites = createServerFn({ method: "GET" })
     if (error) throw new Error("Couldn't load invites.");
     const myEmail = String(context.claims.email ?? "").toLowerCase();
     const rows = (data ?? []) as RemoteInvite[];
+    const inviterIds = [...new Set(rows.map((r) => r.inviter_id))];
+    if (inviterIds.length) {
+      const { data: profiles } = await context.supabase
+        .from("profiles")
+        .select("id, handle")
+        .in("id", inviterIds);
+      const handleById = new Map((profiles ?? []).map((p) => [p.id as string, p.handle as string]));
+      for (const row of rows) row.inviter_handle = handleById.get(row.inviter_id) ?? null;
+    }
     return {
       received: rows.filter((r) => r.status === "pending" && r.inviter_id !== context.userId && (r.invitee_id === context.userId || r.invitee_email.toLowerCase() === myEmail)),
       sent: rows.filter((r) => r.inviter_id === context.userId),
