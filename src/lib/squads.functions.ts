@@ -24,7 +24,7 @@ export const listMySquads = createServerFn({ method: "GET" })
       : { data: [], error: null };
     if (profilesError) throw new Error("Could not load squad profiles.");
     const { data: demoMembers, error: demoError } = await (sb as unknown as SupabaseClient<AppDatabase>).from("squad_demo_members").select("squad_id, person_id").in("squad_id", ids);
-    if (demoError) throw new Error("Could not load demo squadmates.");
+    if (demoError) console.error("demo squadmates unavailable", demoError.message);
     const byId = new Map((profiles ?? []).map((p) => [p.id, p]));
     return {
       me: context.userId,
