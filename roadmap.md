@@ -15,5 +15,5 @@
 - [x] Feed: number ratings instead of stars, collapsible comments, smaller images with a subtle squircle rounding
 
 ## Open
-- [ ] Live site: publish build missing backend connection settings (VITE_SUPABASE_* absent from bundle)
-- [ ] Sign-in email must send a 6-digit code (not just a link) for non-Lovable users
+- [ ] Clickable names → profiles in squad list and invite notifications (built, verifying)
+- [ ] Starting a quest marks all included members as "on a quest right now" in their view
