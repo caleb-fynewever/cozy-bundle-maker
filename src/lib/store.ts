@@ -616,7 +616,7 @@ export const actions = {
   /** Mirror shared squads and demo memberships from the backend. */
   syncRemoteSquads(
     me: string,
-    remote: { id: string; name: string; leaderId: string; members: { id: string; name: string; demo?: boolean }[] }[],
+    remote: { id: string; name: string; leaderId: string; members: { id: string; name: string; handle?: string; demo?: boolean }[] }[],
   ) {
     setState((s) => {
       const isShared = (id: string) => UUID_RE.test(id);
