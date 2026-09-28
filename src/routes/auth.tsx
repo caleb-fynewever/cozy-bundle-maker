@@ -9,36 +9,77 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Sign in — wego" },
-      { name: "description", content: "Sign in to wego with your Google account. One tap, no password." },
+      { name: "description", content: "Sign in to wego with your username and password." },
     ],
   }),
   component: AuthPage,
 });
 
+/** Auth needs an email under the hood; derive a stable synthetic one from the username. */
+function toAuthEmail(username: string): string {
+  const clean = username.trim().toLowerCase().replace(/[^a-z0-9._-]/g, "");
+  return `${clean}@wego.local`;
+}
+
+function isValidUsername(username: string): boolean {
+  return /^[a-z0-9._-]{3,20}$/.test(username.trim().toLowerCase());
+}
+
 function AuthPage() {
   const { session, loading } = useAuth();
   const navigate = useNavigate();
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!loading && session) navigate({ to: "/", replace: true });
   }, [loading, session, navigate]);
 
-  async function onGoogle() {
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const name = username.trim().toLowerCase();
+    if (!isValidUsername(name)) {
+      toast.error("Username must be 3–20 characters: letters, numbers, dots, dashes, underscores.");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
     setBusy(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: window.location.origin },
-      });
-      if (error) {
-        toast.error("Couldn't start Google sign-in. Try again.");
-        setBusy(false);
+      const email = toAuthEmail(name);
+      if (mode === "signup") {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { username: name } },
+        });
+        if (error) {
+          toast.error(
+            error.message.toLowerCase().includes("already")
+              ? "That username is taken. Try signing in instead."
+              : "Couldn't create your account. Try again.",
+          );
+          return;
+        }
+        if (!data.session) {
+          // Email confirmation is enabled on the project — tell the user how to fix.
+          toast.error("Account created but sign-in is blocked — email confirmation needs to be off.");
+          return;
+        }
+        toast.success("Account created — welcome to wego.");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          toast.error("Wrong username or password.");
+          return;
+        }
       }
-      // On success the browser navigates to Google; it returns to the origin
-      // with tokens in the URL, which restoreSessionFromUrl() picks up.
-    } catch {
-      toast.error("Couldn't start Google sign-in. Try again.");
+      // Session is set; the effect above navigates to the app (or setup).
+    } finally {
       setBusy(false);
     }
   }
@@ -47,36 +88,51 @@ function AuthPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-5">
       <div className="w-full max-w-sm">
         <p className="font-hand text-4xl leading-none">wego</p>
-        <h1 className="mt-6 text-2xl font-semibold text-foreground">Sign in</h1>
+        <h1 className="mt-6 text-2xl font-semibold text-foreground">
+          {mode === "signin" ? "Sign in" : "Create your account"}
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          One tap with your Google account. No password, no codes.
+          {mode === "signin"
+            ? "Pick up where you left off."
+            : "Just a username and a password. That's it."}
         </p>
+
+        <form onSubmit={onSubmit} className="mt-6 space-y-3">
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="username"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            maxLength={20}
+            className="min-h-12 w-full rounded-lg border border-input bg-card px-4 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="password"
+            autoComplete={mode === "signin" ? "current-password" : "new-password"}
+            maxLength={72}
+            className="min-h-12 w-full rounded-lg border border-input bg-card px-4 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <button
+            type="submit"
+            disabled={busy || loading}
+            className="min-h-12 w-full rounded-lg bg-primary text-base font-semibold text-primary-foreground transition-opacity disabled:opacity-60"
+          >
+            {busy ? "One sec…" : mode === "signin" ? "Sign in" : "Create account"}
+          </button>
+        </form>
 
         <button
           type="button"
-          onClick={onGoogle}
-          disabled={busy || loading}
-          className="mt-6 flex min-h-12 w-full items-center justify-center gap-3 rounded-lg border border-input bg-card text-base font-semibold text-foreground transition-opacity disabled:opacity-60"
+          onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+          className="mt-4 w-full text-center text-sm font-medium text-muted-foreground underline-offset-4 hover:underline"
         >
-          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>
-            <path
-              fill="#4285F4"
-              d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.16.83-.67 1.53-1.44 2.02l2.92 2.26c1.7-1.57 2.68-3.89 2.68-6.62z"
-            />
-            <path
-              fill="#34A853"
-              d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26a5.4 5.4 0 0 1-4.04 1.1A5.44 5.44 0 0 1 3.06 11.18l-3 2.32A9 9 0 0 0 9 18z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M3.06 11.18A5.44 5.44 0 0 1 2.78 9c0-.76.13-1.5.28-2.18l-3-2.32a9 9 0 0 0 0 8.02l3-1.34z"
-            />
-            <path
-              fill="#EA4335"
-              d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.55-2.55C13.34.75 11.35 0 9 0 5.48 0 2.44 2.02.06 4.5l3 2.32C3.7 5.04 6.14 3.58 9 3.58z"
-            />
-          </svg>
-          {busy ? "Opening Google…" : "Sign in with Google"}
+          {mode === "signin" ? "New here? Create an account" : "Already have an account? Sign in"}
         </button>
 
         <p className="mt-8 font-hand text-lg text-muted-foreground">see you out there.</p>
