@@ -32,26 +32,6 @@ export function useAuth(): AuthState {
   return state;
 }
 
-/** Sends a sign-in code to the email. Creates the account on first use. */
-export async function sendEmailCode(email: string) {
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { shouldCreateUser: true },
-  });
-  if (error) throw error;
-}
-
-/** Checks the code from the email. Resolves with the new session. */
-export async function verifyEmailCode(email: string, code: string) {
-  const { data, error } = await supabase.auth.verifyOtp({
-    email,
-    token: code,
-    type: "email",
-  });
-  if (error) throw error;
-  return data.session;
-}
-
 export async function signOut() {
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
