@@ -1,4 +1,5 @@
 import { findQuest } from "@/lib/catalog";
+import { NEARBY_STUDENTS } from "@/data/people";
 import { useDatabaseSync } from "@/lib/database-sync";
 import { useSharedSquadSync } from "@/lib/shared-squads";
 import { useSquadInvites } from "@/lib/squad-invites";
