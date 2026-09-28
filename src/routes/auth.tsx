@@ -27,18 +27,16 @@ function AuthPage() {
   async function onGoogle() {
     setBusy(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin },
       });
-      if (result.error) {
+      if (error) {
         toast.error("Couldn't start Google sign-in. Try again.");
         setBusy(false);
-        return;
       }
-      // The browser is heading to Google (or the session is already set).
-      if (!result.redirected) {
-        navigate({ to: "/", replace: true });
-      }
+      // On success the browser navigates to Google; it returns to the origin
+      // with tokens in the URL, which restoreSessionFromUrl() picks up.
     } catch {
       toast.error("Couldn't start Google sign-in. Try again.");
       setBusy(false);
