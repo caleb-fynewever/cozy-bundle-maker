@@ -14,7 +14,7 @@ export const loadDatabase = createServerFn({ method: "GET" })
       await Promise.all([
         db.from("quests").select("id, owner_id, archived, content").order("id").limit(1000),
         db.from("demo_people").select("data").order("id"),
-        db.rpc("people_directory", {}),
+        db.rpc("people_directory"),
         db
           .from("account_state")
           .select("revision, payload")
