@@ -154,6 +154,39 @@ function AuthPage() {
           </form>
         )}
 
+        <div className="mt-6 flex items-center gap-3" aria-hidden>
+          <span className="h-px flex-1 bg-border" />
+          <span className="font-hand text-sm text-muted-foreground">or</span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+
+        <button
+          type="button"
+          onClick={onGoogle}
+          disabled={busy}
+          className="mt-6 flex min-h-12 w-full items-center justify-center gap-3 rounded-lg border border-input bg-card text-base font-semibold text-foreground transition-opacity disabled:opacity-60"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>
+            <path
+              fill="#4285F4"
+              d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92a8.78 8.78 0 0 0 2.68-6.62Z"
+            />
+            <path
+              fill="#34A853"
+              d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26a5.55 5.55 0 0 1-4.04-1.1H4.08v2.34A9 9 0 0 0 9 18Z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M3 11.18A5.4 5.4 0 0 1 2.72 9c0-.76.13-1.49.28-2.18V4.48H-.01a9 9 0 0 0 0 9.04L3 11.18Z"
+            />
+            <path
+              fill="#EA4335"
+              d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59A9 9 0 0 0-.01 4.48L3 6.82C3.68 5.02 6.14 3.58 9 3.58Z"
+            />
+          </svg>
+          Sign in with Google
+        </button>
+
         <p className="mt-8 font-hand text-lg text-muted-foreground">see you out there.</p>
       </div>
     </div>
