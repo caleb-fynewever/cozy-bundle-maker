@@ -116,7 +116,7 @@ function ProfilePage() {
   const { handle } = Route.useSearch();
 
   if (handle && handle !== state.handle) {
-    if (state.directory.some(p=>p.handle===handle)) return <RemoteProfile key={handle} handle={handle} />;
+    if (state.directory.some(p => p.handle === handle)) return <RemoteProfile key={handle} handle={handle} />;
     const person = (state.catalogLoaded ? state.remotePeople : NEARBY_STUDENTS).find((candidate) => candidate.handle === handle);
     if (!person) return <RemoteProfile key={handle} handle={handle} />;
     return <PublicProfile person={person} />;
@@ -157,8 +157,8 @@ function OwnProfile() {
   const dnaVibes = taste.hasHistory
     ? taste.vibes
     : (Object.fromEntries(
-        VIBES.map((vibe) => [vibe, state.favoriteVibes.includes(vibe) ? 1 : 0]),
-      ) as Record<Vibe, number>);
+      VIBES.map((vibe) => [vibe, state.favoriteVibes.includes(vibe) ? 1 : 0]),
+    ) as Record<Vibe, number>);
 
   const rankLinkClass =
     "hit-44 text-sm font-semibold underline decoration-border decoration-1 underline-offset-4 transition-colors duration-(--dur-quick) hover:decoration-primary hover:decoration-2";
@@ -1007,9 +1007,6 @@ function SettingsDialog() {
           </fieldset>
           <div>
             <span className="block text-sm font-medium">Put wego on your phone</span>
-            <p className="mt-1 font-hand text-lg leading-snug text-muted-foreground">
-              add wego to your home screen so it opens like a real app
-            </p>
             <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
               <li>
                 <strong className="text-foreground">iPhone:</strong> open wegoquests.com in Safari,
@@ -1285,7 +1282,7 @@ function PublicProfile({ person }: { person: DemoUser }) {
 
 function RemoteProfile({ handle }: { handle: string }) {
   const state = useUserState();
-  const stats = state.directory.find(p=>p.handle===handle);
+  const stats = state.directory.find(p => p.handle === handle);
   const findByHandle = useServerFn(findProfileByHandle);
   const [profile, setProfile] = useState<RemotePublicProfile | null | "loading">("loading");
 
@@ -1335,8 +1332,8 @@ function RemoteProfile({ handle }: { handle: string }) {
           ) : null}
         </div>
         {stats ? <StatLedger items={[
-          {label: "XP", value: stats.xp}, {label: "quests finished", value: stats.completed},
-          {label: "quests made", value: stats.created}, {label: "weekly streak", value: stats.weekly_streak},
+          { label: "XP", value: stats.xp }, { label: "quests finished", value: stats.completed },
+          { label: "quests made", value: stats.created }, { label: "weekly streak", value: stats.weekly_streak },
         ]} /> : <p className="font-hand text-lg text-muted-foreground">fresh face on wego.</p>}
       </div>
     </AppShell>
