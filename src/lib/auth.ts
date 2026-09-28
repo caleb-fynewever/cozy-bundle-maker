@@ -15,8 +15,23 @@ export function useAuth(): AuthState {
     let active = true;
     restoreSessionFromUrl()
       .then(() => supabase.auth.getSession())
-      .then(({ data }) => {
+      .then(async ({ data }) => {
+        if (!data.session) {
+          if (active) setState({ session: null, loading: false });
+          return;
+        }
+        // Validate the token against the current backend — a session minted by a
+        // previous backend fails every query, so drop it and start fresh.
+        const { data: userData, error } = await supabase.auth.getUser();
+        if (error || !userData.user) {
+          await supabase.auth.signOut().catch(() => {});
+          if (active) setState({ session: null, loading: false });
+          return;
+        }
         if (active) setState({ session: data.session, loading: false });
+      })
+      .catch(() => {
+        if (active) setState({ session: null, loading: false });
       });
     const {
       data: { subscription },
