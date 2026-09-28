@@ -90,6 +90,7 @@ const COPY: Pair[] = [
   ["Use my rough location for suggestions", "Usar mi ubicación aproximada para sugerencias", "Utiliser ma zone approximative pour les suggestions"],
   ["Finding your area…", "Buscando tu zona…", "Recherche de votre zone…"], ["Update area", "Actualizar zona", "Mettre à jour la zone"],
   ["Using your approximate area.", "Usando tu zona aproximada.", "Votre zone approximative est utilisée."], ["Put wego on your phone", "Instala wego en tu teléfono", "Installez wego sur votre téléphone"],
+  ["The app changes language right away.", "La aplicación cambia de idioma al instante.", "L’application change de langue immédiatement."],
   ["Language", "Idioma", "Langue"], ["App language", "Idioma de la aplicación", "Langue de l’application"], ["Sign out", "Cerrar sesión", "Se déconnecter"],
   ["Demo tools", "Herramientas demo", "Outils de démo"], ["Load demo", "Cargar demo", "Charger la démo"], ["Reset app", "Reiniciar aplicación", "Réinitialiser l’application"],
   ["Start wego over?", "¿Reiniciar wego?", "Recommencer wego ?"], ["Keep everything", "Conservar todo", "Tout conserver"], ["Save settings", "Guardar ajustes", "Enregistrer les paramètres"],
