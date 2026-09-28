@@ -494,6 +494,14 @@ function GoPage() {
     setFinished({ earned, squad: withSquad && earned > 0, at: Date.now(), fresh });
     setAnnounce(earned ? `Quest complete. Plus ${earned} XP.` : "Quest complete.");
     swapStage("share");
+    if (sessionId.current) {
+      void endSession({ data: { id: sessionId.current } })
+        .catch(() => {})
+        .finally(() => {
+          sessionId.current = null;
+          refreshQuestSessions();
+        });
+    }
   }
 
   async function headOut() {
@@ -501,6 +509,24 @@ function GoPage() {
     actions.startQuest(quest!.id);
     setAnnounce(repeat ? "You’re out again." : "You’re out. Your quest is active.");
     swapStage("out");
+    // Tell the backend so everyone included sees they're on this quest right now.
+    const memberIds = chosen
+      .filter((id) => id.startsWith("f_"))
+      .map((id) => id.slice(2))
+      .filter((id) => UUID_RE.test(id));
+    void startSession({
+      data: {
+        questId: quest!.id,
+        questTitle: quest!.title,
+        locationName: quest!.location.name,
+        memberIds,
+      },
+    })
+      .then((row) => {
+        sessionId.current = row.id;
+        refreshQuestSessions();
+      })
+      .catch(() => {});
     if (!names.length) return;
     const time = when === null ? "right now" : whenLabel(when);
     const text = `Want to join us for ${quest!.title} at ${quest!.location.name} ${time}?`;
