@@ -30,8 +30,8 @@ for (const key of [
 // Accept either naming convention locally; Lovable supplies the server names in production.
 // These are publishable identifiers, never a service-role key or other server secret.
 for (const [serverKey, browserKey, fallback] of [
-  ["SUPABASE_URL", "VITE_SUPABASE_URL", "https://lhsjyrqhujftuawwshav.supabase.co"],
-  ["SUPABASE_PUBLISHABLE_KEY", "VITE_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_CnQHNZirCr8CkFC44irEzg_iMPYLO1F"],
+  ["SUPABASE_URL", "VITE_SUPABASE_URL", "https://evamtnygvhnyzewmeowe.supabase.co"],
+  ["SUPABASE_PUBLISHABLE_KEY", "VITE_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_RWN9ky3t__efGaj0JsE2SQ_-yfijqAL"],
 ] as const) {
   const value = processEnv[serverKey] || processEnv[browserKey] || localEnv[serverKey] || localEnv[browserKey] || fallback;
   processEnv[serverKey] = value;
