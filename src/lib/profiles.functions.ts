@@ -44,6 +44,9 @@ export const syncProfile = createServerFn({ method: "POST" })
       if (/demo profile/i.test(error.message) || error.code === "23505") {
         throw new Error(`@${data.handle} is taken. Try another handle.`);
       }
+      if (/permission denied/i.test(error.message)) {
+        throw new Error("The database isn't letting the app save profiles yet. The table permissions need to be granted.");
+      }
       throw new Error("Couldn't save your profile. Try again.");
     }
     return { ok: true };
