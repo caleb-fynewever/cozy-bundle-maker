@@ -39,7 +39,13 @@ export const syncProfile = createServerFn({ method: "POST" })
       email,
       updated_at: new Date().toISOString(),
     });
-    if (error) throw new Error("Couldn't save your profile. Try again.");
+    if (error) {
+      console.error("syncProfile failed", error.message);
+      if (/demo profile/i.test(error.message) || error.code === "23505") {
+        throw new Error(`@${data.handle} is taken. Try another handle.`);
+      }
+      throw new Error("Couldn't save your profile. Try again.");
+    }
     return { ok: true };
   });
 
