@@ -42,7 +42,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { getQuest } from "@/data/quests";
 import { NEARBY_STUDENTS } from "@/data/people";
 import { questImage } from "@/lib/imagery";
-import { XP, actions, hydrate, useUserState, type UserState } from "@/lib/store";
+import { XP, UUID_RE, actions, hydrate, useUserState, type UserState } from "@/lib/store";
+import { useServerFn } from "@tanstack/react-start";
+import { endQuestSession, startQuestSession } from "@/lib/quest-sessions.functions";
+import { refreshQuestSessions } from "@/lib/quest-sessions";
 import { CAMPUS_ORIGIN } from "@/lib/engine";
 import { EASE_IN, SPRING, burst, flyToNav, reducedMotion, useCountUp } from "@/lib/motion";
 import {
@@ -270,6 +273,10 @@ function GoPage() {
   /** The plan you just scheduled here, so its calendar step can arrive (and take focus) once. */
   const [scheduledHere, setScheduledHere] = useState<string | null>(null);
   const calendarRef = useRef<HTMLAnchorElement>(null);
+  const startSession = useServerFn(startQuestSession);
+  const endSession = useServerFn(endQuestSession);
+  /** The live session this page started, so finishing here wraps it up for everyone. */
+  const sessionId = useRef<string | null>(null);
   const scheduledWhen = state.scheduledQuests.find((item) => item.questId === questId)?.when;
   const scheduledEndWhen = state.scheduledQuests.find((item) => item.questId === questId)?.endWhen;
   useEffect(() => {
