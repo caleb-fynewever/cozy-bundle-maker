@@ -66,7 +66,7 @@ export type CompleteSnapshot = Pick<
 export type ApproximateLocation = { lat: number; lng: number; label: string };
 export type ScheduledQuest = { questId: string; when: string; endWhen?: string };
 export type UserSquad = { id: string; name: string; leaderId: string; memberIds: string[] };
-export type Friend = { id: string; name: string; email: string };
+export type Friend = { id: string; name: string; email: string; handle?: string };
 export type SquadInvite = {
   id: string;
   personId: string;
@@ -637,8 +637,8 @@ export const actions = {
           if (m.id === me || m.demo) continue;
           const fid = `f_${m.id}`;
           const i = friends.findIndex((f) => f.id === fid);
-          if (i === -1) friends.push({ id: fid, name: m.name, email: "" });
-          else friends[i] = { ...friends[i]!, name: m.name };
+          if (i === -1) friends.push({ id: fid, name: m.name, email: "", handle: m.handle || undefined });
+          else friends[i] = { ...friends[i]!, name: m.name, handle: m.handle || friends[i]!.handle };
         }
       const activeSquadId = squads.some((sq) => sq.id === s.activeSquadId)
         ? s.activeSquadId
