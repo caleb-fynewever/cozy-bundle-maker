@@ -33,7 +33,9 @@ for (const [serverKey, browserKey, fallback] of [
   ["SUPABASE_URL", "VITE_SUPABASE_URL", "https://evamtnygvhnyzewmeowe.supabase.co"],
   ["SUPABASE_PUBLISHABLE_KEY", "VITE_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_RWN9ky3t__efGaj0JsE2SQ_-yfijqAL"],
 ] as const) {
-  const value = processEnv[serverKey] || processEnv[browserKey] || localEnv[serverKey] || localEnv[browserKey] || fallback;
+  // Prefer local .env over process env: the platform may inject stale values
+  // from a previously connected backend, while .env reflects the current one.
+  const value = localEnv[serverKey] || localEnv[browserKey] || processEnv[serverKey] || processEnv[browserKey] || fallback;
   processEnv[serverKey] = value;
   processEnv[browserKey] = value;
 }
