@@ -20,6 +20,7 @@ import { getMyProfile } from "../lib/profiles.functions";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppFrame, AppShell } from "@/components/AppShell";
 import { Button, PageHeader, buttonClass, textButtonClass } from "@/components/ui-kit";
+import { AppLanguage } from "@/lib/i18n";
 
 /*
  * The 404 and error pages live inside the notebook too: a dashed trail leaves your clover dot and
@@ -370,6 +371,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <AppLanguage />
       {session && userState.configured && !onAuthPage && !onSetupPage ? (
         <AppFrame>{body}</AppFrame>
       ) : (

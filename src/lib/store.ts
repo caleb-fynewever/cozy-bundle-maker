@@ -3,8 +3,10 @@ import { useSyncExternalStore } from "react";
 import type { Quest, Vibe, DemoUser } from "@/lib/types";
 import type { FeedComment, FeedPost } from "@/data/feed";
 import { FOUNDERS_SQUAD } from "@/data/people";
+import type { Locale } from "@/lib/i18n";
 
 export type UserState = {
+  language: Locale;
   /** Set once the founders squad has been added, so leaving it sticks. */
   foundersJoined?: boolean;
   hiddenDemoSquadIds: string[];
@@ -86,6 +88,7 @@ export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
 let activeKey = BASE_KEY;
 
 const initialState: UserState = {
+  language: "en",
   foundersJoined: true,
   hiddenDemoSquadIds: [],
   configured: false,
@@ -314,6 +317,9 @@ function gain(
 }
 
 export const actions = {
+  setLanguage(language: Locale) {
+    setState((s) => ({ ...s, language }));
+  },
   toggleSave(id: string, at?: number) {
     setState((s) => {
       if (s.saved.includes(id)) return { ...s, saved: s.saved.filter((x) => x !== id) };
