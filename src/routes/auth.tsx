@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { markInstallHintPending } from "@/components/InstallHint";
+import { LANGUAGE_OPTIONS, type Locale } from "@/lib/i18n";
+import { useUserState } from "@/lib/store";
 
 export const Route = createFileRoute("/auth")({
   staticData: { sitemap: true },
@@ -94,7 +96,21 @@ function AuthPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-5">
       <div className="w-full max-w-sm">
-        <p className="font-hand text-4xl leading-none">wego</p>
+        <div className="flex items-start justify-between gap-3">
+          <p className="font-hand text-4xl leading-none">wego</p>
+          <select
+            value={state.language}
+            onChange={(event) => actions.setLanguage(event.target.value as Locale)}
+            aria-label="App language"
+            className="-mr-1 shrink-0 rounded-md border border-input bg-card px-2 py-1.5 text-sm text-foreground"
+          >
+            {LANGUAGE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
         <h1 className="mt-6 text-2xl font-semibold text-foreground">
           {mode === "signin" ? "Sign in" : "Create your account"}
         </h1>
