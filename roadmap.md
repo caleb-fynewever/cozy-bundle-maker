@@ -15,5 +15,5 @@
 - [x] Feed: number ratings instead of stars, collapsible comments, smaller images with a subtle squircle rounding
 
 ## Open
-- [ ] Clickable names → profiles in squad list and invite notifications (built, verifying)
-- [ ] Starting a quest marks all included members as "on a quest right now" in their view
+- [x] Clickable names → profiles in squad list and invite notifications
+- [x] Starting a quest marks all included members as "on a quest right now" (needs sql/0007_quest_sessions.sql run in Supabase)
