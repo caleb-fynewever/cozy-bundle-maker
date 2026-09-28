@@ -41,6 +41,16 @@ for (const [serverKey, browserKey, fallback] of [
 }
 
 export default defineConfig({
+  vite: {
+    // The platform injects stale VITE_SUPABASE_* values from a previously
+    // connected backend into the dev-server process env, and those win over
+    // .env. Force the current project's publishable connection settings here.
+    define: {
+      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(processEnv["VITE_SUPABASE_URL"]),
+      "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(processEnv["VITE_SUPABASE_PUBLISHABLE_KEY"]),
+      "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(processEnv["VITE_SUPABASE_PROJECT_ID"]),
+    },
+  },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
