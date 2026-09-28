@@ -98,7 +98,7 @@ function FeedPage() {
                 : `${activeQuest.starter_name} got you out the door`}
             </span>
             <span className="block text-sm text-muted-foreground">
-              {activeQuest.quest_title}
+              <span data-no-translate>{activeQuest.quest_title}</span>
               {activeQuest.location_name ? ` · ${activeQuest.location_name}` : ""} · tap to open
             </span>
           </Link>
@@ -377,7 +377,7 @@ function Post({ post, priority }: { post: FeedPost; priority: boolean }) {
                   search={{ from: "feed" }}
                   className="font-semibold underline decoration-primary decoration-2 underline-offset-4 transition-[text-decoration-color] duration-(--dur-quick) hover:decoration-foreground"
                 >
-                  {quest.title}
+                  <span data-no-translate>{quest.title}</span>
                 </Link>
               ) : (
                 "a quest"
@@ -475,7 +475,7 @@ function Post({ post, priority }: { post: FeedPost; priority: boolean }) {
           </button>
         </div>
 
-        {post.caption ? <p className="mt-1 max-w-[62ch] leading-relaxed text-pretty">{post.caption}</p> : null}
+        {post.caption ? <p data-no-translate className="mt-1 max-w-[62ch] leading-relaxed text-pretty">{post.caption}</p> : null}
 
         <div id={threadId} className="mt-2 empty:hidden">
           {visible.length ? (
@@ -564,7 +564,7 @@ function CommentLine({ comment, own, avatarUrl, trailing }: { comment: FeedComme
     <span className="flex min-w-0 items-start gap-2.5">
       <Avatar name={comment.author} size={20} you={own} imageUrl={own ? avatarUrl : null} />
       <span className="min-w-0 text-sm leading-snug text-pretty">
-        <span className="font-semibold">{own ? "You" : comment.author}</span> {comment.text}
+        <span className="font-semibold" {...(!own ? { "data-no-translate": "" } : {})}>{own ? "You" : comment.author}</span>{" "}<span data-no-translate>{comment.text}</span>
         <When at={comment.at} className="ml-1.5 whitespace-nowrap text-xs text-muted-foreground" />
         {trailing}
       </span>

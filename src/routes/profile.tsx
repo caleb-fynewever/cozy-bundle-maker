@@ -75,6 +75,7 @@ import {
 import { actions, useUserState, type UserState } from "@/lib/store";
 import { VIBES, VIBE_LABEL, type DemoUser, type Quest, type Vibe } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { LANGUAGE_OPTIONS, translate, type Locale } from "@/lib/i18n";
 import { VIBE_DOODLE, VIBE_ICON } from "@/lib/vibes";
 
 async function makeAvatarDataUrl(file: File): Promise<string> {
@@ -167,19 +168,19 @@ function OwnProfile() {
     <AppShell>
       <PageHeader
         eyebrow="your field notes"
-        title={state.name}
+        title={<span data-no-translate>{state.name}</span>}
         leading={<Avatar name={state.name} you size={72} imageUrl={state.avatarUrl} />}
         action={<SettingsDialog />}
         meta={
           <div className="space-y-2">
             <MetaLine
               parts={[
-                <span key="handle">@{state.handle}</span>,
+                <span key="handle" data-no-translate>@{state.handle}</span>,
                 state.verified ? <Verified key="verified" label="UMN student" /> : null,
               ]}
             />
             {state.bio ? (
-              <p className="max-w-prose text-[15px] leading-relaxed text-muted-foreground text-pretty">
+              <p data-no-translate className="max-w-prose text-[15px] leading-relaxed text-muted-foreground text-pretty">
                 {state.bio}
               </p>
             ) : null}
@@ -1005,6 +1006,27 @@ function SettingsDialog() {
               </p>
             ) : null}
           </fieldset>
+          <div>
+            <label className="block text-sm font-medium" htmlFor={`${idBase}-language`}>
+              Language
+            </label>
+            <select
+              id={`${idBase}-language`}
+              value={state.language}
+              onChange={(event) => actions.setLanguage(event.target.value as Locale)}
+              className="mt-2 min-h-11 w-full rounded-md border border-input bg-card px-3 text-[15px]"
+              aria-label="App language"
+            >
+              {LANGUAGE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {translate("The app changes language right away.", state.language)}
+            </p>
+          </div>
           <div>
             <span className="block text-sm font-medium">Put wego on your phone</span>
             <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">

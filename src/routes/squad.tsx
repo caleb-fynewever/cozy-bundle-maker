@@ -290,7 +290,7 @@ function SquadPage() {
                       <details className="group">
                         <summary className="flex min-h-20 cursor-pointer list-none items-center justify-between gap-4 bg-surface px-4 py-3 transition hover:bg-muted sm:px-5 [&::-webkit-details-marker]:hidden">
                           <span className="min-w-0">
-                            <span className="block truncate text-lg font-bold">{item.name}</span>
+                            <span data-no-translate className="block truncate text-lg font-bold">{item.name}</span>
                             <span className="mt-1 block text-sm text-muted-foreground">
                               You + {members.length + friends.length}{" "}
                               {members.length + friends.length === 1 ? "person" : "people"}
