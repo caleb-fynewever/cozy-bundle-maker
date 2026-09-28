@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { translate } from "../src/lib/i18n.tsx";
+import { translate } from "../src/lib/i18n.ts";
 
 test("translates common interface labels", () => {
   assert.equal(translate("Settings", "es"), "Ajustes");
