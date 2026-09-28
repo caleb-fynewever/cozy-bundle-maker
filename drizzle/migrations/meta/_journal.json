@@ -43,6 +43,13 @@
       "when": 1790556919685,
       "tag": "0005_noop_check",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790558335887,
+      "tag": "0006_grant_profiles_access",
+      "breakpoints": true
     }
   ]
 }
