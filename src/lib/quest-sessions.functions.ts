@@ -26,12 +26,12 @@ export const startQuestSession = createServerFn({ method: "POST" })
   .inputValidator((data) => startSchema.parse(data))
   .handler(async ({ data, context }) => {
     // Close any session you still have open so there's only one "right now".
-    await context.supabase
+    await (context.supabase as any)
       .from("quest_sessions")
       .update({ ended_at: new Date().toISOString() })
       .eq("starter_id", context.userId)
       .is("ended_at", null);
-    const { data: row, error } = await context.supabase
+    const { data: row, error } = await (context.supabase as any)
       .from("quest_sessions")
       .insert({
         quest_id: data.questId,
@@ -50,7 +50,7 @@ export const startQuestSession = createServerFn({ method: "POST" })
 export const getActiveQuestSession = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<QuestSession | null> => {
-    const { data, error } = await context.supabase
+    const { data, error } = await (context.supabase as any)
       .from("quest_sessions")
       .select("id, quest_id, quest_title, location_name, starter_id, member_ids, started_at")
       .is("ended_at", null)
@@ -77,7 +77,7 @@ export const endQuestSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    await context.supabase
+    await (context.supabase as any)
       .from("quest_sessions")
       .update({ ended_at: new Date().toISOString() })
       .eq("id", data.id)
