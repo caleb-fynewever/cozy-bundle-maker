@@ -711,7 +711,7 @@ function GoPage() {
                 tabIndex={-1}
                 className="text-lg font-semibold leading-tight"
               >
-                Which squads are going?
+                Which squad is going?
               </h2>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Chip
@@ -728,10 +728,9 @@ function GoPage() {
                     key={squad.id}
                     active={selectedSquadIds.includes(squad.id)}
                     onClick={() => {
+                      // One squad at a time: picking one clears the rest.
                       setSelectedSquadIds((ids) =>
-                        ids.includes(squad.id)
-                          ? ids.filter((id) => id !== squad.id)
-                          : [...ids, squad.id],
+                        ids.includes(squad.id) ? [] : [squad.id],
                       );
                       setCrew(null);
                     }}
