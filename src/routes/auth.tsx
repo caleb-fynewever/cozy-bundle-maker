@@ -71,6 +71,7 @@ function AuthPage() {
           toast.error("Account created but sign-in is blocked — email confirmation needs to be off.");
           return;
         }
+        markInstallHintPending();
         toast.success("Account created — welcome to wego.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
