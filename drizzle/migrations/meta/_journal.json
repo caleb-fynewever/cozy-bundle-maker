@@ -36,6 +36,13 @@
       "when": 1790540000001,
       "tag": "0004_seed_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790556919685,
+      "tag": "0005_noop_check",
+      "breakpoints": true
     }
   ]
 }
