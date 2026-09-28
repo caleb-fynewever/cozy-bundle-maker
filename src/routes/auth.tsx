@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { markInstallHintPending } from "@/components/InstallHint";
 import { LANGUAGE_OPTIONS, type Locale } from "@/lib/i18n";
-import { useUserState } from "@/lib/store";
+import { actions, useUserState } from "@/lib/store";
 
 export const Route = createFileRoute("/auth")({
   staticData: { sitemap: true },
@@ -35,6 +35,7 @@ function isValidUsername(username: string): boolean {
 function AuthPage() {
   const { session, loading } = useAuth();
   const navigate = useNavigate();
+  const state = useUserState();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
