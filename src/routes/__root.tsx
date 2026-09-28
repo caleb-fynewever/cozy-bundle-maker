@@ -255,6 +255,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       // Tints Safari's toolbar on iPhone to the paper background.
       { name: "theme-color", content: "#ECF2F7" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
+      { name: "apple-mobile-web-app-title", content: "wego" },
       { title: "wego" },
       {
         name: "description",
@@ -275,7 +279,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Schoolbell&display=swap",
       },
-      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+      { rel: "icon", href: "/favicon.png", type: "image/png" },
+      { rel: "apple-touch-icon", href: "/icons/apple-touch-icon.png" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
     ],
   }),
   shellComponent: RootShell,
