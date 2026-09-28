@@ -13,9 +13,11 @@ export function useAuth(): AuthState {
 
   useEffect(() => {
     let active = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (active) setState({ session: data.session, loading: false });
-    });
+    restoreSessionFromUrl()
+      .then(() => supabase.auth.getSession())
+      .then(({ data }) => {
+        if (active) setState({ session: data.session, loading: false });
+      });
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
