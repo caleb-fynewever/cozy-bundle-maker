@@ -22,7 +22,6 @@ export function useDatabaseSync() {
     let stopped = false,
       busy = false,
       warned = false,
-      backoff = 5000,
       timer: ReturnType<typeof setTimeout>;
     let base: AccountPayload | null = null;
     const cacheKey = `wego.sync.v1.${userId}`;
@@ -71,10 +70,8 @@ export function useDatabaseSync() {
               });
         if (!valid()) return;
         if (result.conflict) {
-          // Another device won the write; reload and retry with growing delay instead of hot-looping.
-          clearTimeout(timer);
-          timer = setTimeout(() => void sync(), backoff);
-          backoff = Math.min(backoff * 2, 60000);
+          // Do not retry a stale write automatically. A later local edit, reconnect, or focus
+          // starts from a fresh revision; retrying here lets competing tabs ping-pong forever.
           return;
         }
         const feed = await social({
@@ -147,7 +144,6 @@ export function useDatabaseSync() {
           ],
         }));
         warned = false;
-        backoff = 5000;
       } catch (error) {
         if (valid() && !warned) {
           warned = true;
@@ -183,14 +179,12 @@ export function useDatabaseSync() {
       }
     });
     const refresh = () => void sync();
-    const interval = setInterval(refresh, 30000);
     window.addEventListener("online", refresh);
     window.addEventListener("focus", refresh);
     void sync();
     return () => {
       stopped = true;
       clearTimeout(timer);
-      clearInterval(interval);
       unsubscribe();
       window.removeEventListener("online", refresh);
       window.removeEventListener("focus", refresh);

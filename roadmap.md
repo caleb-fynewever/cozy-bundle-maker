@@ -18,3 +18,4 @@
 - [x] Clickable names → profiles in squad list and invite notifications
 - [x] Starting a quest marks all included members as "on a quest right now" (needs sql/0007_quest_sessions.sql run in Supabase)
 - [x] Add English, Spanish, and French app languages with an account-scoped Settings selector
+- [ ] Apply `sql/0008_account_conflicts_are_results.sql` to the external database to stop routine save conflicts appearing as PostgreSQL errors
