@@ -30,3 +30,4 @@
 
 - Squads with uuid ids are shared rows in the `squads`/`squad_members` tables and mirrored into the local store by `useSharedSquadSync`; accepting an invite adds membership via a DB trigger, so every member points at one squad.
 - Localize built-in copy through `src/lib/i18n.tsx`; preserve user-authored text.
+- Treat account revision conflicts as normal RPC results and never auto-retry them; this prevents competing sessions from flooding PostgreSQL logs.

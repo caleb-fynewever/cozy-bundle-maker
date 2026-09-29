@@ -41,7 +41,11 @@ assert.equal(
     .revision,
   1,
 );
-await assert.rejects(db.query("SELECT save_account_state(0,$1::jsonb)", [payload]));
+assert.equal(
+  (await db.query("SELECT save_account_state(0,$1::jsonb) AS revision", [payload])).rows[0]
+    .revision,
+  0,
+);
 assert.equal((await db.query("SELECT * FROM people_directory() WHERE id=$1", [a])).rows[0].xp, 160);
 await as(b);
 assert.equal((await db.query("SELECT * FROM account_state")).rows.length, 0);

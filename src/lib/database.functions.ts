@@ -91,7 +91,8 @@ export const saveAccount = createServerFn({ method: "POST" })
       expected_revision: data.revision,
       new_payload: data.payload as Json,
     });
-    if (result.error?.code === "40001") return { conflict: true as const };
+    if (result.error?.code === "40001" || result.data === 0)
+      return { conflict: true as const };
     if (result.error) throw new Error("Could not save account progress.");
     const { data: awards, error: awardError } = await db
       .from("xp_events")
