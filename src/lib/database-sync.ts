@@ -22,6 +22,7 @@ export function useDatabaseSync() {
     let stopped = false,
       busy = false,
       warned = false,
+      backoff = 5000,
       timer: ReturnType<typeof setTimeout>;
     let base: AccountPayload | null = null;
     const cacheKey = `wego.sync.v1.${userId}`;
@@ -70,7 +71,10 @@ export function useDatabaseSync() {
               });
         if (!valid()) return;
         if (result.conflict) {
-          schedule();
+          // Another device won the write; reload and retry with growing delay instead of hot-looping.
+          clearTimeout(timer);
+          timer = setTimeout(() => void sync(), backoff);
+          backoff = Math.min(backoff * 2, 60000);
           return;
         }
         const feed = await social({
@@ -143,6 +147,7 @@ export function useDatabaseSync() {
           ],
         }));
         warned = false;
+        backoff = 5000;
       } catch (error) {
         if (valid() && !warned) {
           warned = true;
