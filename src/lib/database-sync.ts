@@ -147,6 +147,7 @@ export function useDatabaseSync() {
           ],
         }));
         warned = false;
+        backoff = 5000;
       } catch (error) {
         if (valid() && !warned) {
           warned = true;
